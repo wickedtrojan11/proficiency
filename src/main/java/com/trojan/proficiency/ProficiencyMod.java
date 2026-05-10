@@ -4,6 +4,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.block.Blocks;
@@ -23,6 +24,10 @@ public class ProficiencyMod implements ModInitializer {
 		LOGGER.info("Proficiency loaded!");
 
 		PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
+
+			// =========================
+			// MINING
+			// =========================
 
 			if (state.getBlock() == Blocks.STONE) {
 
@@ -52,7 +57,7 @@ public class ProficiencyMod implements ModInitializer {
 					);
 				}
 
-				// Mining bonus at level 5+
+				// Mining bonus
 				if (level >= 5) {
 
 					player.addEffect(
@@ -62,6 +67,39 @@ public class ProficiencyMod implements ModInitializer {
 									0,
 									false,
 									false
+							)
+					);
+				}
+			}
+
+			// =========================
+			// WOODCUTTING
+			// =========================
+
+			if (state.is(BlockTags.LOGS)) {
+
+				boolean leveledUp =
+						SkillManager.addWoodcuttingXp(player.getUUID(), 1);
+
+				int xp =
+						SkillManager.getWoodcuttingXp(player.getUUID());
+
+				int level =
+						SkillManager.getWoodcuttingLevel(player.getUUID());
+
+				LOGGER.info(
+						player.getName().getString()
+								+ " Woodcutting Level: "
+								+ level
+								+ " | XP: "
+								+ xp
+				);
+
+				if (leveledUp) {
+
+					player.sendSystemMessage(
+							Component.literal(
+									"§2Woodcutting Level Up! → Level " + level
 							)
 					);
 				}
