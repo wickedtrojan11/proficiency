@@ -7,7 +7,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public class SkillScreen extends Screen {
-
+    private int selectedSkill = 0;
     public SkillScreen() {
         super(Component.literal("Proficiency"));
     }
@@ -37,7 +37,43 @@ public class SkillScreen extends Screen {
 
         return bar.toString();
     }
+    @Override
+    public boolean keyPressed(
+            int keyCode,
+            int scanCode,
+            int modifiers
+    ) {
 
+        // Up arrow
+        if (keyCode == 265) {
+
+            selectedSkill--;
+
+            if (selectedSkill < 0) {
+                selectedSkill = 1;
+            }
+
+            return true;
+        }
+
+        // Down arrow
+        if (keyCode == 264) {
+
+            selectedSkill++;
+
+            if (selectedSkill > 1) {
+                selectedSkill = 0;
+            }
+
+            return true;
+        }
+
+        return super.keyPressed(
+                keyCode,
+                scanCode,
+                modifiers
+        );
+    }
     @Override
     public void render(
             GuiGraphics graphics,
@@ -80,62 +116,83 @@ public class SkillScreen extends Screen {
                         minecraft.player.getUUID()
                 );
 
+        // =========================
+// LEFT PANEL - SKILL LIST
+// =========================
+
         graphics.drawString(
                 font,
-                "Proficiency",
-                width / 2 - 40,
+                (selectedSkill == 0 ? "> " : "  ")
+                        + "Mining",
                 40,
-                0xFFFFFF
-        );
-
-        // Mining
-
-        graphics.drawString(
-                font,
-                "Mining Level: " + miningLevel,
-                width / 2 - 60,
                 80,
                 0xFFD700
         );
 
         graphics.drawString(
                 font,
-                createProgressBar(
-                        miningXp,
-                        miningXpRequired
-                )
-                        + " "
-                        + miningXp
-                        + "/"
-                        + miningXpRequired,
-                width / 2 - 60,
-                92,
-                0xAAAAAA
-        );
-
-        // Woodcutting
-
-        graphics.drawString(
-                font,
-                "Woodcutting Level: " + woodcuttingLevel,
-                width / 2 - 60,
-                120,
+                (selectedSkill == 1 ? "> " : "  ")
+                        + "Woodcutting",
+                40,
+                100,
                 0x55FF55
         );
 
-        graphics.drawString(
-                font,
-                createProgressBar(
-                        woodcuttingXp,
-                        woodcuttingXpRequired
-                )
-                        + " "
-                        + woodcuttingXp
-                        + "/"
-                        + woodcuttingXpRequired,
-                width / 2 - 60,
-                132,
-                0xAAAAAA
-        );
+// =========================
+// RIGHT PANEL - DETAILS
+// =========================
+
+        if (selectedSkill == 0) {
+
+            graphics.drawString(
+                    font,
+                    "Mining Level: " + miningLevel,
+                    220,
+                    80,
+                    0xFFD700
+            );
+
+            graphics.drawString(
+                    font,
+                    createProgressBar(
+                            miningXp,
+                            miningXpRequired
+                    )
+                            + " "
+                            + miningXp
+                            + "/"
+                            + miningXpRequired,
+                    220,
+                    95,
+                    0xAAAAAA
+            );
+        }
+
+        if (selectedSkill == 1) {
+
+            graphics.drawString(
+                    font,
+                    "Woodcutting Level: "
+                            + woodcuttingLevel,
+                    220,
+                    80,
+                    0x55FF55
+            );
+
+            graphics.drawString(
+                    font,
+                    createProgressBar(
+                            woodcuttingXp,
+                            woodcuttingXpRequired
+                    )
+                            + " "
+                            + woodcuttingXp
+                            + "/"
+                            + woodcuttingXpRequired,
+                    220,
+                    95,
+                    0xAAAAAA
+            );
+        }
     }
 }
