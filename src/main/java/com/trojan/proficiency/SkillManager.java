@@ -47,7 +47,12 @@ public class SkillManager {
 
         return miningXp.getOrDefault(playerId, 0);
     }
+    public static int getMiningXpRequired(UUID playerId) {
 
+        int level = getMiningLevel(playerId);
+
+        return level * 10;
+    }
     public static int getMiningLevel(UUID playerId) {
 
         return miningLevel.getOrDefault(playerId, 1);
@@ -87,7 +92,12 @@ public class SkillManager {
 
         return woodcuttingXp.getOrDefault(playerId, 0);
     }
+    public static int getWoodcuttingXpRequired(UUID playerId) {
 
+        int level = getWoodcuttingLevel(playerId);
+
+        return level * 10;
+    }
     public static int getWoodcuttingLevel(UUID playerId) {
 
         return woodcuttingLevel.getOrDefault(playerId, 1);
