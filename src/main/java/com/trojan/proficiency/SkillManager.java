@@ -1,5 +1,6 @@
 package com.trojan.proficiency;
-
+import com.trojan.proficiency.skill.MiningSkill;
+import com.trojan.proficiency.skill.WoodcuttingSkill;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -24,7 +25,8 @@ public class SkillManager {
 
         currentXp += amount;
 
-        int xpRequired = currentLevel * 10;
+        int xpRequired =
+                MiningSkill.getXpRequired(currentLevel);;
 
         boolean leveledUp = false;
 
@@ -51,7 +53,7 @@ public class SkillManager {
 
         int level = getMiningLevel(playerId);
 
-        return level * 10;
+        return MiningSkill.getXpRequired(level);
     }
     public static int getMiningLevel(UUID playerId) {
 
@@ -69,7 +71,8 @@ public class SkillManager {
 
         currentXp += amount;
 
-        int xpRequired = currentLevel * 10;
+        int xpRequired =
+                WoodcuttingSkill.getXpRequired(currentLevel);
 
         boolean leveledUp = false;
 
@@ -96,7 +99,7 @@ public class SkillManager {
 
         int level = getWoodcuttingLevel(playerId);
 
-        return level * 10;
+        return WoodcuttingSkill.getXpRequired(level);
     }
     public static int getWoodcuttingLevel(UUID playerId) {
 
