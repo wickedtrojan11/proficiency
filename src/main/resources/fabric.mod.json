@@ -19,7 +19,7 @@
 			"com.trojan.proficiency.ProficiencyMod"
 		],
 		"client": [
-			"com.trojan.proficiency.client.ProficiencyModClient"
+			"com.trojan.proficiency.client.ProficiencyClient"
 		]
 	},
 	"mixins": [
