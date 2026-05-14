@@ -1,108 +1,381 @@
 package com.trojan.proficiency;
+import com.trojan.proficiency.perk.MiningPerks;
+import com.trojan.proficiency.perk.SkillPerk;
+import java.util.Set;
+import net.minecraft.network.chat.Component;
+
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerPlayer;
+
+import net.minecraft.network.chat.Component;
+
+import com.trojan.proficiency.perk.MiningPerks;
+import com.trojan.proficiency.perk.SkillPerk;
+import com.trojan.proficiency.player.PlayerData;
+import com.trojan.proficiency.save.PlayerDataStorage;
 import com.trojan.proficiency.skill.MiningSkill;
 import com.trojan.proficiency.skill.WoodcuttingSkill;
+
 import java.util.HashMap;
 import java.util.UUID;
-
+import java.util.HashMap;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 public class SkillManager {
+    private static final HashMap<UUID, PlayerData>
+            playerDataMap = new HashMap<>();
+    private static final HashMap<UUID, Integer>
+            miningStreaks = new HashMap<>();
+    private static PlayerData getPlayerData(
+            UUID playerId
+    )
+    {
 
-    // Mining
-    private static final HashMap<UUID, Integer> miningXp = new HashMap<>();
-    private static final HashMap<UUID, Integer> miningLevel = new HashMap<>();
+        if (!playerDataMap.containsKey(playerId)) {
 
-    // Woodcutting
-    private static final HashMap<UUID, Integer> woodcuttingXp = new HashMap<>();
-    private static final HashMap<UUID, Integer> woodcuttingLevel = new HashMap<>();
+            PlayerData loadedData =
+                    PlayerDataStorage.loadPlayer(
+                            playerId
+                    );
+
+            playerDataMap.put(
+                    playerId,
+                    loadedData
+            );
+        }
+
+        return playerDataMap.get(playerId);
+    }
+
+    // =========================
+    // SAVE / LOAD
+    // =========================
+
+    public static void savePlayerData(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        PlayerDataStorage.savePlayer(
+                playerId,
+                data
+        );
+    }
 
     // =========================
     // MINING
     // =========================
+    public static int getMiningStreak(
+            UUID playerId
+    ) {
 
-    public static boolean addMiningXp(UUID playerId, int amount) {
+        return miningStreaks.getOrDefault(
+                playerId,
+                0
+        );
+    }
 
-        int currentXp = miningXp.getOrDefault(playerId, 0);
-        int currentLevel = miningLevel.getOrDefault(playerId, 1);
+    public static void increaseMiningStreak(
+            UUID playerId
+    ) {
+
+        int streak =
+                getMiningStreak(playerId);
+
+        miningStreaks.put(
+                playerId,
+                streak + 1
+        );
+    }
+
+    public static void resetMiningStreak(
+            UUID playerId
+    ) {
+
+        miningStreaks.put(
+                playerId,
+                0
+        );
+    }
+    public static boolean addMiningXp(ServerPlayer player, int amount) {
+
+        UUID playerId = player.getUUID();
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        int currentXp =
+                data.getMiningXp();
+
+        int currentLevel =
+                data.getMiningLevel();
 
         currentXp += amount;
 
         int xpRequired =
-                MiningSkill.getXpRequired(currentLevel);;
+                MiningSkill.getXpRequired(
+                        currentLevel
+                );
 
         boolean leveledUp = false;
 
         if (currentXp >= xpRequired) {
 
             currentXp = 0;
+
             currentLevel++;
 
-            miningLevel.put(playerId, currentLevel);
+            data.setMiningLevel(currentLevel);
+            checkForNewPerks(
+                    player,
+                    data.getMiningLevel()
+            );
+            int currentPerkPoints =
+                    data.getMiningPerkPoints();
+
+            data.setMiningPerkPoints(
+                    currentPerkPoints + 1
+            );
 
             leveledUp = true;
         }
 
-        miningXp.put(playerId, currentXp);
+        data.setMiningXp(currentXp);
+
+        savePlayerData(playerId);
 
         return leveledUp;
     }
+    private static void checkForNewPerks(
+            ServerPlayer player,
+            int level
+    ) {
 
-    public static int getMiningXp(UUID playerId) {
+        for (SkillPerk perk : MiningPerks.ALL_PERKS) {
 
-        return miningXp.getOrDefault(playerId, 0);
+            if (level == perk.getRequiredLevel()) {
+
+                player.sendSystemMessage(
+                        Component.literal(
+                                "§aNEW PERK AVAILABLE: "
+                                        + perk.getName()
+                        )
+
+                );
+                player.level().playSound(
+                        null,
+                        player.blockPosition(),
+                        SoundEvents.ENCHANTMENT_TABLE_USE,
+                        SoundSource.PLAYERS,
+                        0.5f,
+                        1.2f
+                );
+            }
+        }
     }
-    public static int getMiningXpRequired(UUID playerId) {
+    public static int getMiningXp(
+            UUID playerId
+    ) {
 
-        int level = getMiningLevel(playerId);
-
-        return MiningSkill.getXpRequired(level);
+        return getPlayerData(playerId)
+                .getMiningXp();
     }
-    public static int getMiningLevel(UUID playerId) {
 
-        return miningLevel.getOrDefault(playerId, 1);
+    public static int getMiningLevel(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .getMiningLevel();
+    }
+
+    public static int getMiningXpRequired(
+            UUID playerId
+    ) {
+
+        int level =
+                getMiningLevel(playerId);
+
+        return MiningSkill.getXpRequired(
+                level
+        );
+    }
+
+    public static int getMiningPerkPoints(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .getMiningPerkPoints();
+    }
+
+    // =========================
+    // GENERIC MINING PERKS
+    // =========================
+
+    public static boolean unlockMiningPerk(
+            UUID playerId,
+            String perkId,
+            int requiredLevel
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        // Already unlocked
+        if (data.hasMiningPerk(perkId)) {
+            return false;
+        }
+
+        // Not high enough level
+        if (data.getMiningLevel() < requiredLevel) {
+            return false;
+        }
+
+        // No perk points
+        if (data.getMiningPerkPoints() <= 0) {
+            return false;
+        }
+
+        // Unlock perk
+        data.unlockMiningPerk(perkId);
+
+        // Spend perk point
+        data.setMiningPerkPoints(
+                data.getMiningPerkPoints() - 1
+        );
+
+        savePlayerData(playerId);
+
+        return true;
+    }
+
+    public static boolean hasMiningPerk(
+            UUID playerId,
+            String perkId
+    ) {
+
+        return getPlayerData(playerId)
+                .hasMiningPerk(
+                        perkId
+                );
     }
 
     // =========================
     // WOODCUTTING
     // =========================
 
-    public static boolean addWoodcuttingXp(UUID playerId, int amount) {
+    public static boolean addWoodcuttingXp(
+            UUID playerId,
+            int amount
+    ) {
 
-        int currentXp = woodcuttingXp.getOrDefault(playerId, 0);
-        int currentLevel = woodcuttingLevel.getOrDefault(playerId, 1);
+        PlayerData data =
+                getPlayerData(playerId);
+
+        int currentXp =
+                data.getWoodcuttingXp();
+
+        int currentLevel =
+                data.getWoodcuttingLevel();
 
         currentXp += amount;
 
         int xpRequired =
-                WoodcuttingSkill.getXpRequired(currentLevel);
+                WoodcuttingSkill.getXpRequired(
+                        currentLevel
+                );
 
         boolean leveledUp = false;
 
         if (currentXp >= xpRequired) {
 
             currentXp = 0;
+
             currentLevel++;
 
-            woodcuttingLevel.put(playerId, currentLevel);
+            data.setWoodcuttingLevel(
+                    currentLevel
+            );
 
             leveledUp = true;
         }
 
-        woodcuttingXp.put(playerId, currentXp);
+        data.setWoodcuttingXp(currentXp);
+
+        savePlayerData(playerId);
 
         return leveledUp;
     }
 
-    public static int getWoodcuttingXp(UUID playerId) {
+    public static int getWoodcuttingXp(
+            UUID playerId
+    ) {
 
-        return woodcuttingXp.getOrDefault(playerId, 0);
+        return getPlayerData(playerId)
+                .getWoodcuttingXp();
     }
-    public static int getWoodcuttingXpRequired(UUID playerId) {
 
-        int level = getWoodcuttingLevel(playerId);
+    public static int getWoodcuttingLevel(
+            UUID playerId
+    ) {
 
-        return WoodcuttingSkill.getXpRequired(level);
+        return getPlayerData(playerId)
+                .getWoodcuttingLevel();
     }
-    public static int getWoodcuttingLevel(UUID playerId) {
 
-        return woodcuttingLevel.getOrDefault(playerId, 1);
+    public static int getWoodcuttingXpRequired(
+            UUID playerId
+    ) {
+
+        int level =
+                getWoodcuttingLevel(playerId);
+
+        return WoodcuttingSkill.getXpRequired(
+                level
+        );
+    }
+    public static Set<String> getSelectedOreSense(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .getSelectedOreSense();
+    }
+
+    public static boolean isOreSelected(
+            UUID playerId,
+            String ore
+    ) {
+
+        return getPlayerData(playerId)
+                .getSelectedOreSense()
+                .contains(ore);
+    }
+
+    public static void toggleOreSense(
+            UUID playerId,
+            String ore
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        Set<String> selected =
+                data.getSelectedOreSense();
+
+        if (selected.contains(ore)) {
+
+            selected.remove(ore);
+
+        } else {
+
+            selected.add(ore);
+        }
+
+        savePlayerData(playerId);
     }
 }
