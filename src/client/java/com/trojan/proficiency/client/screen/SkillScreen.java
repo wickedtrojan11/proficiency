@@ -8,6 +8,7 @@ import com.trojan.proficiency.skill.MiningSkill;
 import com.trojan.proficiency.perk.MiningPerks;
 import com.trojan.proficiency.perk.SkillPerk;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -112,6 +113,11 @@ public class SkillScreen extends Screen {
     private static final int TAB_OUTLINE_COLOR = 0xFF777777;
     private static final int ACTIVE_TAB_FILL_COLOR = 0xFF222222;
     private static final int TITLE_COLOR = 0xFFFFAA00;
+    private static final int PERK_LOCKED_FILL_COLOR = 0xFF222222;
+    private static final int PERK_LOCKED_BORDER_COLOR = 0xFF555555;
+    private static final int PERK_AVAILABLE_FILL_COLOR = 0xFF665000;
+    private static final int PERK_AVAILABLE_BORDER_COLOR = 0xFFFFAA00;
+    private static final int PERK_UNLOCKED_COLOR = 0xFFFFD700;
 
     private boolean backgroundEnabled = true;;
     private boolean dragging = false;
@@ -269,6 +275,8 @@ public class SkillScreen extends Screen {
                             );
 
                     if (success) {
+
+                        showPerkUnlockToast(perk);
 
                         minecraft.player.sendSystemMessage(
                                 Component.literal(
@@ -760,16 +768,12 @@ public class SkillScreen extends Screen {
                     continue;
                 }
 
-                boolean unlocked =
-                        SkillManager.hasMiningPerk(
-                                minecraft.player.getUUID(),
-                                perk.getId()
-                        );
-
                 int color =
-                        unlocked
-                                ? 0xFFFFAA00
-                                : 0xFF555555;
+                        getConnectionColor(
+                                perk,
+                                miningLevel,
+                                miningPerkPoints
+                        );
 
                 int x1 =
                         parent.getX()
@@ -819,23 +823,26 @@ public class SkillScreen extends Screen {
                             perk.getY()
                                     + TREE_OFFSET_Y;
 
-                    boolean unlocked =
-                            SkillManager.hasMiningPerk(
-                                    minecraft.player.getUUID(),
-                                    perk.getId()
+                    int fillColor =
+                            getPerkFillColor(
+                                    perk,
+                                    miningLevel,
+                                    miningPerkPoints
                             );
 
-                    int color =
-                            unlocked
-                                    ? 0xFFFFAA00
-                                    : 0xFFCCCCCC;
+                    int borderColor =
+                            getPerkBorderColor(
+                                    perk,
+                                    miningLevel,
+                                    miningPerkPoints
+                            );
 
                     graphics.fill(
                             perkX,
                             perkY,
                             perkX + PERK_NODE_SIZE,
                             perkY + PERK_NODE_SIZE,
-                            color
+                            fillColor
                     );
 
                     graphics.renderOutline(
@@ -843,7 +850,7 @@ public class SkillScreen extends Screen {
                             perkY,
                             PERK_NODE_SIZE,
                             PERK_NODE_SIZE,
-                            0xFFFFFFFF
+                            borderColor
                     );
 
                     // Hover tooltip
@@ -861,7 +868,14 @@ public class SkillScreen extends Screen {
                                                 perk.getName()
                                         ).getVisualOrderText(),
                                         Component.literal(
+                                                "Requires Mining Level: "
+                                                        + perk.getRequiredLevel()
+                                        ).getVisualOrderText(),
+                                        Component.literal(
                                                 perk.getDescription()
+                                        ).getVisualOrderText(),
+                                        Component.literal(
+                                                perk.getEffectText()
                                         ).getVisualOrderText()
                                 ),
                                 mouseX,
@@ -1268,6 +1282,128 @@ public class SkillScreen extends Screen {
         return SkillManager.hasMiningPerk(
                 playerId,
                 "deep_delver"
+        );
+    }
+
+    private void showPerkUnlockToast(SkillPerk perk) {
+
+        SystemToast.add(
+                minecraft.getToasts(),
+                SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                Component.literal("NEW PERK UNLOCKED!"),
+                Component.literal(
+                        perk.getName()
+                                + ": "
+                                + perk.getDescription()
+                )
+        );
+    }
+
+    private int getConnectionColor(
+            SkillPerk perk,
+            int miningLevel,
+            int miningPerkPoints
+    ) {
+
+        if (isPerkUnlocked(perk)) {
+
+            return PERK_UNLOCKED_COLOR;
+        }
+
+        if (
+                isPerkAvailable(
+                        perk,
+                        miningLevel,
+                        miningPerkPoints
+                )
+        ) {
+
+            return PERK_AVAILABLE_BORDER_COLOR;
+        }
+
+        return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private int getPerkFillColor(
+            SkillPerk perk,
+            int miningLevel,
+            int miningPerkPoints
+    ) {
+
+        if (isPerkUnlocked(perk)) {
+
+            return PERK_UNLOCKED_COLOR;
+        }
+
+        if (
+                isPerkAvailable(
+                        perk,
+                        miningLevel,
+                        miningPerkPoints
+                )
+        ) {
+
+            return PERK_AVAILABLE_FILL_COLOR;
+        }
+
+        return PERK_LOCKED_FILL_COLOR;
+    }
+
+    private int getPerkBorderColor(
+            SkillPerk perk,
+            int miningLevel,
+            int miningPerkPoints
+    ) {
+
+        if (isPerkUnlocked(perk)) {
+
+            return PERK_UNLOCKED_COLOR;
+        }
+
+        if (
+                isPerkAvailable(
+                        perk,
+                        miningLevel,
+                        miningPerkPoints
+                )
+        ) {
+
+            return PERK_AVAILABLE_BORDER_COLOR;
+        }
+
+        return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private boolean isPerkAvailable(
+            SkillPerk perk,
+            int miningLevel,
+            int miningPerkPoints
+    ) {
+
+        return !isPerkUnlocked(perk)
+                && miningLevel >= perk.getRequiredLevel()
+                && miningPerkPoints > 0
+                && isParentUnlocked(perk);
+    }
+
+    private boolean isPerkUnlocked(SkillPerk perk) {
+
+        return SkillManager.hasMiningPerk(
+                minecraft.player.getUUID(),
+                perk.getId()
+        );
+    }
+
+    private boolean isParentUnlocked(SkillPerk perk) {
+
+        if (perk.getParentId() == null) {
+
+            return true;
+        }
+
+        return SkillManager.hasMiningPerk(
+                minecraft.player.getUUID(),
+                perk.getParentId()
         );
     }
 
