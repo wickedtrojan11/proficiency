@@ -7,6 +7,7 @@ import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.skill.MiningSkill;
 import com.trojan.proficiency.perk.MiningPerks;
 import com.trojan.proficiency.perk.SkillPerk;
+import com.trojan.proficiency.perk.WoodcuttingPerks;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
@@ -301,6 +302,87 @@ public class SkillScreen extends Screen {
             }
 
         }
+        if (selectedSkill == 1) {
+
+            for (SkillPerk perk
+                    : WoodcuttingPerks.ALL_PERKS) {
+
+                int perkX =
+                        perk.getX()
+                                + TREE_OFFSET_X;
+
+                int perkY =
+                        perk.getY() + TREE_OFFSET_Y;
+
+                boolean hovering =
+                        mouseX >= perkX
+                                && mouseX <= perkX + PERK_NODE_SIZE
+                                && mouseY >= perkY
+                                && mouseY <= perkY + PERK_NODE_SIZE;
+
+                if (hovering) {
+
+                    int woodcuttingLevel =
+                            SkillManager.getWoodcuttingLevel(
+                                    minecraft.player.getUUID()
+                            );
+
+                    int woodcuttingPerkPoints =
+                            SkillManager.getWoodcuttingPerkPoints(
+                                    minecraft.player.getUUID()
+                            );
+
+                    if (
+                            !isWoodcuttingPerkAvailable(
+                                    perk,
+                                    woodcuttingLevel,
+                                    woodcuttingPerkPoints
+                            )
+                    ) {
+
+                        minecraft.player.sendSystemMessage(
+                                Component.literal(
+                                        "§cCannot unlock "
+                                                + perk.getName()
+                                )
+                        );
+
+                        return true;
+                    }
+
+                    boolean success =
+                            SkillManager.unlockWoodcuttingPerk(
+                                    minecraft.player.getUUID(),
+                                    perk.getId(),
+                                    perk.getRequiredLevel()
+                            );
+
+                    if (success) {
+
+                        showPerkUnlockToast(perk);
+
+                        minecraft.player.sendSystemMessage(
+                                Component.literal(
+                                        "§6Unlocked "
+                                                + perk.getName()
+                                                + "!"
+                                )
+                        );
+
+                    } else {
+
+                        minecraft.player.sendSystemMessage(
+                                Component.literal(
+                                        "§cCannot unlock "
+                                                + perk.getName()
+                                )
+                        );
+                    }
+
+                    return true;
+                }
+            }
+        }
         String[] ores = {
                 "coal",
                 "redstone",
@@ -475,7 +557,9 @@ public class SkillScreen extends Screen {
 
         graphics.drawString(
                 font,
-                "ORE SENSING",
+                selectedSkill == 1
+                        ? "FORAGING"
+                        : "ORE SENSING",
                 ORE_TITLE_X,
                 ORE_TITLE_Y,
                 TITLE_COLOR
@@ -573,6 +657,12 @@ public class SkillScreen extends Screen {
                             "textures/gui/wood_pick_bg.png"
                     );
         }
+        ResourceLocation woodcuttingBackground =
+                ResourceLocation.fromNamespaceAndPath(
+                        "proficiency",
+                        "textures/gui/woodcutting_axe_stump_bg.png"
+                );
+
         int miningXp =
                 SkillManager.getMiningXp(
                         minecraft.player.getUUID()
@@ -602,6 +692,11 @@ public class SkillScreen extends Screen {
                 SkillManager.getWoodcuttingXpRequired(
                         minecraft.player.getUUID()
                 );
+
+        int woodcuttingPerkPoints =
+                SkillManager.getWoodcuttingPerkPoints(
+                        minecraft.player.getUUID()
+                );
         if (
                 selectedSkill == 0
                         && backgroundEnabled
@@ -609,6 +704,27 @@ public class SkillScreen extends Screen {
 
             graphics.blit(
                     background,
+                    TREE_X,
+                    TREE_Y,
+                    0,
+                    0,
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT,
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT
+            );
+        }
+
+        if (
+                selectedSkill == 1
+                        && backgroundEnabled
+                        && minecraft.getResourceManager()
+                                .getResource(woodcuttingBackground)
+                                .isPresent()
+        ) {
+
+            graphics.blit(
+                    woodcuttingBackground,
                     TREE_X,
                     TREE_Y,
                     0,
@@ -1101,20 +1217,201 @@ public class SkillScreen extends Screen {
                     font,
                     "Woodcutting Level: "
                             + woodcuttingLevel,
-                    WOODCUTTING_INFO_X,
-                    WOODCUTTING_LEVEL_Y,
+                    BOTTOM_INFO_X,
+                    height - MINING_LEVEL_Y_OFFSET,
                     0x55FF55
             );
+
+            graphics.drawString(
+                    font,
+                    "Perk Points: " + woodcuttingPerkPoints,
+                    BOTTOM_INFO_X,
+                    height - PERK_POINTS_Y_OFFSET,
+                    0x55FFFF
+            );
+
             drawXpBar(
                     graphics,
-                    WOODCUTTING_INFO_X,
-                    WOODCUTTING_XP_BAR_Y,
-                    WOODCUTTING_XP_BAR_WIDTH,
+                    MINING_XP_BAR_X,
+                    height - MINING_XP_BAR_Y_OFFSET,
+                    MINING_XP_BAR_WIDTH,
                     XP_BAR_HEIGHT,
                     woodcuttingXp,
                     woodcuttingXpRequired,
                     0xFF55AA55
             );
+
+            graphics.drawString(
+                    font,
+                    "Chop Speed: +0%",
+                    MINING_STAT_X,
+                    MINING_SPEED_STAT_Y,
+                    0x55FF55
+            );
+
+            graphics.drawString(
+                    font,
+                    "Foraging: +0",
+                    MINING_STAT_X,
+                    FORTUNE_STAT_Y,
+                    0x55FFFF
+            );
+
+            graphics.drawString(
+                    font,
+                    "Axe Durability: +0%",
+                    MINING_STAT_X,
+                    DURABILITY_STAT_Y,
+                    0xAAAAAA
+            );
+
+            graphics.drawString(
+                    font,
+                    "Bonus Drops: Tier 0",
+                    MINING_STAT_X,
+                    ORE_SENSE_STAT_Y,
+                    0xFFAA00
+            );
+
+            for (SkillPerk perk
+                    : WoodcuttingPerks.ALL_PERKS) {
+
+                if (perk.getParentId() == null) {
+                    continue;
+                }
+
+                SkillPerk parent = null;
+
+                for (SkillPerk possibleParent
+                        : WoodcuttingPerks.ALL_PERKS) {
+
+                    if (
+                            possibleParent.getId()
+                                    .equals(
+                                            perk.getParentId()
+                                    )
+                    ) {
+
+                        parent = possibleParent;
+                        break;
+                    }
+                }
+
+                if (parent == null) {
+                    continue;
+                }
+
+                int color =
+                        getWoodcuttingConnectionColor(
+                                perk,
+                                woodcuttingLevel,
+                                woodcuttingPerkPoints
+                        );
+
+                int x1 =
+                        parent.getX()
+                                + TREE_OFFSET_X
+                                + PERK_LINE_CENTER_OFFSET;
+
+                int y1 =
+                        parent.getY()
+                                + TREE_OFFSET_Y
+                                + PERK_LINE_CENTER_OFFSET;
+
+                int x2 =
+                        perk.getX()
+                                + TREE_OFFSET_X
+                                + PERK_LINE_CENTER_OFFSET;
+
+                int y2 =
+                        perk.getY()
+                                + TREE_OFFSET_Y
+                                + PERK_LINE_CENTER_OFFSET;
+
+                graphics.hLine(
+                        Math.min(x1, x2),
+                        Math.max(x1, x2),
+                        y1,
+                        color
+                );
+
+                graphics.vLine(
+                        x2,
+                        Math.min(y1, y2),
+                        Math.max(y1, y2),
+                        color
+                );
+            }
+
+            for (SkillPerk perk : WoodcuttingPerks.ALL_PERKS) {
+
+                int perkX =
+                        perk.getX()
+                                + TREE_OFFSET_X;
+
+                int perkY =
+                        perk.getY()
+                                + TREE_OFFSET_Y;
+
+                int fillColor =
+                        getWoodcuttingPerkFillColor(
+                                perk,
+                                woodcuttingLevel,
+                                woodcuttingPerkPoints
+                        );
+
+                int borderColor =
+                        getWoodcuttingPerkBorderColor(
+                                perk,
+                                woodcuttingLevel,
+                                woodcuttingPerkPoints
+                        );
+
+                graphics.fill(
+                        perkX,
+                        perkY,
+                        perkX + PERK_NODE_SIZE,
+                        perkY + PERK_NODE_SIZE,
+                        fillColor
+                );
+
+                graphics.renderOutline(
+                        perkX,
+                        perkY,
+                        PERK_NODE_SIZE,
+                        PERK_NODE_SIZE,
+                        borderColor
+                );
+
+                if (
+                        mouseX >= perkX
+                                && mouseX <= perkX + PERK_NODE_SIZE
+                                && mouseY >= perkY
+                                && mouseY <= perkY + PERK_NODE_SIZE
+                ) {
+
+                    graphics.renderTooltip(
+                            font,
+                            List.of(
+                                    Component.literal(
+                                            perk.getName()
+                                    ).getVisualOrderText(),
+                                    Component.literal(
+                                            "Requires Woodcutting Level: "
+                                                    + perk.getRequiredLevel()
+                                    ).getVisualOrderText(),
+                                    Component.literal(
+                                            perk.getDescription()
+                                    ).getVisualOrderText(),
+                                    Component.literal(
+                                            perk.getEffectText()
+                                    ).getVisualOrderText()
+                            ),
+                            mouseX,
+                            mouseY
+                    );
+                }
+            }
         }
     }
     private int getMiningSpeedBonusPercent(UUID playerId) {
@@ -1402,6 +1699,114 @@ public class SkillScreen extends Screen {
         }
 
         return SkillManager.hasMiningPerk(
+                minecraft.player.getUUID(),
+                perk.getParentId()
+        );
+    }
+
+    private int getWoodcuttingConnectionColor(
+            SkillPerk perk,
+            int woodcuttingLevel,
+            int woodcuttingPerkPoints
+    ) {
+
+        if (isWoodcuttingPerkUnlocked(perk)) {
+
+            return PERK_UNLOCKED_COLOR;
+        }
+
+        if (
+                isWoodcuttingPerkAvailable(
+                        perk,
+                        woodcuttingLevel,
+                        woodcuttingPerkPoints
+                )
+        ) {
+
+            return PERK_AVAILABLE_BORDER_COLOR;
+        }
+
+        return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private int getWoodcuttingPerkFillColor(
+            SkillPerk perk,
+            int woodcuttingLevel,
+            int woodcuttingPerkPoints
+    ) {
+
+        if (isWoodcuttingPerkUnlocked(perk)) {
+
+            return PERK_UNLOCKED_COLOR;
+        }
+
+        if (
+                isWoodcuttingPerkAvailable(
+                        perk,
+                        woodcuttingLevel,
+                        woodcuttingPerkPoints
+                )
+        ) {
+
+            return PERK_AVAILABLE_FILL_COLOR;
+        }
+
+        return PERK_LOCKED_FILL_COLOR;
+    }
+
+    private int getWoodcuttingPerkBorderColor(
+            SkillPerk perk,
+            int woodcuttingLevel,
+            int woodcuttingPerkPoints
+    ) {
+
+        if (isWoodcuttingPerkUnlocked(perk)) {
+
+            return PERK_UNLOCKED_COLOR;
+        }
+
+        if (
+                isWoodcuttingPerkAvailable(
+                        perk,
+                        woodcuttingLevel,
+                        woodcuttingPerkPoints
+                )
+        ) {
+
+            return PERK_AVAILABLE_BORDER_COLOR;
+        }
+
+        return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private boolean isWoodcuttingPerkAvailable(
+            SkillPerk perk,
+            int woodcuttingLevel,
+            int woodcuttingPerkPoints
+    ) {
+
+        return !isWoodcuttingPerkUnlocked(perk)
+                && woodcuttingLevel >= perk.getRequiredLevel()
+                && woodcuttingPerkPoints > 0
+                && isWoodcuttingParentUnlocked(perk);
+    }
+
+    private boolean isWoodcuttingPerkUnlocked(SkillPerk perk) {
+
+        return SkillManager.hasWoodcuttingPerk(
+                minecraft.player.getUUID(),
+                perk.getId()
+        );
+    }
+
+    private boolean isWoodcuttingParentUnlocked(SkillPerk perk) {
+
+        if (perk.getParentId() == null) {
+
+            return true;
+        }
+
+        return SkillManager.hasWoodcuttingPerk(
                 minecraft.player.getUUID(),
                 perk.getParentId()
         );

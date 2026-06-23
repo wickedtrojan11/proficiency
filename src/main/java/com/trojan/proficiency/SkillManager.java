@@ -383,6 +383,10 @@ public class SkillManager {
                     currentLevel
             );
 
+            data.setWoodcuttingPerkPoints(
+                    data.getWoodcuttingPerkPoints() + 1
+            );
+
             leveledUp = true;
         }
 
@@ -420,6 +424,58 @@ public class SkillManager {
                 level
         );
     }
+
+    public static int getWoodcuttingPerkPoints(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .getWoodcuttingPerkPoints();
+    }
+
+    public static boolean unlockWoodcuttingPerk(
+            UUID playerId,
+            String perkId,
+            int requiredLevel
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        if (data.hasWoodcuttingPerk(perkId)) {
+            return false;
+        }
+
+        if (data.getWoodcuttingLevel() < requiredLevel) {
+            return false;
+        }
+
+        if (data.getWoodcuttingPerkPoints() <= 0) {
+            return false;
+        }
+
+        data.unlockWoodcuttingPerk(perkId);
+
+        data.setWoodcuttingPerkPoints(
+                data.getWoodcuttingPerkPoints() - 1
+        );
+
+        savePlayerData(playerId);
+
+        return true;
+    }
+
+    public static boolean hasWoodcuttingPerk(
+            UUID playerId,
+            String perkId
+    ) {
+
+        return getPlayerData(playerId)
+                .hasWoodcuttingPerk(
+                        perkId
+                );
+    }
+
     public static Set<String> getSelectedOreSense(
             UUID playerId
     ) {

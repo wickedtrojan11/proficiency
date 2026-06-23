@@ -28,6 +28,12 @@ public class PlayerData {
     private int woodcuttingXp = 0;
 
     private int woodcuttingLevel = 1;
+
+    private int woodcuttingPerkPoints = 0;
+
+    private final Set<String> unlockedWoodcuttingPerks =
+            new HashSet<>();
+
     private Set<String> selectedOreSense =
             new HashSet<>();
     public Set<String> getSelectedOreSense() {
@@ -130,5 +136,38 @@ public class PlayerData {
     ) {
         this.woodcuttingLevel =
                 woodcuttingLevel;
+    }
+
+    public int getWoodcuttingPerkPoints() {
+        return woodcuttingPerkPoints;
+    }
+
+    public void setWoodcuttingPerkPoints(
+            int woodcuttingPerkPoints
+    ) {
+        this.woodcuttingPerkPoints =
+                woodcuttingPerkPoints;
+    }
+
+    public Set<String> getUnlockedWoodcuttingPerks() {
+        return unlockedWoodcuttingPerks;
+    }
+
+    public boolean hasWoodcuttingPerk(
+            String perkId
+    ) {
+
+        return unlockedWoodcuttingPerks.contains(
+                perkId
+        );
+    }
+
+    public void unlockWoodcuttingPerk(
+            String perkId
+    ) {
+
+        unlockedWoodcuttingPerks.add(
+                perkId
+        );
     }
 }
