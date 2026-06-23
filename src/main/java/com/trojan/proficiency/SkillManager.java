@@ -18,6 +18,7 @@ import com.trojan.proficiency.skill.MiningSkill;
 import com.trojan.proficiency.skill.WoodcuttingSkill;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.UUID;
 import java.util.HashMap;
 import net.minecraft.sounds.SoundEvents;
@@ -27,6 +28,75 @@ public class SkillManager {
             playerDataMap = new HashMap<>();
     private static final HashMap<UUID, Integer>
             miningStreaks = new HashMap<>();
+
+    public static void clearPlayerDataCache() {
+
+        playerDataMap.clear();
+        miningStreaks.clear();
+    }
+
+    public static void loadPlayerData(
+            UUID playerId
+    ) {
+
+        PlayerData loadedData =
+                PlayerDataStorage.loadPlayer(
+                        playerId
+                );
+
+        playerDataMap.put(
+                playerId,
+                loadedData
+        );
+    }
+
+    public static void saveAllPlayerData() {
+
+        for (
+                UUID playerId
+                        : new HashSet<>(
+                                playerDataMap.keySet()
+                        )
+        ) {
+
+            PlayerDataStorage.savePlayer(
+                    playerId,
+                    playerDataMap.get(playerId),
+                    "server stopping"
+            );
+        }
+    }
+
+    public static void saveLoadedPlayerData(
+            UUID playerId,
+            String reason
+    ) {
+
+        if (!playerDataMap.containsKey(playerId)) {
+
+            ProficiencyMod.LOGGER.warn(
+                    "Skipping proficiency save for {} because no data is loaded ({})",
+                    playerId,
+                    reason
+            );
+            return;
+        }
+
+        PlayerDataStorage.savePlayer(
+                playerId,
+                playerDataMap.get(playerId),
+                reason
+        );
+    }
+
+    public static void unloadPlayerData(
+            UUID playerId
+    ) {
+
+        playerDataMap.remove(playerId);
+        miningStreaks.remove(playerId);
+    }
+
     private static PlayerData getPlayerData(
             UUID playerId
     )
@@ -56,12 +126,24 @@ public class SkillManager {
             UUID playerId
     ) {
 
+        savePlayerData(
+                playerId,
+                "regular save"
+        );
+    }
+
+    public static void savePlayerData(
+            UUID playerId,
+            String reason
+    ) {
+
         PlayerData data =
                 getPlayerData(playerId);
 
         PlayerDataStorage.savePlayer(
                 playerId,
-                data
+                data,
+                reason
         );
     }
 

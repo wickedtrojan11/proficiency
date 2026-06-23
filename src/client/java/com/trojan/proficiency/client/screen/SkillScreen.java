@@ -1,5 +1,7 @@
 package com.trojan.proficiency.client.screen;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.skill.MiningSkill;
@@ -10,11 +12,108 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 public class SkillScreen extends Screen {
+    private static final int SCREEN_MARGIN_X = 10;
+    private static final int SCREEN_TOP = 20;
+    private static final int SCREEN_BOTTOM_MARGIN = 20;
+    private static final int SCREEN_OUTLINE_HEIGHT_OFFSET = 40;
+
+    private static final int MINING_TAB_X = 40;
+    private static final int MINING_TAB_Y = 22;
+    private static final int MINING_TAB_WIDTH = 140;
+    private static final int MINING_TAB_HEIGHT = 25;
+    private static final int MINING_TAB_LABEL_X = 110;
+    private static final int TAB_LABEL_Y = 30;
+
+    private static final int WOODCUTTING_TAB_X = 190;
+    private static final int WOODCUTTING_TAB_Y = 22;
+    private static final int WOODCUTTING_TAB_WIDTH = 180;
+    private static final int WOODCUTTING_TAB_HEIGHT = 25;
+    private static final int WOODCUTTING_TAB_LABEL_X = 280;
+
+    private static final int STATS_PANEL_X = 35;
+    private static final int STATS_PANEL_Y = 90;
+    private static final int STATS_PANEL_WIDTH = 185;
+    private static final int STATS_PANEL_HEIGHT = 130;
+    private static final int STATS_TITLE_X = 50;
+    private static final int STATS_TITLE_Y = 105;
+    private static final int MINING_STAT_X = 50;
+    private static final int MINING_SPEED_STAT_Y = 130;
+    private static final int FORTUNE_STAT_Y = 150;
+    private static final int DURABILITY_STAT_Y = 170;
+    private static final int ORE_SENSE_STAT_Y = 190;
+
+    private static final int ORE_PANEL_X = 35;
+    private static final int ORE_PANEL_Y = 235;
+    private static final int ORE_PANEL_WIDTH = 185;
+    private static final int ORE_PANEL_HEIGHT = 150;
+    private static final int ORE_TITLE_X = 50;
+    private static final int ORE_TITLE_Y = 255;
+    private static final int ORE_TOGGLE_X = 40;
+    private static final int ORE_TOGGLE_WIDTH = 120;
+    private static final int ORE_START_Y = 280;
+    private static final int ORE_ROW_HEIGHT = 10;
+    private static final int ORE_ROW_STEP = 10;
+    private static final int ORE_TIER_GAP = 2;
+
+    private static final int SETTINGS_PANEL_X = 35;
+    private static final int SETTINGS_PANEL_FILL_Y = 410;
+    private static final int SETTINGS_PANEL_FILL_HEIGHT = 50;
+    private static final int SETTINGS_PANEL_OUTLINE_Y = 400;
+    private static final int SETTINGS_PANEL_WIDTH = 185;
+    private static final int SETTINGS_PANEL_OUTLINE_HEIGHT = 70;
+    private static final int SETTINGS_TITLE_X = 50;
+    private static final int SETTINGS_TITLE_Y = 415;
+    private static final int BACKGROUND_TOGGLE_X = 40;
+    private static final int BACKGROUND_TOGGLE_Y = 440;
+    private static final int BACKGROUND_TOGGLE_WIDTH = 140;
+    private static final int BACKGROUND_TOGGLE_HEIGHT = 15;
+    private static final int BACKGROUND_LABEL_X = 50;
+    private static final int BACKGROUND_LABEL_Y = 440;
+
+    private static final int TREE_PANEL_X = 250;
+    private static final int TREE_PANEL_Y = 50;
+    private static final int TREE_PANEL_RIGHT = 700;
+    private static final int TREE_PANEL_BOTTOM = 420;
+    private static final int TREE_PANEL_WIDTH = 700;
+    private static final int TREE_PANEL_HEIGHT = 420;
     private static final int TREE_X = 420;
     private static final int TREE_Y = 60;
-    private boolean backgroundEnabled = true;;
+    private static final int TREE_BACKGROUND_WIDTH = 400;
+    private static final int TREE_BACKGROUND_HEIGHT = 300;
     private static final int TREE_OFFSET_X = 355;
     private static final int TREE_OFFSET_Y = -15;
+    private static final int PERK_NODE_SIZE = 10;
+    private static final int PERK_LINE_CENTER_OFFSET = 6;
+
+    private static final int BOTTOM_PANEL_X = 250;
+    private static final int BOTTOM_PANEL_WIDTH = 700;
+    private static final int BOTTOM_PANEL_HEIGHT = 110;
+    private static final int BOTTOM_PANEL_TOP_OFFSET = 140;
+    private static final int BOTTOM_PANEL_BOTTOM_OFFSET = 30;
+    private static final int BOTTOM_INFO_X = 260;
+    private static final int MINING_LEVEL_Y_OFFSET = 125;
+    private static final int PERK_POINTS_Y_OFFSET = 108;
+    private static final int MINING_XP_BAR_X = 520;
+    private static final int MINING_XP_BAR_Y_OFFSET = 120;
+    private static final int MINING_XP_BAR_WIDTH = 240;
+    private static final int XP_BAR_HEIGHT = 12;
+    private static final int PERK_PROMPT_Y_OFFSET = 100;
+
+    private static final int WOODCUTTING_INFO_X = 220;
+    private static final int WOODCUTTING_LEVEL_Y = 80;
+    private static final int WOODCUTTING_XP_BAR_Y = 95;
+    private static final int WOODCUTTING_XP_BAR_WIDTH = 140;
+
+    private static final int PANEL_FILL_COLOR = 0x88000000;
+    private static final int SCREEN_FILL_COLOR = 0x66000000;
+    private static final int TREE_PANEL_FILL_COLOR = 0x44000000;
+    private static final int DEFAULT_OUTLINE_COLOR = 0xFF555555;
+    private static final int TREE_PANEL_OUTLINE_COLOR = 0xFF444444;
+    private static final int TAB_OUTLINE_COLOR = 0xFF777777;
+    private static final int ACTIVE_TAB_FILL_COLOR = 0xFF222222;
+    private static final int TITLE_COLOR = 0xFFFFAA00;
+
+    private boolean backgroundEnabled = true;;
     private boolean dragging = false;
 
     private double lastMouseX;
@@ -103,10 +202,10 @@ public class SkillScreen extends Screen {
 // =========================
 
         if (
-                mouseX >= 40
-                        && mouseX <= 180
-                        && mouseY >=  570
-                        && mouseY <=  585
+                mouseX >= BACKGROUND_TOGGLE_X
+                        && mouseX <= BACKGROUND_TOGGLE_X + BACKGROUND_TOGGLE_WIDTH
+                        && mouseY >= BACKGROUND_TOGGLE_Y
+                        && mouseY <= BACKGROUND_TOGGLE_Y + BACKGROUND_TOGGLE_HEIGHT
         ) {
 
             backgroundEnabled =
@@ -120,10 +219,10 @@ public class SkillScreen extends Screen {
 
 // Mining tab
         if (
-                mouseX >= 40
-                        && mouseX <= 180
-                        && mouseY >= 30
-                        && mouseY <= 55
+                mouseX >= MINING_TAB_X
+                        && mouseX <= MINING_TAB_X + MINING_TAB_WIDTH
+                        && mouseY >= MINING_TAB_Y
+                        && mouseY <= MINING_TAB_Y + MINING_TAB_HEIGHT
         ) {
 
             selectedSkill = 0;
@@ -133,10 +232,10 @@ public class SkillScreen extends Screen {
 
 // Woodcutting tab
         if (
-                mouseX >= 190
-                        && mouseX <= 370
-                        && mouseY >= 30
-                        && mouseY <= 55
+                mouseX >= WOODCUTTING_TAB_X
+                        && mouseX <= WOODCUTTING_TAB_X + WOODCUTTING_TAB_WIDTH
+                        && mouseY >= WOODCUTTING_TAB_Y
+                        && mouseY <= WOODCUTTING_TAB_Y + WOODCUTTING_TAB_HEIGHT
         ) {
 
             selectedSkill = 1;
@@ -156,9 +255,9 @@ public class SkillScreen extends Screen {
 
                 boolean hovering =
                         mouseX >= perkX
-                                && mouseX <= perkX + 10
+                                && mouseX <= perkX + PERK_NODE_SIZE
                                 && mouseY >= perkY
-                                && mouseY <= perkY + 10;
+                                && mouseY <= perkY + PERK_NODE_SIZE;
 
                 if (hovering) {
 
@@ -206,7 +305,7 @@ public class SkillScreen extends Screen {
                 "ancient_debris"
         };
 
-        int oreY = 370;
+        int oreY = ORE_START_Y;
 
         for (String ore : ores) {
 
@@ -245,10 +344,10 @@ public class SkillScreen extends Screen {
             }
 
             if (
-                    mouseX >= 40
-                            && mouseX <= 160
+                    mouseX >= ORE_TOGGLE_X
+                            && mouseX <= ORE_TOGGLE_X + ORE_TOGGLE_WIDTH
                             && mouseY >= oreY
-                            && mouseY <= oreY + 10
+                            && mouseY <= oreY + ORE_ROW_HEIGHT
             ) {
 
                 SkillManager.toggleOreSense(
@@ -265,7 +364,7 @@ public class SkillScreen extends Screen {
                 return true;
             }
 
-            oreY += 12;
+            oreY += ORE_ROW_STEP;
 
             if (
                     ore.equals("redstone")
@@ -273,7 +372,7 @@ public class SkillScreen extends Screen {
                             || ore.equals("diamond")
             ) {
 
-                oreY += 6;
+                oreY += ORE_TIER_GAP;
             }
         }
         return super.mouseClicked(
@@ -305,119 +404,119 @@ public class SkillScreen extends Screen {
 // =========================
 
         graphics.fill(
-                10,
-                20,
-                width - 10,
-                height - 20,
-                0x66000000
+                SCREEN_MARGIN_X,
+                SCREEN_TOP,
+                width - SCREEN_MARGIN_X,
+                height - SCREEN_BOTTOM_MARGIN,
+                SCREEN_FILL_COLOR
         );
 
         graphics.renderOutline(
-                10,
-                20,
-                width - 20,
-                height - 40,
-                0xFF555555
+                SCREEN_MARGIN_X,
+                SCREEN_TOP,
+                width - SCREEN_MARGIN_X * 2,
+                height - SCREEN_OUTLINE_HEIGHT_OFFSET,
+                DEFAULT_OUTLINE_COLOR
         );
         // =========================
 // STATS PANEL
 // =========================
 
         graphics.fill(
-                35,
-                90,
-                220,
-                290,
-                0x88000000
+                STATS_PANEL_X,
+                STATS_PANEL_Y,
+                STATS_PANEL_X + STATS_PANEL_WIDTH,
+                STATS_PANEL_Y + STATS_PANEL_HEIGHT,
+                PANEL_FILL_COLOR
         );
 
         graphics.renderOutline(
-                35,
-                90,
-                185,
-                200,
-                0xFF555555
+                STATS_PANEL_X,
+                STATS_PANEL_Y,
+                STATS_PANEL_WIDTH,
+                STATS_PANEL_HEIGHT,
+                DEFAULT_OUTLINE_COLOR
         );
 
         graphics.drawString(
                 font,
                 "STATS",
-                50,
-                105,
-                0xFFFFAA00
+                STATS_TITLE_X,
+                STATS_TITLE_Y,
+                TITLE_COLOR
         );
         // =========================
 // ORE SENSING PANEL
 // =========================
 
         graphics.fill(
-                35,
-                320,
-                220,
-                530,
-                0x88000000
+                ORE_PANEL_X,
+                ORE_PANEL_Y,
+                ORE_PANEL_X + ORE_PANEL_WIDTH,
+                ORE_PANEL_Y + ORE_PANEL_HEIGHT,
+                PANEL_FILL_COLOR
         );
 
         graphics.renderOutline(
-                35,
-                320,
-                185,
-                210,
-                0xFF555555
+                ORE_PANEL_X,
+                ORE_PANEL_Y,
+                ORE_PANEL_WIDTH,
+                ORE_PANEL_HEIGHT,
+                DEFAULT_OUTLINE_COLOR
         );
 
         graphics.drawString(
                 font,
                 "ORE SENSING",
-                50,
-                340,
-                0xFFFFAA00
+                ORE_TITLE_X,
+                ORE_TITLE_Y,
+                TITLE_COLOR
         );
         // =========================
 // SETTINGS PANEL
 // =========================
 
         graphics.fill(
-                35,
-                550,
-                220,
-                560,
-                0x88000000
+                SETTINGS_PANEL_X,
+                SETTINGS_PANEL_FILL_Y,
+                SETTINGS_PANEL_X + SETTINGS_PANEL_WIDTH,
+                SETTINGS_PANEL_FILL_Y + SETTINGS_PANEL_FILL_HEIGHT,
+                PANEL_FILL_COLOR
         );
 
         graphics.renderOutline(
-                35,
-                540,
-                185,
-                60,
-                0xFF555555
+                SETTINGS_PANEL_X,
+                SETTINGS_PANEL_OUTLINE_Y,
+                SETTINGS_PANEL_WIDTH,
+                SETTINGS_PANEL_OUTLINE_HEIGHT,
+                DEFAULT_OUTLINE_COLOR
         );
 
         graphics.drawString(
                 font,
                 "SETTINGS",
-                50,
-                565,
-                0xFFFFAA00
+                SETTINGS_TITLE_X,
+                SETTINGS_TITLE_Y,
+                TITLE_COLOR
         );
 // =========================
 // TREE PANEL
 // =========================
 
         graphics.fill(
-                250,
-                50,
-                700,
-                420,
-                0x44000000
+                TREE_PANEL_X,
+                TREE_PANEL_Y,
+                TREE_PANEL_RIGHT,
+                TREE_PANEL_BOTTOM,
+                TREE_PANEL_FILL_COLOR
         );
 
         graphics.renderOutline(
-                250,
-                50,
-                700,
-                420,
-                0xFF444444
+                TREE_PANEL_X,
+                TREE_PANEL_Y,
+                TREE_PANEL_WIDTH,
+                TREE_PANEL_HEIGHT,
+                TREE_PANEL_OUTLINE_COLOR
         );
 
         int miningLevel =
@@ -506,10 +605,10 @@ public class SkillScreen extends Screen {
                     TREE_Y,
                     0,
                     0,
-                    400,
-                    300,
-                    400,
-                    300
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT,
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT
             );
         }
 
@@ -518,43 +617,43 @@ public class SkillScreen extends Screen {
 // =========================
 
         graphics.fill(
-                250,
-                height - 140,
-                950,
-                height - 30,
-                0x88000000
+                BOTTOM_PANEL_X,
+                height - BOTTOM_PANEL_TOP_OFFSET,
+                BOTTOM_PANEL_X + BOTTOM_PANEL_WIDTH,
+                height - BOTTOM_PANEL_BOTTOM_OFFSET,
+                PANEL_FILL_COLOR
         );
 
         graphics.renderOutline(
-                250,
-                height - 140,
-                700,
-                110,
-                0xFF444444
+                BOTTOM_PANEL_X,
+                height - BOTTOM_PANEL_TOP_OFFSET,
+                BOTTOM_PANEL_WIDTH,
+                BOTTOM_PANEL_HEIGHT,
+                TREE_PANEL_OUTLINE_COLOR
         );
         if (selectedSkill == 0) {
 
                 graphics.drawString(
                         font,
                         "Mining Level: " + miningLevel,
-                        260,
-                        height - 125,
+                        BOTTOM_INFO_X,
+                        height - MINING_LEVEL_Y_OFFSET,
                         0xFFD700
                 );
 
                 graphics.drawString(
                         font,
                         "Perk Points: " + miningPerkPoints,
-                        260,
-                        height - 108,
+                        BOTTOM_INFO_X,
+                        height - PERK_POINTS_Y_OFFSET,
                         0x55FFFF
                 );
                 drawXpBar(
                         graphics,
-                        520,
-                        height - 120,
-                        240,
-                        12,
+                        MINING_XP_BAR_X,
+                        height - MINING_XP_BAR_Y_OFFSET,
+                        MINING_XP_BAR_WIDTH,
+                        XP_BAR_HEIGHT,
                         miningXp,
                         miningXpRequired,
                         0xFFFFAA00
@@ -564,40 +663,54 @@ public class SkillScreen extends Screen {
                     graphics.drawString(
                             font,
                             "Spend your perk points!",
-                            520,
-                            height - 100,
+                            MINING_XP_BAR_X,
+                            height - PERK_PROMPT_Y_OFFSET,
                             0x55FF55
                     );
                 }
                 graphics.drawString(
                         font,
-                        "Mining Speed: +15%",
-                        50,
-                         190,
+                        "Mining Speed: +"
+                                + getMiningSpeedBonusPercent(
+                                        minecraft.player.getUUID()
+                                )
+                                + "%",
+                        MINING_STAT_X,
+                        MINING_SPEED_STAT_Y,
                         0x55FF55
                 );
 
                 graphics.drawString(
                         font,
-                        "Fortune: +3",
-                        50,
-                         210,
+                        "Fortune: +"
+                                + getMiningFortuneBonus(
+                                        minecraft.player.getUUID()
+                                ),
+                        MINING_STAT_X,
+                        FORTUNE_STAT_Y,
                         0x55FFFF
                 );
 
                 graphics.drawString(
                         font,
-                        "Durability: +40%",
-                        50,
-                         230,
+                        "Durability: +"
+                                + getMiningDurabilityBonusPercent(
+                                        minecraft.player.getUUID()
+                                )
+                                + "%",
+                        MINING_STAT_X,
+                        DURABILITY_STAT_Y,
                         0xAAAAAA
                 );
 
                 graphics.drawString(
                         font,
-                        "Ore Sense: Tier 2",
-                        50,
-                        250,
+                        "Ore Sense: Tier "
+                                + getOreSenseTier(
+                                        minecraft.player.getUUID()
+                                ),
+                        MINING_STAT_X,
+                        ORE_SENSE_STAT_Y,
                         0xFFAA00
                 );
             // =========================
@@ -646,22 +759,22 @@ public class SkillScreen extends Screen {
                 int x1 =
                         parent.getX()
                                 + TREE_OFFSET_X
-                                + 6;
+                                + PERK_LINE_CENTER_OFFSET;
 
                 int y1 =
                         parent.getY()
                                 + TREE_OFFSET_Y
-                                + 6;
+                                + PERK_LINE_CENTER_OFFSET;
 
                 int x2 =
                         perk.getX()
                                 + TREE_OFFSET_X
-                                + 6;
+                                + PERK_LINE_CENTER_OFFSET;
 
                 int y2 =
                         perk.getY()
                                 + TREE_OFFSET_Y
-                                + 6;
+                                + PERK_LINE_CENTER_OFFSET;
 
                 graphics.hLine(
                         Math.min(x1, x2),
@@ -705,33 +818,36 @@ public class SkillScreen extends Screen {
                     graphics.fill(
                             perkX,
                             perkY,
-                            perkX + 10,
-                            perkY + 10,
+                            perkX + PERK_NODE_SIZE,
+                            perkY + PERK_NODE_SIZE,
                             color
                     );
 
                     graphics.renderOutline(
                             perkX,
                             perkY,
-                            10,
-                            10,
+                            PERK_NODE_SIZE,
+                            PERK_NODE_SIZE,
                             0xFFFFFFFF
                     );
 
                     // Hover tooltip
                     if (
                             mouseX >= perkX
-                                    && mouseX <= perkX + 10
+                                    && mouseX <= perkX + PERK_NODE_SIZE
                                     && mouseY >= perkY
-                                    && mouseY <= perkY + 10
+                                    && mouseY <= perkY + PERK_NODE_SIZE
                     ) {
 
                         graphics.renderTooltip(
                                 font,
-                                Component.literal(
-                                        perk.getName()
-                                                + "\n"
-                                                + perk.getDescription()
+                                List.of(
+                                        Component.literal(
+                                                perk.getName()
+                                        ).getVisualOrderText(),
+                                        Component.literal(
+                                                perk.getDescription()
+                                        ).getVisualOrderText()
                                 ),
                                 mouseX,
                                 mouseY
@@ -754,7 +870,7 @@ public class SkillScreen extends Screen {
                     "diamond",
                     "ancient_debris"
             };
-            int oreY = 370;
+            int oreY = ORE_START_Y;
 
 // =========================
 // TIER 1
@@ -766,7 +882,7 @@ public class SkillScreen extends Screen {
                     oreY
             );
 
-            oreY += 12;
+            oreY += ORE_ROW_STEP;
 
             drawOreToggle(
                     graphics,
@@ -774,7 +890,7 @@ public class SkillScreen extends Screen {
                     oreY
             );
 
-            oreY += 18;
+            oreY += ORE_ROW_STEP + ORE_TIER_GAP;
 
 // =========================
 // TIER 2
@@ -793,7 +909,7 @@ public class SkillScreen extends Screen {
                         oreY
                 );
 
-                oreY += 12;
+                oreY += ORE_ROW_STEP;
 
                 drawOreToggle(
                         graphics,
@@ -801,7 +917,7 @@ public class SkillScreen extends Screen {
                         oreY
                 );
 
-                oreY += 12;
+                oreY += ORE_ROW_STEP;
 
                 drawOreToggle(
                         graphics,
@@ -809,7 +925,7 @@ public class SkillScreen extends Screen {
                         oreY
                 );
 
-                oreY += 18;
+                oreY += ORE_ROW_STEP + ORE_TIER_GAP;
             }
 
 // =========================
@@ -829,7 +945,7 @@ public class SkillScreen extends Screen {
                         oreY
                 );
 
-                oreY += 12;
+                oreY += ORE_ROW_STEP;
 
                 drawOreToggle(
                         graphics,
@@ -837,7 +953,7 @@ public class SkillScreen extends Screen {
                         oreY
                 );
 
-                oreY += 12;
+                oreY += ORE_ROW_STEP;
 
                 drawOreToggle(
                         graphics,
@@ -845,7 +961,7 @@ public class SkillScreen extends Screen {
                         oreY
                 );
 
-                oreY += 18;
+                oreY += ORE_ROW_STEP + ORE_TIER_GAP;
             }
 
 // =========================
@@ -874,8 +990,8 @@ public class SkillScreen extends Screen {
                                 ? "ON"
                                 : "OFF"
                 ),
-                50,
-                525,
+                BACKGROUND_LABEL_X,
+                BACKGROUND_LABEL_Y,
                 backgroundEnabled
                         ? 0x55FF55
                         : 0xFF5555
@@ -886,48 +1002,48 @@ public class SkillScreen extends Screen {
 
 // Mining tab background
         graphics.fill(
-                40,
-                30,
-                180,
-                55,
+                MINING_TAB_X,
+                MINING_TAB_Y,
+                MINING_TAB_X + MINING_TAB_WIDTH,
+                MINING_TAB_Y + MINING_TAB_HEIGHT,
                 selectedSkill == 0
-                        ? 0xFF222222
-                        : 0x88000000
+                        ? ACTIVE_TAB_FILL_COLOR
+                        : PANEL_FILL_COLOR
         );
 
         graphics.renderOutline(
-                40,
-                30,
-                140,
-                25,
-                0xFF777777
+                MINING_TAB_X,
+                MINING_TAB_Y,
+                MINING_TAB_WIDTH,
+                MINING_TAB_HEIGHT,
+                TAB_OUTLINE_COLOR
         );
 
 // Woodcutting tab background
         graphics.fill(
-                190,
-                30,
-                370,
-                55,
+                WOODCUTTING_TAB_X,
+                WOODCUTTING_TAB_Y,
+                WOODCUTTING_TAB_X + WOODCUTTING_TAB_WIDTH,
+                WOODCUTTING_TAB_Y + WOODCUTTING_TAB_HEIGHT,
                 selectedSkill == 1
-                        ? 0xFF222222
-                        : 0x88000000
+                        ? ACTIVE_TAB_FILL_COLOR
+                        : PANEL_FILL_COLOR
         );
 
         graphics.renderOutline(
-                190,
-                30,
-                180,
-                25,
-                0xFF777777
+                WOODCUTTING_TAB_X,
+                WOODCUTTING_TAB_Y,
+                WOODCUTTING_TAB_WIDTH,
+                WOODCUTTING_TAB_HEIGHT,
+                TAB_OUTLINE_COLOR
         );
 
 // Tab text
         graphics.drawCenteredString(
                 font,
                 "MINING",
-                110,
-                38,
+                MINING_TAB_LABEL_X,
+                TAB_LABEL_Y,
                 selectedSkill == 0
                         ? 0xFFFF55
                         : 0xAAAAAA
@@ -936,8 +1052,8 @@ public class SkillScreen extends Screen {
         graphics.drawCenteredString(
                 font,
                 "WOODCUTTING",
-                280,
-                38,
+                WOODCUTTING_TAB_LABEL_X,
+                TAB_LABEL_Y,
                 selectedSkill == 1
                         ? 0x55FF55
                         : 0xAAAAAA
@@ -956,22 +1072,172 @@ public class SkillScreen extends Screen {
                     font,
                     "Woodcutting Level: "
                             + woodcuttingLevel,
-                    220,
-                    80,
+                    WOODCUTTING_INFO_X,
+                    WOODCUTTING_LEVEL_Y,
                     0x55FF55
             );
             drawXpBar(
                     graphics,
-                    220,
-                    95,
-                    140,
-                    12,
+                    WOODCUTTING_INFO_X,
+                    WOODCUTTING_XP_BAR_Y,
+                    WOODCUTTING_XP_BAR_WIDTH,
+                    XP_BAR_HEIGHT,
                     woodcuttingXp,
                     woodcuttingXpRequired,
                     0xFF55AA55
             );
         }
     }
+    private int getMiningSpeedBonusPercent(UUID playerId) {
+
+        int hasteLevel = 0;
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "stonecutter"
+                )
+        ) {
+
+            hasteLevel = 1;
+        }
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "miners_momentum"
+                )
+        ) {
+
+            int streak =
+                    SkillManager.getMiningStreak(
+                            playerId
+                    );
+
+            if (streak >= 50) {
+
+                hasteLevel =
+                        Math.max(
+                                hasteLevel,
+                                3
+                        );
+
+            } else if (streak >= 30) {
+
+                hasteLevel =
+                        Math.max(
+                                hasteLevel,
+                                2
+                        );
+
+            } else if (streak >= 10) {
+
+                hasteLevel =
+                        Math.max(
+                                hasteLevel,
+                                1
+                        );
+            }
+        }
+
+        return hasteLevel * 20;
+    }
+
+    private int getMiningFortuneBonus(UUID playerId) {
+
+        return 0;
+    }
+
+    private int getMiningDurabilityBonusPercent(UUID playerId) {
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "nearly_indestructible"
+                )
+        ) {
+
+            return 75;
+        }
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "tempered_tools"
+                )
+        ) {
+
+            return 40;
+        }
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "reinforced_grip"
+                )
+        ) {
+
+            return 25;
+        }
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "better_handling"
+                )
+        ) {
+
+            return 10;
+        }
+
+        return 0;
+    }
+
+    private int getOreSenseTier(UUID playerId) {
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "it_smells_4"
+                )
+        ) {
+
+            return 4;
+        }
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "it_smells_3"
+                )
+        ) {
+
+            return 3;
+        }
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "it_smells_2"
+                )
+        ) {
+
+            return 2;
+        }
+
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "they_have_a_scent"
+                )
+        ) {
+
+            return 1;
+        }
+
+        return 0;
+    }
+
     private void drawOreToggle(
             GuiGraphics graphics,
             String ore,
@@ -990,7 +1256,7 @@ public class SkillScreen extends Screen {
                 font,
                 (selected ? "[x] " : "[ ] ")
                         + ore,
-                40,
+                ORE_TOGGLE_X,
                 y,
                 selected
                         ? 0x55FF55

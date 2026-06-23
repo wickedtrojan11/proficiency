@@ -3,7 +3,10 @@ import com.trojan.proficiency.event.MiningEvents;
 import com.trojan.proficiency.event.WoodcuttingEvents;
 import com.trojan.proficiency.perk.MiningPerkEffects;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import com.trojan.proficiency.event.MiningDurabilityEvents;
+import com.trojan.proficiency.save.PlayerDataStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.trojan.proficiency.perk.OreSenseEffects;
@@ -18,6 +21,39 @@ public class ProficiencyMod implements ModInitializer {
 	public void onInitialize() {
 
 		LOGGER.info("Proficiency loaded!");
+
+		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+
+			PlayerDataStorage.configureForServer(server);
+			SkillManager.clearPlayerDataCache();
+		});
+
+		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+
+			LOGGER.info("Saving all loaded proficiency player data on server stopping");
+			SkillManager.saveAllPlayerData();
+		});
+
+		ServerLifecycleEvents.SERVER_STOPPED.register(server ->
+				SkillManager.clearPlayerDataCache()
+		);
+
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+				SkillManager.loadPlayerData(
+						handler.player.getUUID()
+				)
+		);
+
+		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+
+			SkillManager.saveLoadedPlayerData(
+					handler.player.getUUID(),
+					"disconnect"
+			);
+			SkillManager.unloadPlayerData(
+					handler.player.getUUID()
+			);
+		});
 
 		MiningEvents.register();
 		WoodcuttingEvents.register();
