@@ -713,6 +713,21 @@ public class SkillScreen extends Screen {
                         ORE_SENSE_STAT_Y,
                         0xFFAA00
                 );
+
+                if (
+                        hasCaveVision(
+                                minecraft.player.getUUID()
+                        )
+                ) {
+
+                    graphics.drawString(
+                            font,
+                            "Cave Vision: Enabled",
+                            MINING_STAT_X,
+                            ORE_SENSE_STAT_Y + 20,
+                            0xAA88FF
+                    );
+                }
             // =========================
             // CONNECTION LINES
             // =========================
@@ -1145,6 +1160,16 @@ public class SkillScreen extends Screen {
 
     private int getMiningFortuneBonus(UUID playerId) {
 
+        if (
+                SkillManager.hasMiningPerk(
+                        playerId,
+                        "no_ore_escapes"
+                )
+        ) {
+
+            return 1;
+        }
+
         return 0;
     }
 
@@ -1236,6 +1261,14 @@ public class SkillScreen extends Screen {
         }
 
         return 0;
+    }
+
+    private boolean hasCaveVision(UUID playerId) {
+
+        return SkillManager.hasMiningPerk(
+                playerId,
+                "deep_delver"
+        );
     }
 
     private void drawOreToggle(

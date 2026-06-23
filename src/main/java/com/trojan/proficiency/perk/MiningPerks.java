@@ -113,6 +113,18 @@ public class MiningPerks {
                     "it_smells_3"
             );
 
+    public static final SkillPerk NO_ORE_ESCAPES =
+            new SkillPerk(
+                    "no_ore_escapes",
+                    "No Ore Escapes",
+                    "No ore escapes your nose!!",
+                    "You sometimes find extra ores.",
+                    40,
+                    90,
+                    210,
+                    "it_smells_4"
+            );
+
     // RIGHT HEAD
 
 
@@ -164,6 +176,18 @@ public class MiningPerks {
                     "tempered_tools"
             );
 
+    public static final SkillPerk DEEP_DELVER =
+            new SkillPerk(
+                    "deep_delver",
+                    "Deep Delver",
+                    "You've spent so much time underground that darkness feels like home.",
+                    "Gain Night Vision while inside caves.",
+                    40,
+                    430,
+                    210,
+                    "nearly_indestructible"
+            );
+
     public static final List<SkillPerk> ALL_PERKS =
             List.of(
 
@@ -177,10 +201,12 @@ public class MiningPerks {
                     IT_SMELLS_2,
                     IT_SMELLS_3,
                     IT_SMELLS_4,
+                    NO_ORE_ESCAPES,
 
                     HEAVY_SWINGS,
                     SWIFT_SWING,
                     TEMPERED_TOOLS,
-                    NEARLY_INDESTRUCTIBLE
+                    NEARLY_INDESTRUCTIBLE,
+                    DEEP_DELVER
             );
 }

@@ -5,6 +5,7 @@ import com.trojan.proficiency.SkillManager;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.LightLayer;
 
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -80,6 +81,34 @@ public class MiningPerkEffects {
                             )
                     );
                 }
+
+                // =========================
+                // DEEP DELVER
+                // =========================
+
+                boolean hasDeepDelver =
+                        SkillManager.hasMiningPerk(
+                                player.getUUID(),
+                                "deep_delver"
+                        );
+
+                if (
+                        hasDeepDelver
+                                && isInsideCave(player)
+                ) {
+
+                    player.addEffect(
+                            new MobEffectInstance(
+                                    MobEffects.NIGHT_VISION,
+                                    260,
+                                    0,
+                                    false,
+                                    false,
+                                    true
+                            )
+                    );
+                }
+
                 if (!holdingPickaxe) {
 
                     SkillManager.resetMiningStreak(
@@ -90,6 +119,26 @@ public class MiningPerkEffects {
 
         });
 
+    }
+
+    private static boolean isInsideCave(
+            ServerPlayer player
+    ) {
+
+        int skyLight =
+                player.serverLevel()
+                        .getBrightness(
+                                LightLayer.SKY,
+                                player.blockPosition()
+                        );
+
+        boolean belowSeaLevel =
+                player.getY()
+                        < player.serverLevel()
+                                .getSeaLevel();
+
+        return belowSeaLevel
+                && skyLight <= 4;
     }
 
 }

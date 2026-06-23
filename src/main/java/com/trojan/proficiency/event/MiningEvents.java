@@ -11,13 +11,73 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 public class MiningEvents {
 
     public static void register() {
-        PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {if (MiningUtils.isStoneType(state)) {
+        PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
+
+// =========================
+// NO ORE ESCAPES
+// =========================
+
+            if (
+                    MiningUtils.isOre(state)
+                            && SkillManager.hasMiningPerk(
+                                    player.getUUID(),
+                                    "no_ore_escapes"
+                            )
+                            && world.random.nextFloat() < 0.10f
+            ) {
+
+                ServerLevel serverLevel =
+                        (ServerLevel) world;
+
+                for (
+                        ItemStack drop
+                                : Block.getDrops(
+                                        state,
+                                        serverLevel,
+                                        pos,
+                                        blockEntity,
+                                        player,
+                                        player.getMainHandItem()
+                                )
+                ) {
+
+                    Block.popResource(
+                            world,
+                            pos,
+                            drop.copy()
+                    );
+                }
+
+                player.playSound(
+                        SoundEvents.EXPERIENCE_ORB_PICKUP,
+                        0.3F,
+                        1.6F
+                );
+
+                serverLevel.sendParticles(
+                        ParticleTypes.HAPPY_VILLAGER,
+                        pos.getX() + 0.5,
+                        pos.getY() + 0.5,
+                        pos.getZ() + 0.5,
+                        3,
+                        0.2,
+                        0.2,
+                        0.2,
+                        0.0
+                );
+            }
+
+            if (MiningUtils.isStoneType(state)) {
 
                 ServerPlayer serverPlayer =
                         (ServerPlayer) player;
