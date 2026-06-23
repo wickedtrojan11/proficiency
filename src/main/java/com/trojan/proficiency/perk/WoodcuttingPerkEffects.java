@@ -43,6 +43,32 @@ public class WoodcuttingPerkEffects {
                             )
                     );
                 }
+
+                if (
+                        holdingAxe
+                                && (
+                                SkillManager.hasWoodcuttingPerk(
+                                        player.getUUID(),
+                                        "timber_training"
+                                )
+                                        || SkillManager.hasWoodcuttingPerk(
+                                        player.getUUID(),
+                                        "lumberjacks_stance"
+                                )
+                        )
+                ) {
+
+                    player.addEffect(
+                            new MobEffectInstance(
+                                    MobEffects.DIG_SPEED,
+                                    40,
+                                    0,
+                                    false,
+                                    false,
+                                    true
+                            )
+                    );
+                }
             }
         });
     }

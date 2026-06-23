@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -23,8 +24,11 @@ import net.minecraft.world.level.block.state.BlockState;
 public class WoodcuttingEvents {
 
     private static final float PROPER_GRIP_SAVE_CHANCE = 0.10f;
+    private static final float REINFORCED_HAFT_SAVE_CHANCE = 0.20f;
     private static final float TWIGS_EVERYWHERE_CHANCE = 0.10f;
     private static final float GREEN_THUMB_CHANCE = 0.05f;
+    private static final float APPLE_PICKER_CHANCE = 0.05f;
+    private static final float NATURES_GIFT_CHANCE = 0.05f;
 
     public static void register() {
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
@@ -48,14 +52,34 @@ public class WoodcuttingEvents {
                 serverPlayer = castPlayer;
             }
 
+            float durabilitySaveChance = 0.0f;
+
+            if (
+                    SkillManager.hasWoodcuttingPerk(
+                            player.getUUID(),
+                            "reinforced_haft"
+                    )
+            ) {
+
+                durabilitySaveChance =
+                        REINFORCED_HAFT_SAVE_CHANCE;
+
+            } else if (
+                    SkillManager.hasWoodcuttingPerk(
+                            player.getUUID(),
+                            "proper_grip"
+                    )
+            ) {
+
+                durabilitySaveChance =
+                        PROPER_GRIP_SAVE_CHANCE;
+            }
+
             if (
                     holdingAxe
-                            && SkillManager.hasWoodcuttingPerk(
-                                    player.getUUID(),
-                                    "proper_grip"
-                            )
+                            && durabilitySaveChance > 0.0f
                             && world.random.nextFloat()
-                                    < PROPER_GRIP_SAVE_CHANCE
+                                    < durabilitySaveChance
             ) {
 
                 int damage =
@@ -122,6 +146,46 @@ public class WoodcuttingEvents {
                 );
             }
 
+            if (
+                    (isLog || isLeaves)
+                            && isOakOrDarkOak(state)
+                            && SkillManager.hasWoodcuttingPerk(
+                                    player.getUUID(),
+                                    "apple_picker"
+                            )
+                            && world.random.nextFloat()
+                                    < APPLE_PICKER_CHANCE
+            ) {
+
+                Block.popResource(
+                        world,
+                        pos,
+                        new ItemStack(
+                                Items.APPLE
+                        )
+                );
+            }
+
+            if (
+                    isLog
+                            && SkillManager.hasWoodcuttingPerk(
+                                    player.getUUID(),
+                                    "natures_gift"
+                            )
+                            && world.random.nextFloat()
+                                    < NATURES_GIFT_CHANCE
+            ) {
+
+                Block.popResource(
+                        world,
+                        pos,
+                        getNatureGiftReward(
+                                state,
+                                world.random
+                        )
+                );
+            }
+
             if (isLog) {
 
                 boolean leveledUp =
@@ -177,6 +241,55 @@ public class WoodcuttingEvents {
                 );
             }
         }
+    }
+
+    private static boolean isOakOrDarkOak(
+            BlockState state
+    ) {
+
+        return state.is(Blocks.OAK_LOG)
+                || state.is(Blocks.OAK_WOOD)
+                || state.is(Blocks.STRIPPED_OAK_LOG)
+                || state.is(Blocks.STRIPPED_OAK_WOOD)
+                || state.is(Blocks.OAK_LEAVES)
+                || state.is(Blocks.DARK_OAK_LOG)
+                || state.is(Blocks.DARK_OAK_WOOD)
+                || state.is(Blocks.STRIPPED_DARK_OAK_LOG)
+                || state.is(Blocks.STRIPPED_DARK_OAK_WOOD)
+                || state.is(Blocks.DARK_OAK_LEAVES);
+    }
+
+    private static ItemStack getNatureGiftReward(
+            BlockState state,
+            RandomSource random
+    ) {
+
+        int reward =
+                random.nextInt(5);
+
+        return switch (reward) {
+
+            case 0 -> new ItemStack(
+                    Items.STICK,
+                    2
+            );
+
+            case 1 -> new ItemStack(
+                    Items.APPLE
+            );
+
+            case 2 -> new ItemStack(
+                    getSaplingForState(state)
+            );
+
+            case 3 -> new ItemStack(
+                    Items.BONE_MEAL
+            );
+
+            default -> new ItemStack(
+                    Items.HONEYCOMB
+            );
+        };
     }
 
     private static Item getSaplingForState(

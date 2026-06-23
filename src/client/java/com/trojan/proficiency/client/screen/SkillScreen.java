@@ -1243,7 +1243,11 @@ public class SkillScreen extends Screen {
 
             graphics.drawString(
                     font,
-                    "Chop Speed: +0%",
+                    "Chop Speed: +"
+                            + getWoodcuttingChopSpeedBonusPercent(
+                                    minecraft.player.getUUID()
+                            )
+                            + "%",
                     MINING_STAT_X,
                     MINING_SPEED_STAT_Y,
                     0x55FF55
@@ -1251,7 +1255,10 @@ public class SkillScreen extends Screen {
 
             graphics.drawString(
                     font,
-                    "Foraging: +0",
+                    "Foraging: +"
+                            + getWoodcuttingForagingBonus(
+                                    minecraft.player.getUUID()
+                            ),
                     MINING_STAT_X,
                     FORTUNE_STAT_Y,
                     0x55FFFF
@@ -1259,7 +1266,11 @@ public class SkillScreen extends Screen {
 
             graphics.drawString(
                     font,
-                    "Axe Durability: +0%",
+                    "Axe Durability: +"
+                            + getWoodcuttingDurabilityBonusPercent(
+                                    minecraft.player.getUUID()
+                            )
+                            + "%",
                     MINING_STAT_X,
                     DURABILITY_STAT_Y,
                     0xAAAAAA
@@ -1267,7 +1278,10 @@ public class SkillScreen extends Screen {
 
             graphics.drawString(
                     font,
-                    "Bonus Drops: Tier 0",
+                    "Bonus Drops: Tier "
+                            + getWoodcuttingBonusDropsTier(
+                                    minecraft.player.getUUID()
+                            ),
                     MINING_STAT_X,
                     ORE_SENSE_STAT_Y,
                     0xFFAA00
@@ -1328,17 +1342,13 @@ public class SkillScreen extends Screen {
                                 + TREE_OFFSET_Y
                                 + PERK_LINE_CENTER_OFFSET;
 
-                graphics.hLine(
-                        Math.min(x1, x2),
-                        Math.max(x1, x2),
+                drawWoodcuttingConnection(
+                        graphics,
+                        perk,
+                        x1,
                         y1,
-                        color
-                );
-
-                graphics.vLine(
                         x2,
-                        Math.min(y1, y2),
-                        Math.max(y1, y2),
+                        y2,
                         color
                 );
             }
@@ -1582,6 +1592,148 @@ public class SkillScreen extends Screen {
         );
     }
 
+    private int getWoodcuttingChopSpeedBonusPercent(UUID playerId) {
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "lumberjacks_stance"
+                )
+        ) {
+
+            return 15;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "timber_training"
+                )
+        ) {
+
+            return 10;
+        }
+
+        return 0;
+    }
+
+    private int getWoodcuttingForagingBonus(UUID playerId) {
+
+        int bonus = 0;
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "twigs_everywhere"
+                )
+        ) {
+
+            bonus++;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "green_thumb"
+                )
+        ) {
+
+            bonus++;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "apple_picker"
+                )
+        ) {
+
+            bonus++;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "natures_gift"
+                )
+        ) {
+
+            bonus++;
+        }
+
+        return bonus;
+    }
+
+    private int getWoodcuttingDurabilityBonusPercent(UUID playerId) {
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "reinforced_haft"
+                )
+        ) {
+
+            return 20;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "proper_grip"
+                )
+        ) {
+
+            return 10;
+        }
+
+        return 0;
+    }
+
+    private int getWoodcuttingBonusDropsTier(UUID playerId) {
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "natures_gift"
+                )
+        ) {
+
+            return 4;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "apple_picker"
+                )
+        ) {
+
+            return 3;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "green_thumb"
+                )
+        ) {
+
+            return 2;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "twigs_everywhere"
+                )
+        ) {
+
+            return 1;
+        }
+
+        return 0;
+    }
+
     private void showPerkUnlockToast(SkillPerk perk) {
 
         SystemToast.add(
@@ -1727,6 +1879,132 @@ public class SkillScreen extends Screen {
         }
 
         return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private void drawWoodcuttingConnection(
+            GuiGraphics graphics,
+            SkillPerk perk,
+            int x1,
+            int y1,
+            int x2,
+            int y2,
+            int color
+    ) {
+
+        if (
+                perk.getId()
+                        .equals("twigs_everywhere")
+        ) {
+
+            int rootForkX =
+                    TREE_OFFSET_X + 210;
+
+            int rootForkY =
+                    TREE_OFFSET_Y + 285;
+
+            drawWoodcuttingConnectionSegment(
+                    graphics,
+                    x1,
+                    y1,
+                    rootForkX,
+                    rootForkY,
+                    color
+            );
+
+            drawWoodcuttingConnectionSegment(
+                    graphics,
+                    rootForkX,
+                    rootForkY,
+                    x2,
+                    y2,
+                    color
+            );
+
+            return;
+        }
+
+        if (
+                perk.getId()
+                        .equals("green_thumb")
+        ) {
+
+            int rootBendX =
+                    TREE_OFFSET_X + 205;
+
+            int rootBendY =
+                    TREE_OFFSET_Y + 330;
+
+            drawWoodcuttingConnectionSegment(
+                    graphics,
+                    x1,
+                    y1,
+                    rootBendX,
+                    rootBendY,
+                    color
+            );
+
+            drawWoodcuttingConnectionSegment(
+                    graphics,
+                    rootBendX,
+                    rootBendY,
+                    x2,
+                    y2,
+                    color
+            );
+
+            return;
+        }
+
+        drawWoodcuttingConnectionSegment(
+                graphics,
+                x1,
+                y1,
+                x2,
+                y2,
+                color
+        );
+    }
+
+    private void drawWoodcuttingConnectionSegment(
+            GuiGraphics graphics,
+            int x1,
+            int y1,
+            int x2,
+            int y2,
+            int color
+    ) {
+
+        int steps =
+                Math.max(
+                        Math.abs(x2 - x1),
+                        Math.abs(y2 - y1)
+                );
+
+        for (int i = 0; i <= steps; i += 3) {
+
+            float progress =
+                    steps == 0
+                            ? 0.0f
+                            : i / (float) steps;
+
+            int x =
+                    x1 + Math.round(
+                            (x2 - x1) * progress
+                    );
+
+            int y =
+                    y1 + Math.round(
+                            (y2 - y1) * progress
+                    );
+
+            graphics.fill(
+                    x,
+                    y,
+                    x + 2,
+                    y + 2,
+                    color
+            );
+        }
     }
 
     private int getWoodcuttingPerkFillColor(
