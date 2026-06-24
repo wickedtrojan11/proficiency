@@ -2,10 +2,12 @@ package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.perk.SkillPerk;
+import com.trojan.proficiency.perk.WoodcuttingPerkEffects;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
 
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,14 +23,43 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 public class WoodcuttingEvents {
 
     private static final float PROPER_GRIP_SAVE_CHANCE = 0.10f;
     private static final float REINFORCED_HAFT_SAVE_CHANCE = 0.20f;
+    private static final float CALLUSED_HANDS_SAVE_CHANCE = 0.35f;
+    private static final float SEASONED_HAFT_SAVE_CHANCE = 0.50f;
+    private static final float VETERAN_WOODSMAN_SAVE_CHANCE = 0.75f;
     private static final float TWIGS_EVERYWHERE_CHANCE = 0.10f;
     private static final float GREEN_THUMB_CHANCE = 0.05f;
     private static final float APPLE_PICKER_CHANCE = 0.05f;
-    private static final float NATURES_GIFT_CHANCE = 0.05f;
+    private static final float NATURES_GIFT_CHANCE = 0.02f;
+    private static final float FRICTION_FIRE_CHANCE = 0.03f;
+    private static final long CHOPPING_STREAK_TIMEOUT = 60L;
+    private static final int MASTER_ARBORIST_LOG_LIMIT = 64;
+    private static final int MASTER_ARBORIST_MIN_LOGS = 4;
+    private static final int MASTER_ARBORIST_MIN_HEIGHT = 3;
+    private static final int MASTER_ARBORIST_MIN_LEAVES = 4;
+
+    private static final Map<UUID, Integer> CHOPPING_STREAKS =
+            new HashMap<>();
+
+    private static final Map<UUID, Long> LAST_LOG_CHOP_TICKS =
+            new HashMap<>();
+
+    private static final Set<UUID> ACTIVE_TREE_FELLING =
+            new HashSet<>();
 
     public static void register() {
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
@@ -55,6 +86,36 @@ public class WoodcuttingEvents {
             float durabilitySaveChance = 0.0f;
 
             if (
+                    SkillManager.hasWoodcuttingPerk(
+                            player.getUUID(),
+                            "veteran_woodsman"
+                    )
+            ) {
+
+                durabilitySaveChance =
+                        VETERAN_WOODSMAN_SAVE_CHANCE;
+
+            } else if (
+                    SkillManager.hasWoodcuttingPerk(
+                            player.getUUID(),
+                            "seasoned_haft"
+                    )
+            ) {
+
+                durabilitySaveChance =
+                        SEASONED_HAFT_SAVE_CHANCE;
+
+            } else if (
+                    SkillManager.hasWoodcuttingPerk(
+                            player.getUUID(),
+                            "callused_hands"
+                    )
+            ) {
+
+                durabilitySaveChance =
+                        CALLUSED_HANDS_SAVE_CHANCE;
+
+            } else if (
                     SkillManager.hasWoodcuttingPerk(
                             player.getUUID(),
                             "reinforced_haft"
@@ -106,6 +167,57 @@ public class WoodcuttingEvents {
                         );
                     }
                 }
+            }
+
+            if (
+                    isLog
+                            && holdingAxe
+                            && SkillManager.hasWoodcuttingPerk(
+                            player.getUUID(),
+                            "felling_momentum"
+                    )
+            ) {
+
+                if (serverPlayer != null) {
+
+                    WoodcuttingPerkEffects.activateFellingMomentum(
+                            serverPlayer
+                    );
+                }
+            }
+
+            if (
+                    isLog
+                            && holdingAxe
+                            && SkillManager.hasWoodcuttingPerk(
+                            player.getUUID(),
+                            "rhythm_of_the_forest"
+                    )
+            ) {
+
+                int choppingStreak =
+                        increaseChoppingStreak(
+                                player.getUUID(),
+                                world.getGameTime()
+                        );
+
+                int amplifier =
+                        choppingStreak >= 8
+                                ? 3
+                                : choppingStreak >= 4
+                                ? 2
+                                : 1;
+
+                player.addEffect(
+                        new net.minecraft.world.effect.MobEffectInstance(
+                                net.minecraft.world.effect.MobEffects.DIG_SPEED,
+                                100,
+                                amplifier,
+                                false,
+                                false,
+                                true
+                        )
+                );
             }
 
             if (
@@ -168,6 +280,62 @@ public class WoodcuttingEvents {
 
             if (
                     isLog
+                            && holdingAxe
+                            && SkillManager.hasWoodcuttingPerk(
+                                    player.getUUID(),
+                                    "friction_fire"
+                            )
+                            && world.random.nextFloat()
+                            < FRICTION_FIRE_CHANCE
+            ) {
+
+                Block.popResource(
+                        world,
+                        pos,
+                        new ItemStack(
+                                Items.CHARCOAL
+                        )
+                );
+
+                if (serverPlayer != null) {
+
+                    serverPlayer.serverLevel().sendParticles(
+                            ParticleTypes.FLAME,
+                            pos.getX() + 0.5,
+                            pos.getY() + 0.5,
+                            pos.getZ() + 0.5,
+                            2,
+                            0.2,
+                            0.2,
+                            0.2,
+                            0.01
+                    );
+
+                    serverPlayer.serverLevel().sendParticles(
+                            ParticleTypes.SMOKE,
+                            pos.getX() + 0.5,
+                            pos.getY() + 0.5,
+                            pos.getZ() + 0.5,
+                            3,
+                            0.2,
+                            0.2,
+                            0.2,
+                            0.01
+                    );
+
+                    world.playSound(
+                            null,
+                            pos,
+                            SoundEvents.FIRECHARGE_USE,
+                            SoundSource.BLOCKS,
+                            0.25f,
+                            1.5f
+                    );
+                }
+            }
+
+            if (
+                    isLog
                             && SkillManager.hasWoodcuttingPerk(
                                     player.getUUID(),
                                     "natures_gift"
@@ -211,7 +379,352 @@ public class WoodcuttingEvents {
                     );
                 }
             }
+
+            if (
+                    serverPlayer != null
+                            && isLog
+                            && holdingAxe
+                            && !ACTIVE_TREE_FELLING.contains(
+                            player.getUUID()
+                    )
+                            && SkillManager.hasWoodcuttingPerk(
+                            player.getUUID(),
+                            "master_arborist"
+                    )
+            ) {
+
+                fellConnectedTree(
+                        serverPlayer,
+                        pos,
+                        state
+                );
+            }
         });
+    }
+
+    private static void fellConnectedTree(
+            ServerPlayer player,
+            BlockPos brokenPos,
+            BlockState brokenState
+    ) {
+
+        if (
+                !brokenState.is(
+                        BlockTags.OVERWORLD_NATURAL_LOGS
+                )
+                        || !player.serverLevel()
+                        .getBlockState(
+                                brokenPos.below()
+                        )
+                        .is(BlockTags.DIRT)
+        ) {
+
+            return;
+        }
+
+        List<BlockPos> connectedLogs =
+                findNaturalTreeLogs(
+                        player,
+                        brokenPos,
+                        brokenState
+                );
+
+        if (connectedLogs.isEmpty()) {
+
+            return;
+        }
+
+        connectedLogs.sort(
+                Comparator.comparingInt(
+                        (BlockPos logPos) ->
+                                logPos.getY()
+                ).reversed()
+        );
+
+        int brokenLogs = 0;
+        ACTIVE_TREE_FELLING.add(
+                player.getUUID()
+        );
+
+        try {
+
+            for (BlockPos logPos : connectedLogs) {
+
+                if (
+                        !(player.getMainHandItem().getItem()
+                        instanceof AxeItem)
+                                || player.getMainHandItem()
+                                .isEmpty()
+                ) {
+
+                    break;
+                }
+
+                if (
+                        player.gameMode.destroyBlock(
+                                logPos
+                        )
+                ) {
+
+                    brokenLogs++;
+                }
+            }
+
+        } finally {
+
+            ACTIVE_TREE_FELLING.remove(
+                    player.getUUID()
+            );
+        }
+
+        if (brokenLogs > 0) {
+
+            player.serverLevel().sendParticles(
+                    ParticleTypes.HAPPY_VILLAGER,
+                    brokenPos.getX() + 0.5,
+                    brokenPos.getY() + 0.8,
+                    brokenPos.getZ() + 0.5,
+                    5,
+                    0.35,
+                    0.45,
+                    0.35,
+                    0.0
+            );
+
+            player.serverLevel().playSound(
+                    null,
+                    brokenPos,
+                    SoundEvents.WOOD_BREAK,
+                    SoundSource.BLOCKS,
+                    0.45f,
+                    0.8f
+            );
+        }
+    }
+
+    private static List<BlockPos> findNaturalTreeLogs(
+            ServerPlayer player,
+            BlockPos brokenPos,
+            BlockState brokenState
+    ) {
+
+        net.minecraft.server.level.ServerLevel level =
+                player.serverLevel();
+
+        Set<BlockPos> visited =
+                new HashSet<>();
+
+        LinkedHashSet<BlockPos> logs =
+                new LinkedHashSet<>();
+
+        ArrayDeque<BlockPos> pending =
+                new ArrayDeque<>();
+
+        visited.add(
+                brokenPos.immutable()
+        );
+
+        logs.add(
+                brokenPos.immutable()
+        );
+
+        pending.add(
+                brokenPos.immutable()
+        );
+
+        int highestY =
+                brokenPos.getY();
+
+        while (!pending.isEmpty()) {
+
+            BlockPos current =
+                    pending.removeFirst();
+
+            for (int offsetX = -1;
+                    offsetX <= 1;
+                    offsetX++) {
+
+                for (int offsetY = -1;
+                        offsetY <= 1;
+                        offsetY++) {
+
+                    for (int offsetZ = -1;
+                            offsetZ <= 1;
+                            offsetZ++) {
+
+                        if (
+                                offsetX == 0
+                                        && offsetY == 0
+                                        && offsetZ == 0
+                        ) {
+
+                            continue;
+                        }
+
+                        BlockPos next =
+                                current.offset(
+                                        offsetX,
+                                        offsetY,
+                                        offsetZ
+                                ).immutable();
+
+                        if (
+                                !visited.add(next)
+                                        || !level.hasChunkAt(next)
+                        ) {
+
+                            continue;
+                        }
+
+                        BlockState nextState =
+                                level.getBlockState(next);
+
+                        if (
+                                nextState.getBlock()
+                                        != brokenState.getBlock()
+                                        || !nextState.is(
+                                        BlockTags.OVERWORLD_NATURAL_LOGS
+                                )
+                        ) {
+
+                            continue;
+                        }
+
+                        logs.add(next);
+
+                        if (
+                                logs.size()
+                                        > MASTER_ARBORIST_LOG_LIMIT
+                        ) {
+
+                            return List.of();
+                        }
+
+                        highestY =
+                                Math.max(
+                                        highestY,
+                                        next.getY()
+                                );
+
+                        pending.addLast(next);
+                    }
+                }
+            }
+        }
+
+        if (
+                logs.size()
+                        < MASTER_ARBORIST_MIN_LOGS
+                        || highestY - brokenPos.getY() + 1
+                        < MASTER_ARBORIST_MIN_HEIGHT
+                        || countNearbyLeaves(
+                        level,
+                        logs
+                ) < MASTER_ARBORIST_MIN_LEAVES
+        ) {
+
+            return List.of();
+        }
+
+        List<BlockPos> extraLogs =
+                new ArrayList<>(
+                        logs
+                );
+
+        extraLogs.remove(
+                brokenPos
+        );
+
+        return extraLogs;
+    }
+
+    private static int countNearbyLeaves(
+            net.minecraft.server.level.ServerLevel level,
+            Set<BlockPos> logs
+    ) {
+
+        Set<BlockPos> leaves =
+                new HashSet<>();
+
+        for (BlockPos logPos : logs) {
+
+            for (int offsetX = -2;
+                    offsetX <= 2;
+                    offsetX++) {
+
+                for (int offsetY = -2;
+                        offsetY <= 2;
+                        offsetY++) {
+
+                    for (int offsetZ = -2;
+                            offsetZ <= 2;
+                            offsetZ++) {
+
+                        BlockPos nearby =
+                                logPos.offset(
+                                        offsetX,
+                                        offsetY,
+                                        offsetZ
+                                );
+
+                        if (
+                                level.hasChunkAt(nearby)
+                                        && level.getBlockState(
+                                        nearby
+                                ).is(BlockTags.LEAVES)
+                        ) {
+
+                            leaves.add(
+                                    nearby.immutable()
+                            );
+
+                            if (
+                                    leaves.size()
+                                            >= MASTER_ARBORIST_MIN_LEAVES
+                            ) {
+
+                                return leaves.size();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return leaves.size();
+    }
+
+    private static int increaseChoppingStreak(
+            UUID playerId,
+            long gameTime
+    ) {
+
+        long lastChopTick =
+                LAST_LOG_CHOP_TICKS.getOrDefault(
+                        playerId,
+                        Long.MIN_VALUE
+                );
+
+        int choppingStreak =
+                gameTime - lastChopTick
+                        <= CHOPPING_STREAK_TIMEOUT
+                        ? CHOPPING_STREAKS.getOrDefault(
+                        playerId,
+                        0
+                ) + 1
+                        : 1;
+
+        CHOPPING_STREAKS.put(
+                playerId,
+                choppingStreak
+        );
+
+        LAST_LOG_CHOP_TICKS.put(
+                playerId,
+                gameTime
+        );
+
+        return choppingStreak;
     }
 
     private static void announceAvailableWoodcuttingPerks(
@@ -265,29 +778,25 @@ public class WoodcuttingEvents {
     ) {
 
         int reward =
-                random.nextInt(5);
+                random.nextInt(20);
 
         return switch (reward) {
 
-            case 0 -> new ItemStack(
-                    Items.STICK,
-                    2
-            );
-
-            case 1 -> new ItemStack(
+            case 17 -> new ItemStack(
                     Items.APPLE
             );
 
-            case 2 -> new ItemStack(
+            case 18 -> new ItemStack(
                     getSaplingForState(state)
             );
 
-            case 3 -> new ItemStack(
-                    Items.BONE_MEAL
+            case 19 -> new ItemStack(
+                    Items.HONEYCOMB
             );
 
             default -> new ItemStack(
-                    Items.HONEYCOMB
+                    Items.STICK,
+                    2
             );
         };
     }

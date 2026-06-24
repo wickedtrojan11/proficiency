@@ -28,11 +28,18 @@ public class SkillManager {
             playerDataMap = new HashMap<>();
     private static final HashMap<UUID, Integer>
             miningStreaks = new HashMap<>();
+    private static final HashMap<UUID, Integer>
+            wellRestedRemainingTicks = new HashMap<>();
+
+    private static final int WELL_RESTED_DURATION_TICKS =
+            10 * 60 * 20;
+    private static final int WELL_RESTED_XP_MULTIPLIER = 2;
 
     public static void clearPlayerDataCache() {
 
         playerDataMap.clear();
         miningStreaks.clear();
+        wellRestedRemainingTicks.clear();
     }
 
     public static void loadPlayerData(
@@ -95,6 +102,7 @@ public class SkillManager {
 
         playerDataMap.remove(playerId);
         miningStreaks.remove(playerId);
+        wellRestedRemainingTicks.remove(playerId);
     }
 
     private static PlayerData getPlayerData(
@@ -185,6 +193,11 @@ public class SkillManager {
     public static boolean addMiningXp(ServerPlayer player, int amount) {
 
         UUID playerId = player.getUUID();
+        amount =
+                applySkillXpMultiplier(
+                        playerId,
+                        amount
+                );
 
         PlayerData data =
                 getPlayerData(playerId);
@@ -355,6 +368,12 @@ public class SkillManager {
             int amount
     ) {
 
+        amount =
+                applySkillXpMultiplier(
+                        playerId,
+                        amount
+                );
+
         PlayerData data =
                 getPlayerData(playerId);
 
@@ -395,6 +414,56 @@ public class SkillManager {
         savePlayerData(playerId);
 
         return leveledUp;
+    }
+
+    public static void grantWellRested(
+            ServerPlayer player
+    ) {
+
+        wellRestedRemainingTicks.put(
+                player.getUUID(),
+                WELL_RESTED_DURATION_TICKS
+        );
+
+        player.sendSystemMessage(
+                Component.literal(
+                        "You feel well rested. Skill XP doubled for 10 minutes."
+                )
+        );
+    }
+
+    public static int applySkillXpMultiplier(
+            UUID playerId,
+            int amount
+    ) {
+
+        Integer remainingTicks =
+                wellRestedRemainingTicks.get(playerId);
+
+        if (
+                remainingTicks == null
+                        || remainingTicks <= 0
+        ) {
+
+            return amount;
+        }
+
+        return amount
+                * WELL_RESTED_XP_MULTIPLIER;
+    }
+
+    public static void tickWellRestedTimers() {
+
+        wellRestedRemainingTicks.replaceAll(
+                (playerId, remainingTicks) ->
+                        remainingTicks - 1
+        );
+
+        wellRestedRemainingTicks.entrySet()
+                .removeIf(
+                        entry ->
+                                entry.getValue() <= 0
+                );
     }
 
     public static int getWoodcuttingXp(
