@@ -11,8 +11,8 @@ public class WoodcuttingPerks {
                     "You have learned that an axe is not just for trees.",
                     "Gain Strength I while holding an axe.",
                     3,
-                    280,
-                    220,
+                    305,
+                    325,
                     null
             );
 
@@ -23,8 +23,8 @@ public class WoodcuttingPerks {
                     "You learn to stop wasting durability on bad strikes.",
                     "Axes lose 10% less durability.",
                     7,
-                    345,
-                    123,
+                    210,
+                    325,
                     "splinter_fighter"
             );
 
@@ -35,8 +35,8 @@ public class WoodcuttingPerks {
                     "You start reading the grain before each swing.",
                     "+10% chopping speed.",
                     8,
-                    300,
-                    200,
+                    115,
+                    265,
                     "splinter_fighter"
             );
 
@@ -47,8 +47,8 @@ public class WoodcuttingPerks {
                     "Your feet settle before the axe falls.",
                     "+15% chopping speed total.",
                     12,
-                    340,
                     140,
+                    265,
                     "timber_training"
             );
 
@@ -59,8 +59,8 @@ public class WoodcuttingPerks {
                     "You hit the wood so hard and fast that it sometimes sparks into charcoal.",
                     "Logs sometimes drop charcoal when chopped with an axe.",
                     25,
-                    370,
-                    125,
+                    140,
+                    205,
                     "lumberjacks_stance"
             );
 
@@ -71,8 +71,8 @@ public class WoodcuttingPerks {
                     "Every cut lands cleanly through the grain.",
                     "Gain an additional chopping speed bonus.",
                     18,
-                    385,
-                    145,
+                    115,
+                    205,
                     "lumberjacks_stance"
             );
 
@@ -83,8 +83,8 @@ public class WoodcuttingPerks {
                     "One clean cut makes the next swing come easier.",
                     "Briefly gain an Efficiency-style chopping boost after cutting a log.",
                     28,
-                    400,
-                    165,
+                    115,
+                    145,
                     "clean_swing"
             );
 
@@ -95,8 +95,8 @@ public class WoodcuttingPerks {
                     "Each falling log pulls you deeper into the rhythm.",
                     "Continuously chopping logs builds additional chop speed.",
                     30,
-                    415,
-                    190,
+                    140,
+                    145,
                     "felling_momentum"
             );
 
@@ -107,8 +107,8 @@ public class WoodcuttingPerks {
                     "You know every tree by heart.",
                     "Breaking a tree's base log with an axe fells the connected tree.",
                     40,
-                    430,
-                    215,
+                    125,
+                    95,
                     "rhythm_of_the_forest"
             );
 
@@ -119,8 +119,8 @@ public class WoodcuttingPerks {
                     "A stronger handle keeps every swing under control.",
                     "Axes lose 20% less durability.",
                     12,
-                    290,
-                    170,
+                    210,
+                    265,
                     "proper_grip"
             );
 
@@ -131,8 +131,8 @@ public class WoodcuttingPerks {
                     "Long days with an axe teach your hands to absorb every impact.",
                     "Axes lose 35% less durability.",
                     18,
-                    305,
-                    155,
+                    200,
+                    205,
                     "reinforced_haft"
             );
 
@@ -143,8 +143,8 @@ public class WoodcuttingPerks {
                     "You know how to keep a trusted handle working for years.",
                     "Axes lose 50% less durability.",
                     25,
-                    320,
-                    140,
+                    225,
+                    205,
                     "callused_hands"
             );
 
@@ -155,8 +155,8 @@ public class WoodcuttingPerks {
                     "Your tools endure because every strike is measured.",
                     "Axes lose 75% less durability.",
                     35,
-                    335,
-                    125,
+                    210,
+                    145,
                     "seasoned_haft"
             );
 
@@ -167,8 +167,8 @@ public class WoodcuttingPerks {
                     "Every swing teaches you where an axe hits hardest.",
                     "Deal a small amount of bonus melee damage with axes.",
                     8,
-                    270,
-                    200,
+                    290,
+                    265,
                     "splinter_fighter"
             );
 
@@ -179,8 +179,8 @@ public class WoodcuttingPerks {
                     "A well-placed blow leaves your target struggling to move.",
                     "Axe hits sometimes apply brief Slowness.",
                     12,
-                    255,
-                    185,
+                    320,
+                    265,
                     "axe_training"
             );
 
@@ -191,8 +191,8 @@ public class WoodcuttingPerks {
                     "Your axe carries enough force to threaten everything nearby.",
                     "Axe hits sometimes damage nearby hostile mobs.",
                     20,
-                    270,
-                    170,
+                    290,
+                    205,
                     "heavy_chop"
             );
 
@@ -203,8 +203,8 @@ public class WoodcuttingPerks {
                     "A perfect finishing blow can leave behind a grim trophy.",
                     "Axe kills have a 25% chance to drop a matching mob head.",
                     40,
-                    250,
-                    150,
+                    290,
+                    95,
                     "cleaving_swing"
             );
 
@@ -215,8 +215,8 @@ public class WoodcuttingPerks {
                     "An axe feels as natural in battle as it does in the forest.",
                     "Gain Strength II while holding an axe.",
                     25,
-                    235,
-                    170,
+                    320,
+                    205,
                     "cleaving_swing"
             );
 
@@ -227,8 +227,8 @@ public class WoodcuttingPerks {
                     "Your axe is back in position before your foe can recover.",
                     "Recover 20% faster between axe attacks.",
                     30,
-                    220,
-                    150,
+                    305,
+                    145,
                     "splinter_fighter_2"
             );
 
@@ -239,8 +239,8 @@ public class WoodcuttingPerks {
                     "Every edge, angle, and opening has become familiar.",
                     "Deal additional melee damage with axes.",
                     40,
-                    205,
-                    130,
+                    320,
+                    95,
                     "quick_hatchet"
             );
 
@@ -251,8 +251,8 @@ public class WoodcuttingPerks {
                     "You start finding useful scraps in every clean chop.",
                     "Small chance to get extra sticks when breaking logs.",
                     10,
-                    185,
-                    325,
+                    390,
+                    265,
                     "splinter_fighter"
             );
 
@@ -263,8 +263,8 @@ public class WoodcuttingPerks {
                     "Nature rewards your careful hands with new growth.",
                     "Small chance to get extra saplings from logs or leaves.",
                     15,
-                    265,
-                    335,
+                    380,
+                    205,
                     "twigs_everywhere"
             );
 
@@ -275,8 +275,8 @@ public class WoodcuttingPerks {
                     "You know where the good branches hide their fruit.",
                     "Small chance for extra apples from oak and dark oak.",
                     12,
-                    350,
-                    325,
+                    420,
+                    265,
                     "green_thumb"
             );
 
@@ -287,8 +287,8 @@ public class WoodcuttingPerks {
                     "The forest leaves small gifts in your path.",
                     "Small chance for an extra random nature reward when chopping logs.",
                     15,
-                    420,
-                    315,
+                    410,
+                    205,
                     "apple_picker"
             );
 
@@ -299,8 +299,8 @@ public class WoodcuttingPerks {
                     "You know exactly which branches to cut.",
                     "Leaves from naturally felled trees decay significantly faster.",
                     25,
-                    385,
-                    300,
+                    440,
+                    205,
                     "apple_picker"
             );
 
@@ -311,8 +311,8 @@ public class WoodcuttingPerks {
                     "The forest sheds its secrets quickly.",
                     "Leaves from naturally felled trees decay even faster.",
                     35,
-                    405,
-                    280,
+                    430,
+                    145,
                     "fast_decay"
             );
 
@@ -323,8 +323,8 @@ public class WoodcuttingPerks {
                     "Nothing useful goes to waste.",
                     "Nearby tree-related drops are gently pulled toward you.",
                     30,
-                    445,
-                    295,
+                    400,
+                    145,
                     "natures_gift"
             );
 

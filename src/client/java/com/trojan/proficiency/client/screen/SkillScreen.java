@@ -2016,156 +2016,45 @@ public class SkillScreen extends Screen {
             int color
     ) {
 
-        if (!shouldDrawWoodcuttingConnection(perk)) {
+        if (x1 == x2 || y1 == y2) {
 
-            return;
-        }
-
-        if (
-                perk.getId()
-                        .equals("green_thumb")
-        ) {
-
-            drawWoodcuttingBentConnection(
+            drawWoodcuttingConnectionSegment(
                     graphics,
                     x1,
                     y1,
                     x2,
                     y2,
-                    TREE_X + 165 + PERK_LINE_CENTER_OFFSET,
-                    TREE_Y + 265 + PERK_LINE_CENTER_OFFSET,
                     color
             );
 
             return;
         }
 
-        if (
-                perk.getId()
-                        .equals("apple_picker")
-        ) {
-
-            drawWoodcuttingBentConnection(
-                    graphics,
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    TREE_X + 245 + PERK_LINE_CENTER_OFFSET,
-                    TREE_Y + 255 + PERK_LINE_CENTER_OFFSET,
-                    color
-            );
-
-            return;
-        }
-
-        if (
-                perk.getId()
-                        .equals("natures_gift")
-        ) {
-
-            drawWoodcuttingBentConnection(
-                    graphics,
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    TREE_X + 325 + PERK_LINE_CENTER_OFFSET,
-                    TREE_Y + 245 + PERK_LINE_CENTER_OFFSET,
-                    color
-            );
-
-            return;
-        }
+        int middleY =
+                y1 + (y2 - y1) / 2;
 
         drawWoodcuttingConnectionSegment(
                 graphics,
                 x1,
                 y1,
+                x1,
+                middleY,
+                color
+        );
+
+        drawWoodcuttingConnectionSegment(
+                graphics,
+                x1,
+                middleY,
                 x2,
-                y2,
-                color
-        );
-    }
-
-    private boolean shouldDrawWoodcuttingConnection(
-            SkillPerk perk
-    ) {
-
-        return perk.getId()
-                .equals("timber_training")
-                || perk.getId()
-                .equals("lumberjacks_stance")
-                || perk.getId()
-                .equals("friction_fire")
-                || perk.getId()
-                .equals("clean_swing")
-                || perk.getId()
-                .equals("felling_momentum")
-                || perk.getId()
-                .equals("rhythm_of_the_forest")
-                || perk.getId()
-                .equals("master_arborist")
-                || perk.getId()
-                .equals("reinforced_haft")
-                || perk.getId()
-                .equals("callused_hands")
-                || perk.getId()
-                .equals("seasoned_haft")
-                || perk.getId()
-                .equals("veteran_woodsman")
-                || perk.getId()
-                .equals("axe_training")
-                || perk.getId()
-                .equals("heavy_chop")
-                || perk.getId()
-                .equals("cleaving_swing")
-                || perk.getId()
-                .equals("decapitation_chance")
-                || perk.getId()
-                .equals("splinter_fighter_2")
-                || perk.getId()
-                .equals("quick_hatchet")
-                || perk.getId()
-                .equals("battle_axe_mastery")
-                || perk.getId()
-                .equals("green_thumb")
-                || perk.getId()
-                .equals("apple_picker")
-                || perk.getId()
-                .equals("natures_gift")
-                || perk.getId()
-                .equals("fast_decay")
-                || perk.getId()
-                .equals("autumn_winds")
-                || perk.getId()
-                .equals("clean_forest_floor");
-    }
-
-    private void drawWoodcuttingBentConnection(
-            GuiGraphics graphics,
-            int x1,
-            int y1,
-            int x2,
-            int y2,
-            int bendX,
-            int bendY,
-            int color
-    ) {
-
-        drawWoodcuttingConnectionSegment(
-                graphics,
-                x1,
-                y1,
-                bendX,
-                bendY,
+                middleY,
                 color
         );
 
         drawWoodcuttingConnectionSegment(
                 graphics,
-                bendX,
-                bendY,
+                x2,
+                middleY,
                 x2,
                 y2,
                 color
