@@ -6,6 +6,7 @@ import com.trojan.proficiency.perk.WoodcuttingPerkEffects;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
 
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -21,6 +22,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayDeque;
@@ -28,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +54,9 @@ public class WoodcuttingEvents {
     private static final int MASTER_ARBORIST_MIN_LOGS = 4;
     private static final int MASTER_ARBORIST_MIN_HEIGHT = 3;
     private static final int MASTER_ARBORIST_MIN_LEAVES = 4;
+    private static final int FAST_DECAY_DELAY_TICKS = 80;
+    private static final int AUTUMN_WINDS_DELAY_TICKS = 40;
+    private static final int LEAF_DECAY_SCAN_RADIUS = 6;
 
     private static final Map<UUID, Integer> CHOPPING_STREAKS =
             new HashMap<>();
@@ -60,6 +66,12 @@ public class WoodcuttingEvents {
 
     private static final Set<UUID> ACTIVE_TREE_FELLING =
             new HashSet<>();
+
+    private static final Map<
+            net.minecraft.server.level.ServerLevel,
+            Map<BlockPos, Long>
+            > PENDING_LEAF_DECAY =
+            new HashMap<>();
 
     public static void register() {
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
@@ -384,6 +396,34 @@ public class WoodcuttingEvents {
                     serverPlayer != null
                             && isLog
                             && holdingAxe
+                            && state.is(
+                            BlockTags.OVERWORLD_NATURAL_LOGS
+                    )
+                            && !ACTIVE_TREE_FELLING.contains(
+                            player.getUUID()
+                    )
+                            && (
+                            SkillManager.hasWoodcuttingPerk(
+                                    player.getUUID(),
+                                    "fast_decay"
+                            )
+                                    || SkillManager.hasWoodcuttingPerk(
+                                    player.getUUID(),
+                                    "autumn_winds"
+                            )
+                    )
+            ) {
+
+                scheduleNearbyLeafDecay(
+                        serverPlayer,
+                        pos
+                );
+            }
+
+            if (
+                    serverPlayer != null
+                            && isLog
+                            && holdingAxe
                             && !ACTIVE_TREE_FELLING.contains(
                             player.getUUID()
                     )
@@ -400,6 +440,149 @@ public class WoodcuttingEvents {
                 );
             }
         });
+
+        ServerTickEvents.END_SERVER_TICK.register(server ->
+                processPendingLeafDecay()
+        );
+    }
+
+    private static void scheduleNearbyLeafDecay(
+            ServerPlayer player,
+            BlockPos brokenLogPos
+    ) {
+
+        net.minecraft.server.level.ServerLevel level =
+                player.serverLevel();
+
+        int delay =
+                SkillManager.hasWoodcuttingPerk(
+                        player.getUUID(),
+                        "autumn_winds"
+                )
+                        ? AUTUMN_WINDS_DELAY_TICKS
+                        : FAST_DECAY_DELAY_TICKS;
+
+        long decayTick =
+                level.getGameTime()
+                        + delay;
+
+        Map<BlockPos, Long> pendingForLevel =
+                PENDING_LEAF_DECAY.computeIfAbsent(
+                        level,
+                        ignored -> new HashMap<>()
+                );
+
+        for (BlockPos leafPos
+                : BlockPos.betweenClosed(
+                brokenLogPos.offset(
+                        -LEAF_DECAY_SCAN_RADIUS,
+                        -2,
+                        -LEAF_DECAY_SCAN_RADIUS
+                ),
+                brokenLogPos.offset(
+                        LEAF_DECAY_SCAN_RADIUS,
+                        LEAF_DECAY_SCAN_RADIUS,
+                        LEAF_DECAY_SCAN_RADIUS
+                )
+        )) {
+
+            BlockState leafState =
+                    level.getBlockState(leafPos);
+
+            if (
+                    leafState.is(BlockTags.LEAVES)
+                            && leafState.hasProperty(
+                            LeavesBlock.PERSISTENT
+                    )
+                            && !leafState.getValue(
+                            LeavesBlock.PERSISTENT
+                    )
+            ) {
+
+                pendingForLevel.merge(
+                        leafPos.immutable(),
+                        decayTick,
+                        Math::min
+                );
+            }
+        }
+    }
+
+    private static void processPendingLeafDecay() {
+
+        Iterator<
+                Map.Entry<
+                        net.minecraft.server.level.ServerLevel,
+                        Map<BlockPos, Long>
+                        >
+                > levelIterator =
+                PENDING_LEAF_DECAY.entrySet()
+                        .iterator();
+
+        while (levelIterator.hasNext()) {
+
+            Map.Entry<
+                    net.minecraft.server.level.ServerLevel,
+                    Map<BlockPos, Long>
+                    > levelEntry =
+                    levelIterator.next();
+
+            net.minecraft.server.level.ServerLevel level =
+                    levelEntry.getKey();
+
+            Iterator<Map.Entry<BlockPos, Long>> leafIterator =
+                    levelEntry.getValue()
+                            .entrySet()
+                            .iterator();
+
+            while (leafIterator.hasNext()) {
+
+                Map.Entry<BlockPos, Long> leafEntry =
+                        leafIterator.next();
+
+                if (
+                        level.getGameTime()
+                                < leafEntry.getValue()
+                ) {
+
+                    continue;
+                }
+
+                BlockState leafState =
+                        level.getBlockState(
+                                leafEntry.getKey()
+                        );
+
+                if (
+                        leafState.is(BlockTags.LEAVES)
+                                && leafState.hasProperty(
+                                LeavesBlock.PERSISTENT
+                        )
+                                && !leafState.getValue(
+                                LeavesBlock.PERSISTENT
+                        )
+                                && leafState.hasProperty(
+                                LeavesBlock.DISTANCE
+                        )
+                                && leafState.getValue(
+                                LeavesBlock.DISTANCE
+                        ) >= LeavesBlock.DECAY_DISTANCE
+                ) {
+
+                    level.destroyBlock(
+                            leafEntry.getKey(),
+                            true
+                    );
+                }
+
+                leafIterator.remove();
+            }
+
+            if (levelEntry.getValue().isEmpty()) {
+
+                levelIterator.remove();
+            }
+        }
     }
 
     private static void fellConnectedTree(

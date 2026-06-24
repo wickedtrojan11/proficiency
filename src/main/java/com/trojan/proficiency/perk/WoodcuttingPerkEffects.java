@@ -8,6 +8,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.resources.ResourceLocation;
@@ -18,6 +19,8 @@ import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +37,8 @@ public class WoodcuttingPerkEffects {
     private static final double CLEAVING_SWING_RANGE = 3.0;
     private static final float DECAPITATION_CHANCE = 0.25f;
     private static final int FELLING_MOMENTUM_DURATION_TICKS = 100;
+    private static final double CLEAN_FOREST_FLOOR_RADIUS = 7.0;
+    private static final double CLEAN_FOREST_FLOOR_PULL_SPEED = 0.08;
     private static final ResourceLocation QUICK_HATCHET_ATTACK_SPEED_ID =
             ResourceLocation.fromNamespaceAndPath(
                     "proficiency",
@@ -180,6 +185,8 @@ public class WoodcuttingPerkEffects {
                         holdingAxe,
                         server.getTickCount()
                 );
+
+                attractTreeDrops(player);
             }
         });
 
@@ -210,6 +217,80 @@ public class WoodcuttingPerkEffects {
                         );
                 }
         );
+    }
+
+    private static void attractTreeDrops(
+            ServerPlayer player
+    ) {
+
+        if (
+                !SkillManager.hasWoodcuttingPerk(
+                        player.getUUID(),
+                        "clean_forest_floor"
+                )
+        ) {
+
+            return;
+        }
+
+        Vec3 target =
+                player.position()
+                        .add(
+                                0.0,
+                                0.75,
+                                0.0
+                        );
+
+        for (ItemEntity itemEntity
+                : player.serverLevel()
+                .getEntitiesOfClass(
+                        ItemEntity.class,
+                        player.getBoundingBox()
+                                .inflate(
+                                        CLEAN_FOREST_FLOOR_RADIUS
+                                ),
+                        WoodcuttingPerkEffects::isTreeRelatedDrop
+                )) {
+
+            Vec3 pullDirection =
+                    target.subtract(
+                            itemEntity.position()
+                    );
+
+            if (pullDirection.lengthSqr() < 0.25) {
+
+                continue;
+            }
+
+            Vec3 pullVelocity =
+                    pullDirection.normalize()
+                            .scale(
+                                    CLEAN_FOREST_FLOOR_PULL_SPEED
+                            );
+
+            itemEntity.setDeltaMovement(
+                    itemEntity.getDeltaMovement()
+                            .scale(0.85)
+                            .add(pullVelocity)
+            );
+        }
+    }
+
+    private static boolean isTreeRelatedDrop(
+            ItemEntity itemEntity
+    ) {
+
+        ItemStack stack =
+                itemEntity.getItem();
+
+        return stack.is(ItemTags.SAPLINGS)
+                || stack.is(ItemTags.LOGS)
+                || stack.is(ItemTags.LEAVES)
+                || stack.is(Items.STICK)
+                || stack.is(Items.APPLE)
+                || stack.is(Items.HONEYCOMB)
+                || stack.is(Items.HONEY_BOTTLE)
+                || stack.is(Items.CHARCOAL);
     }
 
     public static void activateFellingMomentum(

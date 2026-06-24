@@ -292,6 +292,42 @@ public class WoodcuttingPerks {
                     "apple_picker"
             );
 
+    public static final SkillPerk FAST_DECAY =
+            new SkillPerk(
+                    "fast_decay",
+                    "Fast Decay",
+                    "You know exactly which branches to cut.",
+                    "Leaves from naturally felled trees decay significantly faster.",
+                    25,
+                    385,
+                    300,
+                    "apple_picker"
+            );
+
+    public static final SkillPerk AUTUMN_WINDS =
+            new SkillPerk(
+                    "autumn_winds",
+                    "Autumn Winds",
+                    "The forest sheds its secrets quickly.",
+                    "Leaves from naturally felled trees decay even faster.",
+                    35,
+                    405,
+                    280,
+                    "fast_decay"
+            );
+
+    public static final SkillPerk CLEAN_FOREST_FLOOR =
+            new SkillPerk(
+                    "clean_forest_floor",
+                    "Clean Forest Floor",
+                    "Nothing useful goes to waste.",
+                    "Nearby tree-related drops are gently pulled toward you.",
+                    30,
+                    445,
+                    295,
+                    "natures_gift"
+            );
+
     public static final List<SkillPerk> ALL_PERKS =
             List.of(
                     SPLINTER_FIGHTER,
@@ -317,6 +353,9 @@ public class WoodcuttingPerks {
                     TWIGS_EVERYWHERE,
                     GREEN_THUMB,
                     APPLE_PICKER,
-                    NATURES_GIFT
+                    NATURES_GIFT,
+                    FAST_DECAY,
+                    AUTUMN_WINDS,
+                    CLEAN_FOREST_FLOOR
             );
 }

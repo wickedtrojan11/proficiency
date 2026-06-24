@@ -1695,6 +1695,36 @@ public class SkillScreen extends Screen {
             bonus++;
         }
 
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "fast_decay"
+                )
+        ) {
+
+            bonus++;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "autumn_winds"
+                )
+        ) {
+
+            bonus++;
+        }
+
+        if (
+                SkillManager.hasWoodcuttingPerk(
+                        playerId,
+                        "clean_forest_floor"
+                )
+        ) {
+
+            bonus++;
+        }
+
         return bonus;
     }
 
@@ -2103,7 +2133,13 @@ public class SkillScreen extends Screen {
                 || perk.getId()
                 .equals("apple_picker")
                 || perk.getId()
-                .equals("natures_gift");
+                .equals("natures_gift")
+                || perk.getId()
+                .equals("fast_decay")
+                || perk.getId()
+                .equals("autumn_winds")
+                || perk.getId()
+                .equals("clean_forest_floor");
     }
 
     private void drawWoodcuttingBentConnection(
