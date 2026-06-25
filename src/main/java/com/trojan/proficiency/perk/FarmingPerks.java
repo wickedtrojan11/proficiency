@@ -37,7 +37,31 @@ public class FarmingPerks {
                     25,
                     125,
                     205,
+                    "improved_growth"
+            );
+
+    public static final SkillPerk IMPROVED_GROWTH =
+            perk(
+                    "improved_growth",
+                    "Improved Growth",
+                    "Your fields respond to increasingly careful cultivation.",
+                    "Normal crops grow 25% faster in total.",
+                    18,
+                    105,
+                    235,
                     "better_yields"
+            );
+
+    public static final SkillPerk RAPID_GROWTH =
+            perk(
+                    "rapid_growth",
+                    "Rapid Growth",
+                    "Your crops waste no time reaching the harvest.",
+                    "Normal crops grow 40% faster in total.",
+                    30,
+                    145,
+                    145,
+                    "auto_replant"
             );
 
     public static final SkillPerk GREENHOUSE_GENIUS =
@@ -45,11 +69,11 @@ public class FarmingPerks {
                     "greenhouse_genius",
                     "Greenhouse Genius",
                     "You can coax abundance from any patch of soil.",
-                    "Future greenhouse automation.",
+                    "Normal crops grow 50% faster in total.",
                     40,
                     125,
                     95,
-                    "auto_replant"
+                    "rapid_growth"
             );
 
     public static final SkillPerk ANIMAL_FASTER_GROWTH =
@@ -188,7 +212,9 @@ public class FarmingPerks {
             List.of(
                     CULTIVATION_FASTER_GROWTH,
                     BETTER_YIELDS,
+                    IMPROVED_GROWTH,
                     AUTO_REPLANT,
+                    RAPID_GROWTH,
                     GREENHOUSE_GENIUS,
                     ANIMAL_FASTER_GROWTH,
                     EXTRA_WOOL,

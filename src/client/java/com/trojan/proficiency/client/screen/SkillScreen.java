@@ -2385,12 +2385,9 @@ public class SkillScreen extends Screen {
             UUID playerId
     ) {
 
-        return SkillManager.hasFarmingPerk(
-                playerId,
-                "cultivation_faster_growth"
-        )
-                ? 10
-                : 0;
+        return SkillManager.getFarmingGrowthBonusPercent(
+                playerId
+        );
     }
 
     private int getFarmingYieldBonusPercent(

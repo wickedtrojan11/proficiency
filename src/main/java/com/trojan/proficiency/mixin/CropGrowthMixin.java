@@ -55,12 +55,16 @@ public abstract class CropGrowthMixin {
             CallbackInfo callbackInfo
     ) {
 
-        if (
-                random.nextFloat() >= 0.10f
-                        || !hasNearbyFasterGrowthPlayer(
+        int growthBonusPercent =
+                getNearbyGrowthBonusPercent(
                         level,
                         pos
-                )
+                );
+
+        if (
+                growthBonusPercent <= 0
+                        || random.nextFloat()
+                        >= growthBonusPercent / 100.0f
         ) {
 
             return;
@@ -106,22 +110,27 @@ public abstract class CropGrowthMixin {
         }
     }
 
-    private static boolean hasNearbyFasterGrowthPlayer(
+    private static int getNearbyGrowthBonusPercent(
             ServerLevel level,
             BlockPos pos
     ) {
 
-        return !level.getPlayers(
-                player ->
-                        player.distanceToSqr(
+        return level.getPlayers(
+                        player ->
+                                player.distanceToSqr(
                                 pos.getX() + 0.5,
                                 pos.getY() + 0.5,
                                 pos.getZ() + 0.5
-                        ) <= FASTER_GROWTH_RADIUS_SQUARED
-                                && SkillManager.hasFarmingPerk(
-                                player.getUUID(),
-                                "cultivation_faster_growth"
-                        )
-        ).isEmpty();
+                                ) <= FASTER_GROWTH_RADIUS_SQUARED
+                )
+                .stream()
+                .mapToInt(
+                        player ->
+                                SkillManager.getFarmingGrowthBonusPercent(
+                                        player.getUUID()
+                                )
+                )
+                .max()
+                .orElse(0);
     }
 }

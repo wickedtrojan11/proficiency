@@ -800,6 +800,53 @@ public class SkillManager {
                 .hasFarmingPerk(perkId);
     }
 
+    public static int getFarmingGrowthBonusPercent(
+            UUID playerId
+    ) {
+
+        if (
+                hasFarmingPerk(
+                        playerId,
+                        "greenhouse_genius"
+                )
+        ) {
+
+            return 50;
+        }
+
+        if (
+                hasFarmingPerk(
+                        playerId,
+                        "rapid_growth"
+                )
+        ) {
+
+            return 40;
+        }
+
+        if (
+                hasFarmingPerk(
+                        playerId,
+                        "improved_growth"
+                )
+        ) {
+
+            return 25;
+        }
+
+        if (
+                hasFarmingPerk(
+                        playerId,
+                        "cultivation_faster_growth"
+                )
+        ) {
+
+            return 10;
+        }
+
+        return 0;
+    }
+
     public static boolean isFarmingBonusHarvestsEnabled(
             UUID playerId
     ) {

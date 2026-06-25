@@ -20,8 +20,10 @@ import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,6 +35,14 @@ public final class FarmingEvents {
 
     private static final List<PendingBlockInteraction>
             PENDING_INTERACTIONS =
+            new ArrayList<>();
+
+    private static final Map<HarvestKey, BlockState>
+            CAPTURED_HARVESTS =
+            new HashMap<>();
+
+    private static final List<PendingAutoReplant>
+            PENDING_AUTO_REPLANTS =
             new ArrayList<>();
 
     private static final Set<Item> PLANTING_ITEMS =
@@ -57,15 +67,74 @@ public final class FarmingEvents {
 
     public static void register() {
 
+        PlayerBlockBreakEvents.BEFORE.register(
+                (world, player, pos, state, blockEntity) -> {
+
+                    if (
+                            player instanceof ServerPlayer serverPlayer
+                                    && world instanceof ServerLevel serverLevel
+                                    && isMatureCrop(state)
+                    ) {
+
+                        CAPTURED_HARVESTS.put(
+                                new HarvestKey(
+                                        serverPlayer.getUUID(),
+                                        serverLevel,
+                                        pos.immutable()
+                                ),
+                                state
+                        );
+                    }
+
+                    return true;
+                }
+        );
+
+        PlayerBlockBreakEvents.CANCELED.register(
+                (world, player, pos, state, blockEntity) -> {
+
+                    if (
+                            player instanceof ServerPlayer serverPlayer
+                                    && world instanceof ServerLevel serverLevel
+                    ) {
+
+                        CAPTURED_HARVESTS.remove(
+                                new HarvestKey(
+                                        serverPlayer.getUUID(),
+                                        serverLevel,
+                                        pos
+                                )
+                        );
+                    }
+                }
+        );
+
         PlayerBlockBreakEvents.AFTER.register(
                 (world, player, pos, state, blockEntity) -> {
 
-                    if (!(player instanceof ServerPlayer serverPlayer)) {
+                    if (
+                            !(player instanceof ServerPlayer serverPlayer)
+                                    || !(world instanceof ServerLevel serverLevel)
+                    ) {
 
                         return;
                     }
 
-                    if (isMatureCrop(state)) {
+                    BlockState harvestedState =
+                            CAPTURED_HARVESTS.remove(
+                                    new HarvestKey(
+                                            serverPlayer.getUUID(),
+                                            serverLevel,
+                                            pos
+                                    )
+                            );
+
+                    if (harvestedState == null) {
+
+                        harvestedState = state;
+                    }
+
+                    if (isMatureCrop(harvestedState)) {
 
                         SkillManager.addFarmingXp(
                                 serverPlayer,
@@ -75,16 +144,16 @@ public final class FarmingEvents {
                         applyBetterYields(
                                 serverPlayer,
                                 pos,
-                                state
+                                harvestedState
                         );
 
-                        applyAutoReplant(
+                        queueAutoReplant(
                                 serverPlayer,
                                 pos,
-                                state
+                                harvestedState
                         );
 
-                    } else if (isMushroom(state)) {
+                    } else if (isMushroom(harvestedState)) {
 
                         SkillManager.addFarmingXp(
                                 serverPlayer,
@@ -170,6 +239,10 @@ public final class FarmingEvents {
         );
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
+
+            processPendingAutoReplants(
+                    server
+            );
 
             Iterator<PendingBlockInteraction> iterator =
                     PENDING_INTERACTIONS.iterator();
@@ -276,7 +349,7 @@ public final class FarmingEvents {
         }
     }
 
-    private static void applyAutoReplant(
+    private static void queueAutoReplant(
             ServerPlayer player,
             BlockPos pos,
             BlockState harvestedState
@@ -290,9 +363,6 @@ public final class FarmingEvents {
                         player.getUUID(),
                         "auto_replant"
                 )
-                        || !player.serverLevel()
-                        .getBlockState(pos)
-                        .isAir()
         ) {
 
             return;
@@ -316,29 +386,86 @@ public final class FarmingEvents {
             return;
         }
 
-        int seedSlot =
-                findInventoryItem(
-                        player,
-                        seedItem
-                );
-
-        if (seedSlot < 0) {
-
-            return;
-        }
-
-        if (!player.isCreative()) {
-
-            player.getInventory()
-                    .getItem(seedSlot)
-                    .shrink(1);
-        }
-
-        player.serverLevel().setBlock(
-                pos,
-                replantedState,
-                3
+        PENDING_AUTO_REPLANTS.add(
+                new PendingAutoReplant(
+                        player.getUUID(),
+                        player.serverLevel(),
+                        pos.immutable(),
+                        seedItem,
+                        replantedState,
+                        player.server.getTickCount()
+                                + 1
+                )
         );
+    }
+
+    private static void processPendingAutoReplants(
+            net.minecraft.server.MinecraftServer server
+    ) {
+
+        Iterator<PendingAutoReplant> iterator =
+                PENDING_AUTO_REPLANTS.iterator();
+
+        while (iterator.hasNext()) {
+
+            PendingAutoReplant pending =
+                    iterator.next();
+
+            if (
+                    server.getTickCount()
+                            < pending.replantTick()
+            ) {
+
+                continue;
+            }
+
+            ServerPlayer player =
+                    server.getPlayerList()
+                            .getPlayer(
+                                    pending.playerId()
+                            );
+
+            if (
+                    player != null
+                            && pending.level()
+                            == player.serverLevel()
+                            && pending.level()
+                            .getBlockState(
+                                    pending.pos()
+                            )
+                            .isAir()
+                            && pending.replantedState()
+                            .canSurvive(
+                                    pending.level(),
+                                    pending.pos()
+                            )
+            ) {
+
+                int seedSlot =
+                        findInventoryItem(
+                                player,
+                                pending.seedItem()
+                        );
+
+                if (seedSlot >= 0) {
+
+                    if (!player.isCreative()) {
+
+                        player.getInventory()
+                                .getItem(seedSlot)
+                                .shrink(1);
+                    }
+
+                    pending.level().setBlock(
+                            pending.pos(),
+                            pending.replantedState(),
+                            3
+                    );
+                }
+            }
+
+            iterator.remove();
+        }
     }
 
     private static int findInventoryItem(
@@ -406,6 +533,10 @@ public final class FarmingEvents {
             return Items.TORCHFLOWER;
         }
 
+        if (state.is(Blocks.SWEET_BERRY_BUSH)) {
+            return Items.SWEET_BERRIES;
+        }
+
         return null;
     }
 
@@ -441,6 +572,10 @@ public final class FarmingEvents {
             return Items.TORCHFLOWER_SEEDS;
         }
 
+        if (state.is(Blocks.SWEET_BERRY_BUSH)) {
+            return Items.SWEET_BERRIES;
+        }
+
         return null;
     }
 
@@ -465,6 +600,14 @@ public final class FarmingEvents {
 
             return state.setValue(
                     CocoaBlock.AGE,
+                    0
+            );
+        }
+
+        if (state.is(Blocks.SWEET_BERRY_BUSH)) {
+
+            return state.setValue(
+                    SweetBerryBushBlock.AGE,
                     0
             );
         }
@@ -514,6 +657,13 @@ public final class FarmingEvents {
             return state.getValue(
                     CocoaBlock.AGE
             ) == CocoaBlock.MAX_AGE;
+        }
+
+        if (state.is(Blocks.SWEET_BERRY_BUSH)) {
+
+            return state.getValue(
+                    SweetBerryBushBlock.AGE
+            ) == SweetBerryBushBlock.MAX_AGE;
         }
 
         return state.is(Blocks.PUMPKIN)
@@ -630,5 +780,22 @@ public final class FarmingEvents {
                     true
             );
         }
+    }
+
+    private record HarvestKey(
+            UUID playerId,
+            ServerLevel level,
+            BlockPos pos
+    ) {
+    }
+
+    private record PendingAutoReplant(
+            UUID playerId,
+            ServerLevel level,
+            BlockPos pos,
+            Item seedItem,
+            BlockState replantedState,
+            int replantTick
+    ) {
     }
 }
