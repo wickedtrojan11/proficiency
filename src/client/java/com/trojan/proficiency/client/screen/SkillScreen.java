@@ -8,6 +8,7 @@ import com.trojan.proficiency.skill.MiningSkill;
 import com.trojan.proficiency.perk.MiningPerks;
 import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
+import com.trojan.proficiency.perk.FarmingPerks;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
@@ -31,6 +32,12 @@ public class SkillScreen extends Screen {
     private static final int WOODCUTTING_TAB_WIDTH = 180;
     private static final int WOODCUTTING_TAB_HEIGHT = 25;
     private static final int WOODCUTTING_TAB_LABEL_X = 280;
+
+    private static final int FARMING_TAB_X = 380;
+    private static final int FARMING_TAB_Y = 22;
+    private static final int FARMING_TAB_WIDTH = 140;
+    private static final int FARMING_TAB_HEIGHT = 25;
+    private static final int FARMING_TAB_LABEL_X = 450;
 
     private static final int STATS_PANEL_X = 35;
     private static final int STATS_PANEL_Y = 90;
@@ -177,7 +184,7 @@ public class SkillScreen extends Screen {
             selectedSkill--;
 
             if (selectedSkill < 0) {
-                selectedSkill = 1;
+                selectedSkill = 2;
             }
 
             return true;
@@ -188,7 +195,7 @@ public class SkillScreen extends Screen {
 
             selectedSkill++;
 
-            if (selectedSkill > 1) {
+            if (selectedSkill > 2) {
                 selectedSkill = 0;
             }
 
@@ -254,6 +261,18 @@ public class SkillScreen extends Screen {
             return true;
         }
 
+// Farming tab
+        if (
+                mouseX >= FARMING_TAB_X
+                        && mouseX <= FARMING_TAB_X + FARMING_TAB_WIDTH
+                        && mouseY >= FARMING_TAB_Y
+                        && mouseY <= FARMING_TAB_Y + FARMING_TAB_HEIGHT
+        ) {
+
+            selectedSkill = 2;
+            return true;
+        }
+
         if (selectedSkill == 1) {
 
             int toggleRow =
@@ -286,6 +305,56 @@ public class SkillScreen extends Screen {
 
                     case 3 ->
                             SkillManager.toggleWoodcuttingCleanFloor(
+                                    playerId
+                            );
+
+                    default -> {
+                        return false;
+                    }
+                }
+
+                minecraft.player.playSound(
+                        net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                        1.0f,
+                        1.0f
+                );
+
+                return true;
+            }
+        }
+
+        if (selectedSkill == 2) {
+
+            int toggleRow =
+                    getWoodcuttingToggleRow(
+                            mouseX,
+                            mouseY
+                    );
+
+            if (toggleRow >= 0) {
+
+                UUID playerId =
+                        minecraft.player.getUUID();
+
+                switch (toggleRow) {
+
+                    case 0 ->
+                            SkillManager.toggleFarmingBonusHarvests(
+                                    playerId
+                            );
+
+                    case 1 ->
+                            SkillManager.toggleFarmingAnimalFollow(
+                                    playerId
+                            );
+
+                    case 2 ->
+                            SkillManager.toggleFarmingAutoReplant(
+                                    playerId
+                            );
+
+                    case 3 ->
+                            SkillManager.toggleFarmingBeeGrowth(
                                     playerId
                             );
 
@@ -431,6 +500,80 @@ public class SkillScreen extends Screen {
                                 Component.literal(
                                         "§cCannot unlock "
                                                 + perk.getName()
+                                )
+                        );
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        if (selectedSkill == 2) {
+
+            for (SkillPerk perk
+                    : FarmingPerks.ALL_PERKS) {
+
+                int perkX =
+                        perk.getX()
+                                + TREE_OFFSET_X;
+
+                int perkY =
+                        perk.getY()
+                                + TREE_OFFSET_Y;
+
+                boolean hovering =
+                        mouseX >= perkX
+                                && mouseX <= perkX + PERK_NODE_SIZE
+                                && mouseY >= perkY
+                                && mouseY <= perkY + PERK_NODE_SIZE;
+
+                if (hovering) {
+
+                    int farmingLevel =
+                            SkillManager.getFarmingLevel(
+                                    minecraft.player.getUUID()
+                            );
+
+                    int farmingPerkPoints =
+                            SkillManager.getFarmingPerkPoints(
+                                    minecraft.player.getUUID()
+                            );
+
+                    if (
+                            !isFarmingPerkAvailable(
+                                    perk,
+                                    farmingLevel,
+                                    farmingPerkPoints
+                            )
+                    ) {
+
+                        minecraft.player.sendSystemMessage(
+                                Component.literal(
+                                        "\u00A7cCannot unlock "
+                                                + perk.getName()
+                                )
+                        );
+
+                        return true;
+                    }
+
+                    boolean success =
+                            SkillManager.unlockFarmingPerk(
+                                    minecraft.player.getUUID(),
+                                    perk.getId(),
+                                    perk.getRequiredLevel()
+                            );
+
+                    if (success) {
+
+                        showPerkUnlockToast(perk);
+
+                        minecraft.player.sendSystemMessage(
+                                Component.literal(
+                                        "\u00A76Unlocked "
+                                                + perk.getName()
+                                                + "!"
                                 )
                         );
                     }
@@ -615,6 +758,8 @@ public class SkillScreen extends Screen {
                 font,
                 selectedSkill == 1
                         ? "FORAGING"
+                        : selectedSkill == 2
+                        ? "FARM OPTIONS"
                         : "ORE SENSING",
                 ORE_TITLE_X,
                 ORE_TITLE_Y,
@@ -659,6 +804,51 @@ public class SkillScreen extends Screen {
                     graphics,
                     "Clean Floor",
                     SkillManager.isWoodcuttingCleanFloorEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+                            + WOODCUTTING_TOGGLE_ROW_STEP * 3
+            );
+        }
+
+        if (selectedSkill == 2) {
+
+            UUID playerId =
+                    minecraft.player.getUUID();
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Bonus Harvests",
+                    SkillManager.isFarmingBonusHarvestsEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+            );
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Animal Follow",
+                    SkillManager.isFarmingAnimalFollowEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+                            + WOODCUTTING_TOGGLE_ROW_STEP
+            );
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Auto Replant",
+                    SkillManager.isFarmingAutoReplantEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+                            + WOODCUTTING_TOGGLE_ROW_STEP * 2
+            );
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Bee Growth",
+                    SkillManager.isFarmingBeeGrowthEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -797,6 +987,26 @@ public class SkillScreen extends Screen {
 
         int woodcuttingPerkPoints =
                 SkillManager.getWoodcuttingPerkPoints(
+                        minecraft.player.getUUID()
+                );
+
+        int farmingLevel =
+                SkillManager.getFarmingLevel(
+                        minecraft.player.getUUID()
+                );
+
+        int farmingXp =
+                SkillManager.getFarmingXp(
+                        minecraft.player.getUUID()
+                );
+
+        int farmingXpRequired =
+                SkillManager.getFarmingXpRequired(
+                        minecraft.player.getUUID()
+                );
+
+        int farmingPerkPoints =
+                SkillManager.getFarmingPerkPoints(
                         minecraft.player.getUUID()
                 );
         if (
@@ -1285,6 +1495,25 @@ public class SkillScreen extends Screen {
                 TAB_OUTLINE_COLOR
         );
 
+// Farming tab background
+        graphics.fill(
+                FARMING_TAB_X,
+                FARMING_TAB_Y,
+                FARMING_TAB_X + FARMING_TAB_WIDTH,
+                FARMING_TAB_Y + FARMING_TAB_HEIGHT,
+                selectedSkill == 2
+                        ? ACTIVE_TAB_FILL_COLOR
+                        : PANEL_FILL_COLOR
+        );
+
+        graphics.renderOutline(
+                FARMING_TAB_X,
+                FARMING_TAB_Y,
+                FARMING_TAB_WIDTH,
+                FARMING_TAB_HEIGHT,
+                TAB_OUTLINE_COLOR
+        );
+
 // Tab text
         graphics.drawCenteredString(
                 font,
@@ -1303,6 +1532,16 @@ public class SkillScreen extends Screen {
                 TAB_LABEL_Y,
                 selectedSkill == 1
                         ? 0x55FF55
+                        : 0xAAAAAA
+        );
+
+        graphics.drawCenteredString(
+                font,
+                "FARMING",
+                FARMING_TAB_LABEL_X,
+                TAB_LABEL_Y,
+                selectedSkill == 2
+                        ? 0xFFFF55
                         : 0xAAAAAA
         );
 
@@ -1514,6 +1753,179 @@ public class SkillScreen extends Screen {
                                     ).getVisualOrderText(),
                                     Component.literal(
                                             "Requires Woodcutting Level: "
+                                                    + perk.getRequiredLevel()
+                                    ).getVisualOrderText(),
+                                    Component.literal(
+                                            perk.getDescription()
+                                    ).getVisualOrderText(),
+                                    Component.literal(
+                                            perk.getEffectText()
+                                    ).getVisualOrderText()
+                            ),
+                            mouseX,
+                            mouseY
+                    );
+                }
+            }
+        }
+
+        if (selectedSkill == 2) {
+
+            graphics.drawString(
+                    font,
+                    "Farming Level: "
+                            + farmingLevel,
+                    BOTTOM_INFO_X,
+                    height - MINING_LEVEL_Y_OFFSET,
+                    0xFFFFCC55
+            );
+
+            graphics.drawString(
+                    font,
+                    "Perk Points: "
+                            + farmingPerkPoints,
+                    BOTTOM_INFO_X,
+                    height - PERK_POINTS_Y_OFFSET,
+                    0x55FFFF
+            );
+
+            drawXpBar(
+                    graphics,
+                    MINING_XP_BAR_X,
+                    height - MINING_XP_BAR_Y_OFFSET,
+                    MINING_XP_BAR_WIDTH,
+                    XP_BAR_HEIGHT,
+                    farmingXp,
+                    farmingXpRequired,
+                    0xFFFFCC55
+            );
+
+            graphics.drawString(
+                    font,
+                    "Growth Rate: +0%",
+                    MINING_STAT_X,
+                    MINING_SPEED_STAT_Y,
+                    0x55FF55
+            );
+
+            graphics.drawString(
+                    font,
+                    "Yield Bonus: +0",
+                    MINING_STAT_X,
+                    FORTUNE_STAT_Y,
+                    0x55FFFF
+            );
+
+            graphics.drawString(
+                    font,
+                    "Animal Care: +0",
+                    MINING_STAT_X,
+                    DURABILITY_STAT_Y,
+                    0xAAAAAA
+            );
+
+            graphics.drawString(
+                    font,
+                    "Harvesting: +0",
+                    MINING_STAT_X,
+                    ORE_SENSE_STAT_Y,
+                    0xFFAA00
+            );
+
+            for (SkillPerk perk
+                    : FarmingPerks.ALL_PERKS) {
+
+                if (perk.getParentId() == null) {
+
+                    continue;
+                }
+
+                SkillPerk parent =
+                        findFarmingPerk(
+                                perk.getParentId()
+                        );
+
+                if (parent == null) {
+
+                    continue;
+                }
+
+                int color =
+                        getFarmingConnectionColor(
+                                perk,
+                                farmingLevel,
+                                farmingPerkPoints
+                        );
+
+                drawWoodcuttingConnection(
+                        graphics,
+                        perk,
+                        parent.getX()
+                                + TREE_OFFSET_X
+                                + PERK_LINE_CENTER_OFFSET,
+                        parent.getY()
+                                + TREE_OFFSET_Y
+                                + PERK_LINE_CENTER_OFFSET,
+                        perk.getX()
+                                + TREE_OFFSET_X
+                                + PERK_LINE_CENTER_OFFSET,
+                        perk.getY()
+                                + TREE_OFFSET_Y
+                                + PERK_LINE_CENTER_OFFSET,
+                        color
+                );
+            }
+
+            for (SkillPerk perk
+                    : FarmingPerks.ALL_PERKS) {
+
+                int perkX =
+                        perk.getX()
+                                + TREE_OFFSET_X;
+
+                int perkY =
+                        perk.getY()
+                                + TREE_OFFSET_Y;
+
+                graphics.fill(
+                        perkX,
+                        perkY,
+                        perkX + PERK_NODE_SIZE,
+                        perkY + PERK_NODE_SIZE,
+                        getFarmingPerkFillColor(
+                                perk,
+                                farmingLevel,
+                                farmingPerkPoints
+                        )
+                );
+
+                graphics.renderOutline(
+                        perkX,
+                        perkY,
+                        PERK_NODE_SIZE,
+                        PERK_NODE_SIZE,
+                        getFarmingPerkBorderColor(
+                                perk,
+                                farmingLevel,
+                                farmingPerkPoints
+                        )
+                );
+
+                if (
+                        mouseX >= perkX
+                                && mouseX <= perkX + PERK_NODE_SIZE
+                                && mouseY >= perkY
+                                && mouseY <= perkY + PERK_NODE_SIZE
+                ) {
+
+                    graphics.renderTooltip(
+                            font,
+                            List.of(
+                                    Component.literal(
+                                            perk.getName()
+                                    ).getVisualOrderText(),
+                                    Component.literal(
+                                            "Requires Farming Level: "
                                                     + perk.getRequiredLevel()
                                     ).getVisualOrderText(),
                                     Component.literal(
@@ -2283,6 +2695,134 @@ public class SkillScreen extends Screen {
         }
 
         return SkillManager.hasWoodcuttingPerk(
+                minecraft.player.getUUID(),
+                perk.getParentId()
+        );
+    }
+
+    private SkillPerk findFarmingPerk(
+            String perkId
+    ) {
+
+        for (SkillPerk perk
+                : FarmingPerks.ALL_PERKS) {
+
+            if (perk.getId().equals(perkId)) {
+
+                return perk;
+            }
+        }
+
+        return null;
+    }
+
+    private int getFarmingConnectionColor(
+            SkillPerk perk,
+            int farmingLevel,
+            int farmingPerkPoints
+    ) {
+
+        if (isFarmingPerkUnlocked(perk)) {
+
+            return PERK_UNLOCKED_COLOR;
+        }
+
+        if (
+                isFarmingPerkAvailable(
+                        perk,
+                        farmingLevel,
+                        farmingPerkPoints
+                )
+        ) {
+
+            return PERK_AVAILABLE_BORDER_COLOR;
+        }
+
+        return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private int getFarmingPerkFillColor(
+            SkillPerk perk,
+            int farmingLevel,
+            int farmingPerkPoints
+    ) {
+
+        if (isFarmingPerkUnlocked(perk)) {
+
+            return PERK_UNLOCKED_COLOR;
+        }
+
+        if (
+                isFarmingPerkAvailable(
+                        perk,
+                        farmingLevel,
+                        farmingPerkPoints
+                )
+        ) {
+
+            return PERK_AVAILABLE_FILL_COLOR;
+        }
+
+        return PERK_LOCKED_FILL_COLOR;
+    }
+
+    private int getFarmingPerkBorderColor(
+            SkillPerk perk,
+            int farmingLevel,
+            int farmingPerkPoints
+    ) {
+
+        if (isFarmingPerkUnlocked(perk)) {
+
+            return PERK_UNLOCKED_COLOR;
+        }
+
+        if (
+                isFarmingPerkAvailable(
+                        perk,
+                        farmingLevel,
+                        farmingPerkPoints
+                )
+        ) {
+
+            return PERK_AVAILABLE_BORDER_COLOR;
+        }
+
+        return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private boolean isFarmingPerkAvailable(
+            SkillPerk perk,
+            int farmingLevel,
+            int farmingPerkPoints
+    ) {
+
+        return !isFarmingPerkUnlocked(perk)
+                && farmingLevel >= perk.getRequiredLevel()
+                && farmingPerkPoints > 0
+                && isFarmingParentUnlocked(perk);
+    }
+
+    private boolean isFarmingPerkUnlocked(
+            SkillPerk perk
+    ) {
+
+        return SkillManager.hasFarmingPerk(
+                minecraft.player.getUUID(),
+                perk.getId()
+        );
+    }
+
+    private boolean isFarmingParentUnlocked(
+            SkillPerk perk
+    ) {
+
+        if (perk.getParentId() == null) {
+
+            return true;
+        }
+
+        return SkillManager.hasFarmingPerk(
                 minecraft.player.getUUID(),
                 perk.getParentId()
         );

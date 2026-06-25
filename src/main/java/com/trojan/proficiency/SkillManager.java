@@ -1,5 +1,6 @@
 package com.trojan.proficiency;
 import com.trojan.proficiency.perk.MiningPerks;
+import com.trojan.proficiency.perk.FarmingPerks;
 import com.trojan.proficiency.perk.SkillPerk;
 import java.util.Set;
 import net.minecraft.network.chat.Component;
@@ -15,6 +16,7 @@ import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.player.PlayerData;
 import com.trojan.proficiency.save.PlayerDataStorage;
 import com.trojan.proficiency.skill.MiningSkill;
+import com.trojan.proficiency.skill.FarmingSkill;
 import com.trojan.proficiency.skill.WoodcuttingSkill;
 
 import java.util.HashMap;
@@ -628,6 +630,259 @@ public class SkillManager {
 
         data.setWoodcuttingCleanFloorEnabled(
                 !data.isWoodcuttingCleanFloorEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
+    // =========================
+    // FARMING
+    // =========================
+
+    public static boolean addFarmingXp(
+            ServerPlayer player,
+            int amount
+    ) {
+
+        UUID playerId =
+                player.getUUID();
+
+        amount =
+                applySkillXpMultiplier(
+                        playerId,
+                        amount
+                );
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        int currentXp =
+                data.getFarmingXp()
+                        + amount;
+
+        int currentLevel =
+                data.getFarmingLevel();
+
+        int xpRequired =
+                FarmingSkill.getXpRequired(
+                        currentLevel
+                );
+
+        boolean leveledUp = false;
+
+        if (currentXp >= xpRequired) {
+
+            currentXp = 0;
+            currentLevel++;
+
+            data.setFarmingLevel(
+                    currentLevel
+            );
+
+            data.setFarmingPerkPoints(
+                    data.getFarmingPerkPoints()
+                            + 1
+            );
+
+            announceAvailableFarmingPerks(
+                    player,
+                    currentLevel
+            );
+
+            leveledUp = true;
+        }
+
+        data.setFarmingXp(currentXp);
+        savePlayerData(playerId);
+
+        return leveledUp;
+    }
+
+    private static void announceAvailableFarmingPerks(
+            ServerPlayer player,
+            int level
+    ) {
+
+        for (SkillPerk perk
+                : FarmingPerks.ALL_PERKS) {
+
+            if (level == perk.getRequiredLevel()) {
+
+                player.sendSystemMessage(
+                        Component.literal(
+                                "\u00A7aNEW PERK AVAILABLE: "
+                                        + perk.getName()
+                        )
+                );
+
+                player.level().playSound(
+                        null,
+                        player.blockPosition(),
+                        SoundEvents.ENCHANTMENT_TABLE_USE,
+                        SoundSource.PLAYERS,
+                        0.5f,
+                        1.2f
+                );
+            }
+        }
+    }
+
+    public static int getFarmingXp(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .getFarmingXp();
+    }
+
+    public static int getFarmingLevel(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .getFarmingLevel();
+    }
+
+    public static int getFarmingXpRequired(
+            UUID playerId
+    ) {
+
+        return FarmingSkill.getXpRequired(
+                getFarmingLevel(playerId)
+        );
+    }
+
+    public static int getFarmingPerkPoints(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .getFarmingPerkPoints();
+    }
+
+    public static boolean unlockFarmingPerk(
+            UUID playerId,
+            String perkId,
+            int requiredLevel
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        if (
+                data.hasFarmingPerk(perkId)
+                        || data.getFarmingLevel()
+                        < requiredLevel
+                        || data.getFarmingPerkPoints()
+                        <= 0
+        ) {
+
+            return false;
+        }
+
+        data.unlockFarmingPerk(perkId);
+
+        data.setFarmingPerkPoints(
+                data.getFarmingPerkPoints()
+                        - 1
+        );
+
+        savePlayerData(playerId);
+        return true;
+    }
+
+    public static boolean hasFarmingPerk(
+            UUID playerId,
+            String perkId
+    ) {
+
+        return getPlayerData(playerId)
+                .hasFarmingPerk(perkId);
+    }
+
+    public static boolean isFarmingBonusHarvestsEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isFarmingBonusHarvestsEnabled();
+    }
+
+    public static void toggleFarmingBonusHarvests(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setFarmingBonusHarvestsEnabled(
+                !data.isFarmingBonusHarvestsEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
+    public static boolean isFarmingAnimalFollowEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isFarmingAnimalFollowEnabled();
+    }
+
+    public static void toggleFarmingAnimalFollow(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setFarmingAnimalFollowEnabled(
+                !data.isFarmingAnimalFollowEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
+    public static boolean isFarmingAutoReplantEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isFarmingAutoReplantEnabled();
+    }
+
+    public static void toggleFarmingAutoReplant(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setFarmingAutoReplantEnabled(
+                !data.isFarmingAutoReplantEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
+    public static boolean isFarmingBeeGrowthEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isFarmingBeeGrowthEnabled();
+    }
+
+    public static void toggleFarmingBeeGrowth(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setFarmingBeeGrowthEnabled(
+                !data.isFarmingBeeGrowthEnabled()
         );
 
         savePlayerData(playerId);

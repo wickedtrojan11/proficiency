@@ -3,7 +3,8 @@
 	"package": "com.trojan.proficiency.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"ExampleMixin",
+		"AnimalBreedingMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

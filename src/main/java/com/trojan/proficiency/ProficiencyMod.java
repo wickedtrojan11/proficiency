@@ -2,6 +2,7 @@ package com.trojan.proficiency;
 import com.trojan.proficiency.event.MiningEvents;
 import com.trojan.proficiency.event.WoodcuttingEvents;
 import com.trojan.proficiency.event.WellRestedEvents;
+import com.trojan.proficiency.event.FarmingEvents;
 import com.trojan.proficiency.perk.MiningPerkEffects;
 import com.trojan.proficiency.perk.WoodcuttingPerkEffects;
 import net.fabricmc.api.ModInitializer;
@@ -60,6 +61,7 @@ public class ProficiencyMod implements ModInitializer {
 		MiningEvents.register();
 		WoodcuttingEvents.register();
 		WellRestedEvents.register();
+		FarmingEvents.register();
 		MiningPerkEffects.register();
 		WoodcuttingPerkEffects.register();
 		MiningDurabilityEvents.register();

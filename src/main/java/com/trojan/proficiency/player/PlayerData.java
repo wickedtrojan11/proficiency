@@ -42,6 +42,27 @@ public class PlayerData {
 
     private Boolean woodcuttingCleanFloorEnabled = true;
 
+    // =========================
+    // FARMING
+    // =========================
+
+    private int farmingXp = 0;
+
+    private int farmingLevel = 1;
+
+    private int farmingPerkPoints = 0;
+
+    private Set<String> unlockedFarmingPerks =
+            new HashSet<>();
+
+    private Boolean farmingBonusHarvestsEnabled = true;
+
+    private Boolean farmingAnimalFollowEnabled = true;
+
+    private Boolean farmingAutoReplantEnabled = true;
+
+    private Boolean farmingBeeGrowthEnabled = true;
+
     private Set<String> selectedOreSense =
             new HashSet<>();
     public Set<String> getSelectedOreSense() {
@@ -229,5 +250,117 @@ public class PlayerData {
     ) {
 
         woodcuttingCleanFloorEnabled = enabled;
+    }
+
+    public int getFarmingXp() {
+
+        return farmingXp;
+    }
+
+    public void setFarmingXp(int farmingXp) {
+
+        this.farmingXp = farmingXp;
+    }
+
+    public int getFarmingLevel() {
+
+        return farmingLevel;
+    }
+
+    public void setFarmingLevel(int farmingLevel) {
+
+        this.farmingLevel = farmingLevel;
+    }
+
+    public int getFarmingPerkPoints() {
+
+        return farmingPerkPoints;
+    }
+
+    public void setFarmingPerkPoints(
+            int farmingPerkPoints
+    ) {
+
+        this.farmingPerkPoints =
+                farmingPerkPoints;
+    }
+
+    public Set<String> getUnlockedFarmingPerks() {
+
+        if (unlockedFarmingPerks == null) {
+
+            unlockedFarmingPerks =
+                    new HashSet<>();
+        }
+
+        return unlockedFarmingPerks;
+    }
+
+    public boolean hasFarmingPerk(
+            String perkId
+    ) {
+
+        return getUnlockedFarmingPerks()
+                .contains(perkId);
+    }
+
+    public void unlockFarmingPerk(
+            String perkId
+    ) {
+
+        getUnlockedFarmingPerks()
+                .add(perkId);
+    }
+
+    public boolean isFarmingBonusHarvestsEnabled() {
+
+        return farmingBonusHarvestsEnabled == null
+                || farmingBonusHarvestsEnabled;
+    }
+
+    public void setFarmingBonusHarvestsEnabled(
+            boolean enabled
+    ) {
+
+        farmingBonusHarvestsEnabled = enabled;
+    }
+
+    public boolean isFarmingAnimalFollowEnabled() {
+
+        return farmingAnimalFollowEnabled == null
+                || farmingAnimalFollowEnabled;
+    }
+
+    public void setFarmingAnimalFollowEnabled(
+            boolean enabled
+    ) {
+
+        farmingAnimalFollowEnabled = enabled;
+    }
+
+    public boolean isFarmingAutoReplantEnabled() {
+
+        return farmingAutoReplantEnabled == null
+                || farmingAutoReplantEnabled;
+    }
+
+    public void setFarmingAutoReplantEnabled(
+            boolean enabled
+    ) {
+
+        farmingAutoReplantEnabled = enabled;
+    }
+
+    public boolean isFarmingBeeGrowthEnabled() {
+
+        return farmingBeeGrowthEnabled == null
+                || farmingBeeGrowthEnabled;
+    }
+
+    public void setFarmingBeeGrowthEnabled(
+            boolean enabled
+    ) {
+
+        farmingBeeGrowthEnabled = enabled;
     }
 }

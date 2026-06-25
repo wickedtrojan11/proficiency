@@ -353,12 +353,22 @@ public class PlayerDataStorage {
                         : data.getUnlockedMiningPerks()
                                 .size();
 
+        int unlockedFarmingPerks =
+                data.getUnlockedFarmingPerks() == null
+                        ? 0
+                        : data.getUnlockedFarmingPerks()
+                                .size();
+
         return data.getMiningLevel() * 100000
                 + data.getMiningXp() * 100
                 + data.getMiningPerkPoints() * 1000
                 + unlockedPerks * 10000
                 + data.getWoodcuttingLevel() * 100
-                + data.getWoodcuttingXp();
+                + data.getWoodcuttingXp()
+                + data.getFarmingLevel() * 100
+                + data.getFarmingXp()
+                + data.getFarmingPerkPoints() * 1000
+                + unlockedFarmingPerks * 10000;
     }
 
     private static File getPlayerFile(
