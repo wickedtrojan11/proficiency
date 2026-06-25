@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CocoaBlock;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.BeehiveBlock;
 import net.minecraft.world.level.block.NetherWartBlock;
 import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -90,7 +91,8 @@ public final class CropGrowthOverlay {
 
         if (state.is(Blocks.SWEET_BERRY_BUSH)) {
 
-            return formatGrowth(
+            return "Gatherer's Eye: "
+                    + formatGrowth(
                     state.getValue(
                             SweetBerryBushBlock.AGE
                     ),
@@ -123,7 +125,25 @@ public final class CropGrowthOverlay {
                         || state.is(Blocks.RED_MUSHROOM)
         ) {
 
-            return "Growth: Mature";
+            return "Gatherer's Eye: Mushroom Ready";
+        }
+
+        if (
+                state.is(Blocks.BEEHIVE)
+                        || state.is(Blocks.BEE_NEST)
+        ) {
+
+            int honeyLevel = state.getValue(
+                    BeehiveBlock.HONEY_LEVEL
+            );
+
+            return honeyLevel
+                    >= BeehiveBlock.MAX_HONEY_LEVELS
+                    ? "Gatherer's Eye: Honey Ready"
+                    : "Gatherer's Eye: Honey "
+                    + honeyLevel
+                    + "/"
+                    + BeehiveBlock.MAX_HONEY_LEVELS;
         }
 
         return null;

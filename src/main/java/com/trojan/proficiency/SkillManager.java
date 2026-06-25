@@ -964,6 +964,28 @@ public class SkillManager {
         savePlayerData(playerId);
     }
 
+    public static boolean isFarmingAnimalDropsEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isFarmingAnimalDropsEnabled();
+    }
+
+    public static void toggleFarmingAnimalDrops(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setFarmingAnimalDropsEnabled(
+                !data.isFarmingAnimalDropsEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
     public static boolean isFarmingAutoReplantEnabled(
             UUID playerId
     ) {
@@ -1006,6 +1028,20 @@ public class SkillManager {
         );
 
         savePlayerData(playerId);
+    }
+
+    public static boolean isFarmingGatheringBonusDropsEnabled(
+            UUID playerId
+    ) {
+
+        return isFarmingBeeGrowthEnabled(playerId);
+    }
+
+    public static void toggleFarmingGatheringBonusDrops(
+            UUID playerId
+    ) {
+
+        toggleFarmingBeeGrowth(playerId);
     }
 
     public static Set<String> getSelectedOreSense(

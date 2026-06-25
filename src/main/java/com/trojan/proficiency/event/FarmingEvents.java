@@ -14,6 +14,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CocoaBlock;
+import net.minecraft.world.level.block.BeehiveBlock;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.NetherWartBlock;
 import net.minecraft.world.level.block.SweetBerryBushBlock;
@@ -21,6 +22,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,10 @@ public final class FarmingEvents {
     private static final List<PendingAutoReplant>
             PENDING_AUTO_REPLANTS =
             new ArrayList<>();
+
+    private static final Set<HarvestKey>
+            BOUNTIFUL_HARVESTS =
+            new HashSet<>();
 
     private static final Set<Item> PLANTING_ITEMS =
             Set.of(
@@ -134,12 +140,27 @@ public final class FarmingEvents {
                         harvestedState = state;
                     }
 
+                    HarvestKey harvestKey =
+                            new HarvestKey(
+                                    serverPlayer.getUUID(),
+                                    serverLevel,
+                                    pos
+                            );
+
+                    boolean automatedBountifulHarvest =
+                            BOUNTIFUL_HARVESTS.remove(
+                                    harvestKey
+                            );
+
                     if (isMatureCrop(harvestedState)) {
 
-                        SkillManager.addFarmingXp(
-                                serverPlayer,
-                                HARVEST_XP
-                        );
+                        if (!automatedBountifulHarvest) {
+
+                            SkillManager.addFarmingXp(
+                                    serverPlayer,
+                                    HARVEST_XP
+                            );
+                        }
 
                         applyBetterYields(
                                 serverPlayer,
@@ -153,11 +174,26 @@ public final class FarmingEvents {
                                 harvestedState
                         );
 
+                        if (!automatedBountifulHarvest) {
+
+                            applyBountifulHarvest(
+                                    serverPlayer,
+                                    serverLevel,
+                                    pos
+                            );
+                        }
+
                     } else if (isMushroom(harvestedState)) {
 
                         SkillManager.addFarmingXp(
                                 serverPlayer,
                                 GATHERING_XP
+                        );
+
+                        applyBonusMushroom(
+                                serverPlayer,
+                                pos,
+                                harvestedState
                         );
                     }
                 }
@@ -184,6 +220,13 @@ public final class FarmingEvents {
 
                     ItemStack heldItem =
                             player.getItemInHand(hand);
+
+                    applyHoneyGatherer(
+                            serverPlayer,
+                            clickedPos,
+                            clickedState,
+                            heldItem
+                    );
 
                     if (
                             clickedState.is(
@@ -281,6 +324,11 @@ public final class FarmingEvents {
                                 GATHERING_XP
                         );
 
+                        applyBonusBerries(
+                                player,
+                                pending.primaryPos()
+                        );
+
                     } else if (
                             !pending.harvest()
                                     && (
@@ -311,6 +359,148 @@ public final class FarmingEvents {
                 iterator.remove();
             }
         });
+    }
+
+    private static void applyBonusMushroom(
+            ServerPlayer player,
+            BlockPos pos,
+            BlockState harvestedState
+    ) {
+
+        if (
+                !SkillManager
+                .isFarmingGatheringBonusDropsEnabled(
+                        player.getUUID()
+                )
+                        || !SkillManager.hasFarmingPerk(
+                        player.getUUID(),
+                        "mushroom_expert"
+                )
+                        || player.getRandom().nextFloat()
+                        >= 0.20f
+        ) {
+            return;
+        }
+
+        Item item = harvestedState.is(Blocks.RED_MUSHROOM)
+                ? Items.RED_MUSHROOM
+                : Items.BROWN_MUSHROOM;
+
+        Block.popResource(
+                player.serverLevel(),
+                pos,
+                new ItemStack(item)
+        );
+    }
+
+    private static void applyBonusBerries(
+            ServerPlayer player,
+            BlockPos pos
+    ) {
+
+        if (
+                !SkillManager
+                .isFarmingGatheringBonusDropsEnabled(
+                        player.getUUID()
+                )
+                        || !SkillManager.hasFarmingPerk(
+                        player.getUUID(),
+                        "berry_harvester"
+                )
+                        || player.getRandom().nextFloat()
+                        >= 0.20f
+        ) {
+            return;
+        }
+
+        Block.popResource(
+                player.serverLevel(),
+                pos,
+                new ItemStack(
+                        Items.SWEET_BERRIES,
+                        1
+                )
+        );
+    }
+
+    private static void applyHoneyGatherer(
+            ServerPlayer player,
+            BlockPos pos,
+            BlockState state,
+            ItemStack heldItem
+    ) {
+
+        if (
+                !heldItem.is(Items.SHEARS)
+                        || !(
+                        state.is(Blocks.BEEHIVE)
+                                || state.is(Blocks.BEE_NEST)
+                )
+                        || state.getValue(
+                        BeehiveBlock.HONEY_LEVEL
+                ) < BeehiveBlock.MAX_HONEY_LEVELS
+                        || !SkillManager
+                        .isFarmingGatheringBonusDropsEnabled(
+                                player.getUUID()
+                        )
+                        || !SkillManager.hasFarmingPerk(
+                        player.getUUID(),
+                        "honey_gatherer"
+                )
+                        || player.getRandom().nextFloat()
+                        >= 0.15f
+        ) {
+            return;
+        }
+
+        Block.popResource(
+                player.serverLevel(),
+                pos,
+                new ItemStack(Items.HONEYCOMB)
+        );
+    }
+
+    private static void applyBountifulHarvest(
+            ServerPlayer player,
+            ServerLevel level,
+            BlockPos harvestedPos
+    ) {
+
+        if (
+                !SkillManager.hasFarmingPerk(
+                        player.getUUID(),
+                        "bountiful_harvest"
+                )
+        ) {
+            return;
+        }
+
+        for (BlockPos adjacentPos : List.of(
+                harvestedPos.north(),
+                harvestedPos.south(),
+                harvestedPos.east(),
+                harvestedPos.west()
+        )) {
+
+            if (!isMatureCrop(
+                    level.getBlockState(adjacentPos)
+            )) {
+                continue;
+            }
+
+            HarvestKey adjacentKey =
+                    new HarvestKey(
+                            player.getUUID(),
+                            level,
+                            adjacentPos
+                    );
+
+            BOUNTIFUL_HARVESTS.add(adjacentKey);
+
+            if (!player.gameMode.destroyBlock(adjacentPos)) {
+                BOUNTIFUL_HARVESTS.remove(adjacentKey);
+            }
+        }
     }
 
     private static void applyBetterYields(

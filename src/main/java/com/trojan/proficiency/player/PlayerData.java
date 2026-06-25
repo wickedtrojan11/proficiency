@@ -59,6 +59,8 @@ public class PlayerData {
 
     private Boolean farmingAnimalFollowEnabled = true;
 
+    private Boolean farmingAnimalDropsEnabled = true;
+
     private Boolean farmingAutoReplantEnabled = true;
 
     private Boolean farmingBeeGrowthEnabled = true;
@@ -336,6 +338,19 @@ public class PlayerData {
     ) {
 
         farmingAnimalFollowEnabled = enabled;
+    }
+
+    public boolean isFarmingAnimalDropsEnabled() {
+
+        return farmingAnimalDropsEnabled == null
+                || farmingAnimalDropsEnabled;
+    }
+
+    public void setFarmingAnimalDropsEnabled(
+            boolean enabled
+    ) {
+
+        farmingAnimalDropsEnabled = enabled;
     }
 
     public boolean isFarmingAutoReplantEnabled() {

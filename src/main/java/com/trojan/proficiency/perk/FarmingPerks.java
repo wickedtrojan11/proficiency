@@ -160,11 +160,60 @@ public class FarmingPerks {
                     "shepherds_touch"
             );
 
+    public static final SkillPerk HEALTHY_STOCK =
+            perk(
+                    "healthy_stock",
+                    "Healthy Stock",
+                    "Well-raised livestock provide a little more.",
+                    "Player-killed farm animals have a 10% chance to drop one extra meat.",
+                    15,
+                    250,
+                    250,
+                    "extra_wool"
+            );
+
+    public static final SkillPerk PRIME_CUTS =
+            perk(
+                    "prime_cuts",
+                    "Prime Cuts",
+                    "Careful husbandry produces better cuts.",
+                    "The extra meat chance improves to 18%.",
+                    22,
+                    250,
+                    215,
+                    "healthy_stock"
+            );
+
+    public static final SkillPerk EFFICIENT_RANCHER =
+            perk(
+                    "efficient_rancher",
+                    "Efficient Rancher",
+                    "You make use of every part of your livestock.",
+                    "Player kills sometimes produce an extra secondary animal drop.",
+                    30,
+                    250,
+                    170,
+                    "prime_cuts"
+            );
+
+    public static final SkillPerk BOUNTIFUL_HERDS =
+            perk(
+                    "bountiful_herds",
+                    "Bountiful Herds",
+                    "Generations of careful ranching show in every animal.",
+                    "Extra meat chance reaches 25% and secondary drop chance reaches 12%.",
+                    40,
+                    250,
+                    95,
+                    "efficient_rancher"
+            );
+
     public static final SkillPerk MUSHROOM_EXPERT =
             perk(
                     "mushroom_expert",
                     "Mushroom Expert",
                     "You recognize the best places for fungi to flourish.",
+                    "Nearby mushrooms spread faster and sometimes yield an extra mushroom.",
                     5,
                     315,
                     325,
@@ -176,6 +225,7 @@ public class FarmingPerks {
                     "berry_harvester",
                     "Berry Harvester",
                     "Not a single ripe berry escapes your eye.",
+                    "Sweet berry bushes grow faster and sometimes yield extra berries.",
                     12,
                     315,
                     265,
@@ -187,6 +237,7 @@ public class FarmingPerks {
                     "honey_gatherer",
                     "Honey Gatherer",
                     "You gather from the hive with a steady hand.",
+                    "Ready hives have a 15% chance to yield one extra honeycomb.",
                     25,
                     315,
                     205,
@@ -198,6 +249,7 @@ public class FarmingPerks {
                     "bountiful_harvest",
                     "Bountiful Harvest",
                     "The land offers its finest rewards to you.",
+                    "Harvesting a mature crop also harvests adjacent mature crops.",
                     40,
                     315,
                     95,
@@ -263,6 +315,10 @@ public class FarmingPerks {
                     HERD_INSTINCT,
                     SHEPHERDS_TOUCH,
                     SHEPHERDS_CALL,
+                    HEALTHY_STOCK,
+                    PRIME_CUTS,
+                    EFFICIENT_RANCHER,
+                    BOUNTIFUL_HERDS,
                     MUSHROOM_EXPERT,
                     BERRY_HARVESTER,
                     HONEY_GATHERER,

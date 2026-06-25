@@ -354,7 +354,12 @@ public class SkillScreen extends Screen {
                             );
 
                     case 3 ->
-                            SkillManager.toggleFarmingBeeGrowth(
+                            SkillManager.toggleFarmingGatheringBonusDrops(
+                                    playerId
+                            );
+
+                    case 4 ->
+                            SkillManager.toggleFarmingAnimalDrops(
                                     playerId
                             );
 
@@ -847,12 +852,22 @@ public class SkillScreen extends Screen {
 
             drawWoodcuttingFeatureToggle(
                     graphics,
-                    "Bee Growth",
-                    SkillManager.isFarmingBeeGrowthEnabled(
+                    "Gathering Drops",
+                    SkillManager.isFarmingGatheringBonusDropsEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
                             + WOODCUTTING_TOGGLE_ROW_STEP * 3
+            );
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Animal Drops",
+                    SkillManager.isFarmingAnimalDropsEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+                            + WOODCUTTING_TOGGLE_ROW_STEP * 4
             );
         }
 
@@ -2911,7 +2926,12 @@ public class SkillScreen extends Screen {
             return -1;
         }
 
-        for (int row = 0; row < 4; row++) {
+        int toggleRows =
+                selectedSkill == 2
+                        ? 5
+                        : 4;
+
+        for (int row = 0; row < toggleRows; row++) {
 
             int rowY =
                     WOODCUTTING_TOGGLE_START_Y

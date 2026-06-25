@@ -8,8 +8,10 @@
 		"AnimalBreedingMixin",
 		"CropGrowthMixin",
 		"EatBlockGoalMixin",
+		"MushroomGrowthMixin",
 		"NetherWartGrowthMixin",
-		"SheepShearingMixin"
+		"SheepShearingMixin",
+		"SweetBerryGrowthMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
