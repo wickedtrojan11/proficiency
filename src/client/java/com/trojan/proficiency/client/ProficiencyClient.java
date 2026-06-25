@@ -10,5 +10,6 @@ public class ProficiencyClient implements ClientModInitializer {
     public void onInitializeClient() {
 
         KeybindHandler.register();
+        CropGrowthOverlay.register();
     }
 }

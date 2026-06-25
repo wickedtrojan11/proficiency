@@ -9,6 +9,7 @@ public class FarmingPerks {
                     "cultivation_faster_growth",
                     "Faster Growth",
                     "Your crops respond to careful cultivation.",
+                    "Normal crops grow 10% faster.",
                     5,
                     125,
                     325,
@@ -20,6 +21,7 @@ public class FarmingPerks {
                     "better_yields",
                     "Better Yields",
                     "Healthy soil rewards a patient farmer.",
+                    "Mature crops have a 10% chance to drop one extra crop item.",
                     12,
                     125,
                     265,
@@ -31,6 +33,7 @@ public class FarmingPerks {
                     "auto_replant",
                     "Auto Replant",
                     "Every harvest leaves the next crop ready to begin.",
+                    "Mature crops are replanted when matching seeds are available.",
                     25,
                     125,
                     205,
@@ -42,6 +45,7 @@ public class FarmingPerks {
                     "greenhouse_genius",
                     "Greenhouse Genius",
                     "You can coax abundance from any patch of soil.",
+                    "Future greenhouse automation.",
                     40,
                     125,
                     95,
@@ -204,6 +208,7 @@ public class FarmingPerks {
             String id,
             String name,
             String description,
+            String effectText,
             int requiredLevel,
             int x,
             int y,
@@ -211,6 +216,28 @@ public class FarmingPerks {
     ) {
 
         return new SkillPerk(
+                id,
+                name,
+                description,
+                effectText,
+                requiredLevel,
+                x,
+                y,
+                parentId
+        );
+    }
+
+    private static SkillPerk perk(
+            String id,
+            String name,
+            String description,
+            int requiredLevel,
+            int x,
+            int y,
+            String parentId
+    ) {
+
+        return perk(
                 id,
                 name,
                 description,

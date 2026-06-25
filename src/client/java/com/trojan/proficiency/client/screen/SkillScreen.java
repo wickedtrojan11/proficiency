@@ -1802,7 +1802,11 @@ public class SkillScreen extends Screen {
 
             graphics.drawString(
                     font,
-                    "Growth Rate: +0%",
+                    "Growth Rate: +"
+                            + getFarmingGrowthRatePercent(
+                            minecraft.player.getUUID()
+                    )
+                            + "%",
                     MINING_STAT_X,
                     MINING_SPEED_STAT_Y,
                     0x55FF55
@@ -1810,7 +1814,11 @@ public class SkillScreen extends Screen {
 
             graphics.drawString(
                     font,
-                    "Yield Bonus: +0",
+                    "Yield Bonus: +"
+                            + getFarmingYieldBonusPercent(
+                            minecraft.player.getUUID()
+                    )
+                            + "%",
                     MINING_STAT_X,
                     FORTUNE_STAT_Y,
                     0x55FFFF
@@ -2371,6 +2379,30 @@ public class SkillScreen extends Screen {
         }
 
         return bonus;
+    }
+
+    private int getFarmingGrowthRatePercent(
+            UUID playerId
+    ) {
+
+        return SkillManager.hasFarmingPerk(
+                playerId,
+                "cultivation_faster_growth"
+        )
+                ? 10
+                : 0;
+    }
+
+    private int getFarmingYieldBonusPercent(
+            UUID playerId
+    ) {
+
+        return SkillManager.hasFarmingPerk(
+                playerId,
+                "better_yields"
+        )
+                ? 10
+                : 0;
     }
 
     private void showPerkUnlockToast(SkillPerk perk) {

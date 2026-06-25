@@ -12,6 +12,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CocoaBlock;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.NetherWartBlock;
@@ -69,6 +70,18 @@ public final class FarmingEvents {
                         SkillManager.addFarmingXp(
                                 serverPlayer,
                                 HARVEST_XP
+                        );
+
+                        applyBetterYields(
+                                serverPlayer,
+                                pos,
+                                state
+                        );
+
+                        applyAutoReplant(
+                                serverPlayer,
+                                pos,
+                                state
                         );
 
                     } else if (isMushroom(state)) {
@@ -225,6 +238,238 @@ public final class FarmingEvents {
                 iterator.remove();
             }
         });
+    }
+
+    private static void applyBetterYields(
+            ServerPlayer player,
+            BlockPos pos,
+            BlockState harvestedState
+    ) {
+
+        if (
+                !SkillManager.isFarmingBonusHarvestsEnabled(
+                        player.getUUID()
+                )
+                        || !SkillManager.hasFarmingPerk(
+                        player.getUUID(),
+                        "better_yields"
+                )
+                        || player.getRandom().nextFloat()
+                        >= 0.10f
+        ) {
+
+            return;
+        }
+
+        Item bonusItem =
+                getHarvestItem(
+                        harvestedState
+                );
+
+        if (bonusItem != null) {
+
+            Block.popResource(
+                    player.serverLevel(),
+                    pos,
+                    new ItemStack(bonusItem)
+            );
+        }
+    }
+
+    private static void applyAutoReplant(
+            ServerPlayer player,
+            BlockPos pos,
+            BlockState harvestedState
+    ) {
+
+        if (
+                !SkillManager.isFarmingAutoReplantEnabled(
+                        player.getUUID()
+                )
+                        || !SkillManager.hasFarmingPerk(
+                        player.getUUID(),
+                        "auto_replant"
+                )
+                        || !player.serverLevel()
+                        .getBlockState(pos)
+                        .isAir()
+        ) {
+
+            return;
+        }
+
+        Item seedItem =
+                getReplantItem(
+                        harvestedState
+                );
+
+        BlockState replantedState =
+                getReplantedState(
+                        harvestedState
+                );
+
+        if (
+                seedItem == null
+                        || replantedState == null
+        ) {
+
+            return;
+        }
+
+        int seedSlot =
+                findInventoryItem(
+                        player,
+                        seedItem
+                );
+
+        if (seedSlot < 0) {
+
+            return;
+        }
+
+        if (!player.isCreative()) {
+
+            player.getInventory()
+                    .getItem(seedSlot)
+                    .shrink(1);
+        }
+
+        player.serverLevel().setBlock(
+                pos,
+                replantedState,
+                3
+        );
+    }
+
+    private static int findInventoryItem(
+            ServerPlayer player,
+            Item item
+    ) {
+
+        for (
+                int slot = 0;
+                slot < player.getInventory()
+                        .getContainerSize();
+                slot++
+        ) {
+
+            if (
+                    player.getInventory()
+                            .getItem(slot)
+                            .is(item)
+            ) {
+
+                return slot;
+            }
+        }
+
+        return -1;
+    }
+
+    private static Item getHarvestItem(
+            BlockState state
+    ) {
+
+        if (state.is(Blocks.WHEAT)) {
+            return Items.WHEAT;
+        }
+
+        if (state.is(Blocks.BEETROOTS)) {
+            return Items.BEETROOT;
+        }
+
+        if (state.is(Blocks.CARROTS)) {
+            return Items.CARROT;
+        }
+
+        if (state.is(Blocks.POTATOES)) {
+            return Items.POTATO;
+        }
+
+        if (state.is(Blocks.NETHER_WART)) {
+            return Items.NETHER_WART;
+        }
+
+        if (state.is(Blocks.COCOA)) {
+            return Items.COCOA_BEANS;
+        }
+
+        if (state.is(Blocks.PUMPKIN)) {
+            return Items.PUMPKIN;
+        }
+
+        if (state.is(Blocks.MELON)) {
+            return Items.MELON_SLICE;
+        }
+
+        if (state.is(Blocks.TORCHFLOWER_CROP)) {
+            return Items.TORCHFLOWER;
+        }
+
+        return null;
+    }
+
+    private static Item getReplantItem(
+            BlockState state
+    ) {
+
+        if (state.is(Blocks.WHEAT)) {
+            return Items.WHEAT_SEEDS;
+        }
+
+        if (state.is(Blocks.BEETROOTS)) {
+            return Items.BEETROOT_SEEDS;
+        }
+
+        if (state.is(Blocks.CARROTS)) {
+            return Items.CARROT;
+        }
+
+        if (state.is(Blocks.POTATOES)) {
+            return Items.POTATO;
+        }
+
+        if (state.is(Blocks.NETHER_WART)) {
+            return Items.NETHER_WART;
+        }
+
+        if (state.is(Blocks.COCOA)) {
+            return Items.COCOA_BEANS;
+        }
+
+        if (state.is(Blocks.TORCHFLOWER_CROP)) {
+            return Items.TORCHFLOWER_SEEDS;
+        }
+
+        return null;
+    }
+
+    private static BlockState getReplantedState(
+            BlockState state
+    ) {
+
+        if (state.getBlock() instanceof CropBlock crop) {
+
+            return crop.getStateForAge(0);
+        }
+
+        if (state.is(Blocks.NETHER_WART)) {
+
+            return state.setValue(
+                    NetherWartBlock.AGE,
+                    0
+            );
+        }
+
+        if (state.is(Blocks.COCOA)) {
+
+            return state.setValue(
+                    CocoaBlock.AGE,
+                    0
+            );
+        }
+
+        return null;
     }
 
     private static void queueInteraction(
