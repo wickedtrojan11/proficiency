@@ -228,6 +228,9 @@ public class WoodcuttingPerkEffects {
                         player.getUUID(),
                         "clean_forest_floor"
                 )
+                        || !SkillManager.isWoodcuttingCleanFloorEnabled(
+                        player.getUUID()
+                )
         ) {
 
             return;

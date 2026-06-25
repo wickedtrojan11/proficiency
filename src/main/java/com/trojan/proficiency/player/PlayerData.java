@@ -34,6 +34,14 @@ public class PlayerData {
     private final Set<String> unlockedWoodcuttingPerks =
             new HashSet<>();
 
+    private Boolean woodcuttingLeafDecayEnabled = true;
+
+    private Boolean woodcuttingWholeTreeEnabled = true;
+
+    private Boolean woodcuttingBonusDropsEnabled = true;
+
+    private Boolean woodcuttingCleanFloorEnabled = true;
+
     private Set<String> selectedOreSense =
             new HashSet<>();
     public Set<String> getSelectedOreSense() {
@@ -169,5 +177,57 @@ public class PlayerData {
         unlockedWoodcuttingPerks.add(
                 perkId
         );
+    }
+
+    public boolean isWoodcuttingLeafDecayEnabled() {
+
+        return woodcuttingLeafDecayEnabled == null
+                || woodcuttingLeafDecayEnabled;
+    }
+
+    public void setWoodcuttingLeafDecayEnabled(
+            boolean enabled
+    ) {
+
+        woodcuttingLeafDecayEnabled = enabled;
+    }
+
+    public boolean isWoodcuttingWholeTreeEnabled() {
+
+        return woodcuttingWholeTreeEnabled == null
+                || woodcuttingWholeTreeEnabled;
+    }
+
+    public void setWoodcuttingWholeTreeEnabled(
+            boolean enabled
+    ) {
+
+        woodcuttingWholeTreeEnabled = enabled;
+    }
+
+    public boolean isWoodcuttingBonusDropsEnabled() {
+
+        return woodcuttingBonusDropsEnabled == null
+                || woodcuttingBonusDropsEnabled;
+    }
+
+    public void setWoodcuttingBonusDropsEnabled(
+            boolean enabled
+    ) {
+
+        woodcuttingBonusDropsEnabled = enabled;
+    }
+
+    public boolean isWoodcuttingCleanFloorEnabled() {
+
+        return woodcuttingCleanFloorEnabled == null
+                || woodcuttingCleanFloorEnabled;
+    }
+
+    public void setWoodcuttingCleanFloorEnabled(
+            boolean enabled
+    ) {
+
+        woodcuttingCleanFloorEnabled = enabled;
     }
 }

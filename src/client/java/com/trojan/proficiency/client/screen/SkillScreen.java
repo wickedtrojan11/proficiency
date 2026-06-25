@@ -56,6 +56,11 @@ public class SkillScreen extends Screen {
     private static final int ORE_ROW_HEIGHT = 10;
     private static final int ORE_ROW_STEP = 10;
     private static final int ORE_TIER_GAP = 2;
+    private static final int WOODCUTTING_TOGGLE_X = 50;
+    private static final int WOODCUTTING_TOGGLE_START_Y = 280;
+    private static final int WOODCUTTING_TOGGLE_WIDTH = 150;
+    private static final int WOODCUTTING_TOGGLE_HEIGHT = 12;
+    private static final int WOODCUTTING_TOGGLE_ROW_STEP = 22;
 
     private static final int SETTINGS_PANEL_X = 35;
     private static final int SETTINGS_PANEL_FILL_Y = 410;
@@ -248,6 +253,57 @@ public class SkillScreen extends Screen {
             selectedSkill = 1;
             return true;
         }
+
+        if (selectedSkill == 1) {
+
+            int toggleRow =
+                    getWoodcuttingToggleRow(
+                            mouseX,
+                            mouseY
+                    );
+
+            if (toggleRow >= 0) {
+
+                UUID playerId =
+                        minecraft.player.getUUID();
+
+                switch (toggleRow) {
+
+                    case 0 ->
+                            SkillManager.toggleWoodcuttingLeafDecay(
+                                    playerId
+                            );
+
+                    case 1 ->
+                            SkillManager.toggleWoodcuttingWholeTree(
+                                    playerId
+                            );
+
+                    case 2 ->
+                            SkillManager.toggleWoodcuttingBonusDrops(
+                                    playerId
+                            );
+
+                    case 3 ->
+                            SkillManager.toggleWoodcuttingCleanFloor(
+                                    playerId
+                            );
+
+                    default -> {
+                        return false;
+                    }
+                }
+
+                minecraft.player.playSound(
+                        net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                        1.0f,
+                        1.0f
+                );
+
+                return true;
+            }
+        }
+
         if (selectedSkill == 0) {
 
             for (SkillPerk perk
@@ -564,6 +620,52 @@ public class SkillScreen extends Screen {
                 ORE_TITLE_Y,
                 TITLE_COLOR
         );
+
+        if (selectedSkill == 1) {
+
+            UUID playerId =
+                    minecraft.player.getUUID();
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Leaf Decay",
+                    SkillManager.isWoodcuttingLeafDecayEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+            );
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Whole Tree",
+                    SkillManager.isWoodcuttingWholeTreeEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+                            + WOODCUTTING_TOGGLE_ROW_STEP
+            );
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Bonus Drops",
+                    SkillManager.isWoodcuttingBonusDropsEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+                            + WOODCUTTING_TOGGLE_ROW_STEP * 2
+            );
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Clean Floor",
+                    SkillManager.isWoodcuttingCleanFloorEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+                            + WOODCUTTING_TOGGLE_ROW_STEP * 3
+            );
+        }
+
         // =========================
 // SETTINGS PANEL
 // =========================
@@ -2211,6 +2313,65 @@ public class SkillScreen extends Screen {
                         : 0xAAAAAA
         );
     }
+
+    private int getWoodcuttingToggleRow(
+            double mouseX,
+            double mouseY
+    ) {
+
+        if (
+                mouseX < WOODCUTTING_TOGGLE_X
+                        || mouseX > WOODCUTTING_TOGGLE_X
+                        + WOODCUTTING_TOGGLE_WIDTH
+        ) {
+
+            return -1;
+        }
+
+        for (int row = 0; row < 4; row++) {
+
+            int rowY =
+                    WOODCUTTING_TOGGLE_START_Y
+                            + row
+                            * WOODCUTTING_TOGGLE_ROW_STEP;
+
+            if (
+                    mouseY >= rowY
+                            && mouseY <= rowY
+                            + WOODCUTTING_TOGGLE_HEIGHT
+            ) {
+
+                return row;
+            }
+        }
+
+        return -1;
+    }
+
+    private void drawWoodcuttingFeatureToggle(
+            GuiGraphics graphics,
+            String label,
+            boolean enabled,
+            int y
+    ) {
+
+        graphics.drawString(
+                font,
+                label
+                        + ": "
+                        + (
+                        enabled
+                                ? "ON"
+                                : "OFF"
+                ),
+                WOODCUTTING_TOGGLE_X,
+                y,
+                enabled
+                        ? 0x55FF55
+                        : 0xAA5555
+        );
+    }
+
     private void drawXpBar(
             GuiGraphics graphics,
             int x,

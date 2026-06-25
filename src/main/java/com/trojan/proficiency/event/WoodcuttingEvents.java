@@ -88,6 +88,11 @@ public class WoodcuttingEvents {
                     heldItem.getItem()
                             instanceof AxeItem;
 
+            boolean bonusDropsEnabled =
+                    SkillManager.isWoodcuttingBonusDropsEnabled(
+                            player.getUUID()
+                    );
+
             ServerPlayer serverPlayer = null;
 
             if (player instanceof ServerPlayer castPlayer) {
@@ -234,6 +239,7 @@ public class WoodcuttingEvents {
 
             if (
                     isLog
+                            && bonusDropsEnabled
                             && SkillManager.hasWoodcuttingPerk(
                                     player.getUUID(),
                                     "twigs_everywhere"
@@ -253,6 +259,7 @@ public class WoodcuttingEvents {
 
             if (
                     (isLog || isLeaves)
+                            && bonusDropsEnabled
                             && SkillManager.hasWoodcuttingPerk(
                                     player.getUUID(),
                                     "green_thumb"
@@ -272,6 +279,7 @@ public class WoodcuttingEvents {
 
             if (
                     (isLog || isLeaves)
+                            && bonusDropsEnabled
                             && isOakOrDarkOak(state)
                             && SkillManager.hasWoodcuttingPerk(
                                     player.getUUID(),
@@ -293,6 +301,7 @@ public class WoodcuttingEvents {
             if (
                     isLog
                             && holdingAxe
+                            && bonusDropsEnabled
                             && SkillManager.hasWoodcuttingPerk(
                                     player.getUUID(),
                                     "friction_fire"
@@ -348,6 +357,7 @@ public class WoodcuttingEvents {
 
             if (
                     isLog
+                            && bonusDropsEnabled
                             && SkillManager.hasWoodcuttingPerk(
                                     player.getUUID(),
                                     "natures_gift"
@@ -396,6 +406,9 @@ public class WoodcuttingEvents {
                     serverPlayer != null
                             && isLog
                             && holdingAxe
+                            && SkillManager.isWoodcuttingLeafDecayEnabled(
+                            player.getUUID()
+                    )
                             && state.is(
                             BlockTags.OVERWORLD_NATURAL_LOGS
                     )
@@ -424,6 +437,9 @@ public class WoodcuttingEvents {
                     serverPlayer != null
                             && isLog
                             && holdingAxe
+                            && SkillManager.isWoodcuttingWholeTreeEnabled(
+                            player.getUUID()
+                    )
                             && !ACTIVE_TREE_FELLING.contains(
                             player.getUUID()
                     )

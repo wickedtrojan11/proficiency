@@ -545,6 +545,94 @@ public class SkillManager {
                 );
     }
 
+    public static boolean isWoodcuttingLeafDecayEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isWoodcuttingLeafDecayEnabled();
+    }
+
+    public static void toggleWoodcuttingLeafDecay(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setWoodcuttingLeafDecayEnabled(
+                !data.isWoodcuttingLeafDecayEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
+    public static boolean isWoodcuttingWholeTreeEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isWoodcuttingWholeTreeEnabled();
+    }
+
+    public static void toggleWoodcuttingWholeTree(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setWoodcuttingWholeTreeEnabled(
+                !data.isWoodcuttingWholeTreeEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
+    public static boolean isWoodcuttingBonusDropsEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isWoodcuttingBonusDropsEnabled();
+    }
+
+    public static void toggleWoodcuttingBonusDrops(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setWoodcuttingBonusDropsEnabled(
+                !data.isWoodcuttingBonusDropsEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
+    public static boolean isWoodcuttingCleanFloorEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isWoodcuttingCleanFloorEnabled();
+    }
+
+    public static void toggleWoodcuttingCleanFloor(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setWoodcuttingCleanFloorEnabled(
+                !data.isWoodcuttingCleanFloorEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
     public static Set<String> getSelectedOreSense(
             UUID playerId
     ) {
