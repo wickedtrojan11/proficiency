@@ -684,6 +684,12 @@ public class SkillManager {
                             + 1
             );
 
+            announceFarmingLevelUp(
+                    player,
+                    currentLevel,
+                    data.getFarmingPerkPoints()
+            );
+
             announceAvailableFarmingPerks(
                     player,
                     currentLevel
@@ -696,6 +702,36 @@ public class SkillManager {
         savePlayerData(playerId);
 
         return leveledUp;
+    }
+
+    private static void announceFarmingLevelUp(
+            ServerPlayer player,
+            int level,
+            int perkPoints
+    ) {
+
+        player.sendSystemMessage(
+                Component.literal(
+                        "\u00A72Farming Level Up! \u2192 Level "
+                                + level
+                )
+        );
+
+        player.sendSystemMessage(
+                Component.literal(
+                        "\u00A7bPerk Point earned! Total: "
+                                + perkPoints
+                )
+        );
+
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.PLAYER_LEVELUP,
+                SoundSource.PLAYERS,
+                0.7f,
+                1.0f
+        );
     }
 
     private static void announceAvailableFarmingPerks(
@@ -842,6 +878,43 @@ public class SkillManager {
         ) {
 
             return 10;
+        }
+
+        return 0;
+    }
+
+    public static int getFarmingAnimalGrowthBonusPercent(
+            UUID playerId
+    ) {
+
+        if (
+                hasFarmingPerk(
+                        playerId,
+                        "shepherds_call"
+                )
+        ) {
+
+            return 75;
+        }
+
+        if (
+                hasFarmingPerk(
+                        playerId,
+                        "shepherds_touch"
+                )
+        ) {
+
+            return 50;
+        }
+
+        if (
+                hasFarmingPerk(
+                        playerId,
+                        "animal_faster_growth"
+                )
+        ) {
+
+            return 25;
         }
 
         return 0;

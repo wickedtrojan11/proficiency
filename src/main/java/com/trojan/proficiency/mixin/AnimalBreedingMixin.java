@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.animal.Animal;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -13,11 +14,38 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Animal.class)
 public abstract class AnimalBreedingMixin {
 
+    @Unique
+    private ServerPlayer proficiency$breeder;
+
     @Inject(
             method = "finalizeSpawnChildFromBreeding",
             at = @At("HEAD")
     )
-    private void proficiency$awardFarmingXp(
+    private void proficiency$captureBreeder(
+            ServerLevel level,
+            Animal partner,
+            AgeableMob child,
+            CallbackInfo callbackInfo
+    ) {
+
+        Animal animal =
+                (Animal) (Object) this;
+
+        proficiency$breeder =
+                animal.getLoveCause();
+
+        if (proficiency$breeder == null) {
+
+            proficiency$breeder =
+                    partner.getLoveCause();
+        }
+    }
+
+    @Inject(
+            method = "finalizeSpawnChildFromBreeding",
+            at = @At("TAIL")
+    )
+    private void proficiency$applyFarmingBreedingEffects(
             ServerLevel level,
             Animal partner,
             AgeableMob child,
@@ -28,12 +56,9 @@ public abstract class AnimalBreedingMixin {
                 (Animal) (Object) this;
 
         ServerPlayer breeder =
-                animal.getLoveCause();
+                proficiency$breeder;
 
-        if (breeder == null) {
-
-            breeder = partner.getLoveCause();
-        }
+        proficiency$breeder = null;
 
         if (breeder != null) {
 
@@ -41,6 +66,15 @@ public abstract class AnimalBreedingMixin {
                     breeder,
                     3
             );
+
+            if (SkillManager.hasFarmingPerk(
+                    breeder.getUUID(),
+                    "experienced_breeder"
+            )) {
+
+                animal.setAge(4500);
+                partner.setAge(4500);
+            }
         }
     }
 }

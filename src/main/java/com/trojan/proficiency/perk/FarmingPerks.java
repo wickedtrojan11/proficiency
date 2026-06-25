@@ -79,23 +79,49 @@ public class FarmingPerks {
     public static final SkillPerk ANIMAL_FASTER_GROWTH =
             perk(
                     "animal_faster_growth",
-                    "Faster Growth",
+                    "Animal Care",
                     "Young animals thrive under your care.",
+                    "Nearby baby animals grow 25% faster.",
                     5,
                     220,
                     325,
                     null
             );
 
+    public static final SkillPerk EXPERIENCED_BREEDER =
+            perk(
+                    "experienced_breeder",
+                    "Experienced Breeder",
+                    "You know how to keep breeding animals healthy and comfortable.",
+                    "Breeding cooldowns are reduced by 25%.",
+                    8,
+                    200,
+                    295,
+                    "animal_faster_growth"
+            );
+
     public static final SkillPerk EXTRA_WOOL =
             perk(
                     "extra_wool",
-                    "Extra Wool",
+                    "Expert Shearer",
                     "A well-kept flock grows a fuller coat.",
+                    "Shearing has a 10% chance to produce one extra wool.",
                     12,
                     220,
                     265,
-                    "animal_faster_growth"
+                    "experienced_breeder"
+            );
+
+    public static final SkillPerk HEALTHY_FLOCKS =
+            perk(
+                    "healthy_flocks",
+                    "Healthy Flocks",
+                    "Healthy sheep replace their coats more quickly.",
+                    "Nearby sheep regrow wool 25% faster.",
+                    20,
+                    200,
+                    235,
+                    "extra_wool"
             );
 
     public static final SkillPerk HERD_INSTINCT =
@@ -103,21 +129,35 @@ public class FarmingPerks {
                     "herd_instinct",
                     "Herd Instinct",
                     "Your animals move together with practiced ease.",
+                    "Nearby farm animals follow without requiring food.",
                     25,
                     220,
                     205,
-                    "extra_wool"
+                    "healthy_flocks"
+            );
+
+    public static final SkillPerk SHEPHERDS_TOUCH =
+            perk(
+                    "shepherds_touch",
+                    "Shepherd's Touch",
+                    "Your flock flourishes under an expert hand.",
+                    "Baby animals grow 50% faster and sheep regrow wool 50% faster in total.",
+                    30,
+                    200,
+                    175,
+                    "herd_instinct"
             );
 
     public static final SkillPerk SHEPHERDS_CALL =
             perk(
                     "shepherds_call",
                     "Shepherd's Call",
-                    "Every animal on the farm knows your voice.",
+                    "Your care helps every newborn thrive.",
+                    "Baby animals grow 75% faster in total.",
                     40,
                     220,
                     95,
-                    "herd_instinct"
+                    "shepherds_touch"
             );
 
     public static final SkillPerk MUSHROOM_EXPERT =
@@ -217,8 +257,11 @@ public class FarmingPerks {
                     RAPID_GROWTH,
                     GREENHOUSE_GENIUS,
                     ANIMAL_FASTER_GROWTH,
+                    EXPERIENCED_BREEDER,
                     EXTRA_WOOL,
+                    HEALTHY_FLOCKS,
                     HERD_INSTINCT,
+                    SHEPHERDS_TOUCH,
                     SHEPHERDS_CALL,
                     MUSHROOM_EXPERT,
                     BERRY_HARVESTER,

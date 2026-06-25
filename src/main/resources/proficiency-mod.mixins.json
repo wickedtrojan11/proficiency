@@ -4,9 +4,12 @@
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"ExampleMixin",
+		"AgeableMobAgeMixin",
 		"AnimalBreedingMixin",
 		"CropGrowthMixin",
-		"NetherWartGrowthMixin"
+		"EatBlockGoalMixin",
+		"NetherWartGrowthMixin",
+		"SheepShearingMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -11,5 +11,6 @@ public class ProficiencyClient implements ClientModInitializer {
 
         KeybindHandler.register();
         CropGrowthOverlay.register();
+        AnimalHusbandryOverlay.register();
     }
 }

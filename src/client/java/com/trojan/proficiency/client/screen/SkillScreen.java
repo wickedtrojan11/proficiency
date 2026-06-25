@@ -1826,7 +1826,11 @@ public class SkillScreen extends Screen {
 
             graphics.drawString(
                     font,
-                    "Animal Care: +0",
+                    "Animal Care: +"
+                            + getFarmingAnimalCarePercent(
+                            minecraft.player.getUUID()
+                    )
+                            + "%",
                     MINING_STAT_X,
                     DURABILITY_STAT_Y,
                     0xAAAAAA
@@ -2400,6 +2404,16 @@ public class SkillScreen extends Screen {
         )
                 ? 10
                 : 0;
+    }
+
+    private int getFarmingAnimalCarePercent(
+            UUID playerId
+    ) {
+
+        return SkillManager
+                .getFarmingAnimalGrowthBonusPercent(
+                        playerId
+                );
     }
 
     private void showPerkUnlockToast(SkillPerk perk) {
