@@ -139,8 +139,8 @@ public final class CropGrowthOverlay {
 
             return honeyLevel
                     >= BeehiveBlock.MAX_HONEY_LEVELS
-                    ? "Gatherer's Eye: Honey Ready"
-                    : "Gatherer's Eye: Honey "
+                    ? "Honey: Ready"
+                    : "Honey: "
                     + honeyLevel
                     + "/"
                     + BeehiveBlock.MAX_HONEY_LEVELS;

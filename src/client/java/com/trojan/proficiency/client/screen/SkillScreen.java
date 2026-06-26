@@ -363,6 +363,11 @@ public class SkillScreen extends Screen {
                                     playerId
                             );
 
+                    case 5 ->
+                            SkillManager.toggleFarmingBeekeeping(
+                                    playerId
+                            );
+
                     default -> {
                         return false;
                     }
@@ -868,6 +873,16 @@ public class SkillScreen extends Screen {
                     ),
                     WOODCUTTING_TOGGLE_START_Y
                             + WOODCUTTING_TOGGLE_ROW_STEP * 4
+            );
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    "Beekeeping",
+                    SkillManager.isFarmingBeekeepingEnabled(
+                            playerId
+                    ),
+                    WOODCUTTING_TOGGLE_START_Y
+                            + WOODCUTTING_TOGGLE_ROW_STEP * 5
             );
         }
 
@@ -2928,7 +2943,7 @@ public class SkillScreen extends Screen {
 
         int toggleRows =
                 selectedSkill == 2
-                        ? 5
+                        ? 6
                         : 4;
 
         for (int row = 0; row < toggleRows; row++) {

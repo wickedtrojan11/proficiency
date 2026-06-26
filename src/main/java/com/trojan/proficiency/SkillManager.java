@@ -1044,6 +1044,28 @@ public class SkillManager {
         toggleFarmingBeeGrowth(playerId);
     }
 
+    public static boolean isFarmingBeekeepingEnabled(
+            UUID playerId
+    ) {
+
+        return getPlayerData(playerId)
+                .isFarmingBeekeepingEnabled();
+    }
+
+    public static void toggleFarmingBeekeeping(
+            UUID playerId
+    ) {
+
+        PlayerData data =
+                getPlayerData(playerId);
+
+        data.setFarmingBeekeepingEnabled(
+                !data.isFarmingBeekeepingEnabled()
+        );
+
+        savePlayerData(playerId);
+    }
+
     public static Set<String> getSelectedOreSense(
             UUID playerId
     ) {
