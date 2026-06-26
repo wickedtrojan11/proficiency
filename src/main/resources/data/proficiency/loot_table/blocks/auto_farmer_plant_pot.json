@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "proficiency:auto_farmer_plant_pot"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "proficiency:blocks/auto_farmer_plant_pot"
+}

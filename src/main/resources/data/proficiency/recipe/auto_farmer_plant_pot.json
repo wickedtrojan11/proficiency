@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "H",
+    "P"
+  ],
+  "key": {
+    "H": {
+      "item": "minecraft:hopper"
+    },
+    "P": {
+      "item": "minecraft:flower_pot"
+    }
+  },
+  "result": {
+    "id": "proficiency:auto_farmer_plant_pot",
+    "count": 1
+  }
+}

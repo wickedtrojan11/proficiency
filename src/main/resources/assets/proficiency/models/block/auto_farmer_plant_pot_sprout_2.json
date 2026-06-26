@@ -1,0 +1,18 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "plant": "minecraft:block/wheat_stage2"
+  },
+  "elements": [
+    {
+      "from": [7, 4, 6.5],
+      "to": [9, 11, 9.5],
+      "faces": {
+        "north": { "uv": [6, 5, 10, 12], "texture": "#plant" },
+        "south": { "uv": [6, 5, 10, 12], "texture": "#plant" },
+        "east": { "uv": [6, 5, 10, 12], "texture": "#plant" },
+        "west": { "uv": [6, 5, 10, 12], "texture": "#plant" }
+      }
+    }
+  ]
+}

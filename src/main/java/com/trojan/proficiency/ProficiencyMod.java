@@ -1,4 +1,5 @@
 package com.trojan.proficiency;
+import com.trojan.proficiency.block.ModBlocks;
 import com.trojan.proficiency.event.MiningEvents;
 import com.trojan.proficiency.event.WoodcuttingEvents;
 import com.trojan.proficiency.event.WellRestedEvents;
@@ -6,6 +7,8 @@ import com.trojan.proficiency.event.FarmingEvents;
 import com.trojan.proficiency.event.FarmingAnimalEffects;
 import com.trojan.proficiency.event.FarmingAnimalDropEffects;
 import com.trojan.proficiency.event.FarmingBeekeepingEffects;
+import com.trojan.proficiency.event.FarmingUtilityEvents;
+import com.trojan.proficiency.menu.ModMenus;
 import com.trojan.proficiency.perk.MiningPerkEffects;
 import com.trojan.proficiency.perk.WoodcuttingPerkEffects;
 import net.fabricmc.api.ModInitializer;
@@ -27,6 +30,9 @@ public class ProficiencyMod implements ModInitializer {
 	public void onInitialize() {
 
 		LOGGER.info("Proficiency loaded!");
+
+		ModBlocks.register();
+		ModMenus.register();
 
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 
@@ -68,6 +74,7 @@ public class ProficiencyMod implements ModInitializer {
 		FarmingAnimalEffects.register();
 		FarmingAnimalDropEffects.register();
 		FarmingBeekeepingEffects.register();
+		FarmingUtilityEvents.register();
 		MiningPerkEffects.register();
 		WoodcuttingPerkEffects.register();
 		MiningDurabilityEvents.register();

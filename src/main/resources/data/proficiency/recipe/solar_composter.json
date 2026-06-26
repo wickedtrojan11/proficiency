@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "C",
+    "F"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:composter"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    }
+  },
+  "result": {
+    "id": "proficiency:solar_composter",
+    "count": 1
+  }
+}
