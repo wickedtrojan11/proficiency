@@ -187,6 +187,11 @@ public class AutoFarmerPlantPotBlockEntity extends BlockEntity {
                         && state.getValue(
                         AutoFarmerPlantPotBlock.STAGE
                 ) != stage
+                        || state.getBlock()
+                        instanceof AutoFarmerPlantPotBlock
+                        && state.getValue(
+                        AutoFarmerPlantPotBlock.CROP_TYPE
+                ) != getCropType()
         ) {
 
             level.setBlock(
@@ -194,10 +199,42 @@ public class AutoFarmerPlantPotBlockEntity extends BlockEntity {
                     state.setValue(
                             AutoFarmerPlantPotBlock.STAGE,
                             stage
+                    ).setValue(
+                            AutoFarmerPlantPotBlock.CROP_TYPE,
+                            getCropType()
                     ),
                     3
             );
         }
+    }
+
+    private int getCropType() {
+
+        if (cropItem == Items.CARROT) {
+            return 1;
+        }
+
+        if (cropItem == Items.POTATO) {
+            return 2;
+        }
+
+        if (cropItem == Items.BEETROOT_SEEDS) {
+            return 3;
+        }
+
+        if (cropItem == Items.NETHER_WART) {
+            return 4;
+        }
+
+        if (cropItem == Items.SWEET_BERRIES) {
+            return 5;
+        }
+
+        if (cropItem == Items.SUGAR_CANE) {
+            return 6;
+        }
+
+        return 0;
     }
 
     private int getVisualStage() {
@@ -387,6 +424,10 @@ public class AutoFarmerPlantPotBlockEntity extends BlockEntity {
 
         if (stack.is(Items.SWEET_BERRIES)) {
             return Items.SWEET_BERRIES;
+        }
+
+        if (stack.is(Items.SUGAR_CANE)) {
+            return Items.SUGAR_CANE;
         }
 
         return null;

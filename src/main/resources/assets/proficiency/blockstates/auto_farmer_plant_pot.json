@@ -6,36 +6,116 @@
       }
     },
     {
-      "when": {
-        "stage": "1"
-      },
-      "apply": {
-        "model": "proficiency:block/auto_farmer_plant_pot_sprout_1"
-      }
+      "when": { "stage": "1", "crop_type": "0" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sprout_1" }
     },
     {
-      "when": {
-        "stage": "2"
-      },
-      "apply": {
-        "model": "proficiency:block/auto_farmer_plant_pot_sprout_2"
-      }
+      "when": { "stage": "2", "crop_type": "0" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sprout_2" }
     },
     {
-      "when": {
-        "stage": "3"
-      },
-      "apply": {
-        "model": "proficiency:block/auto_farmer_plant_pot_sprout_3"
-      }
+      "when": { "stage": "3", "crop_type": "0" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sprout_3" }
     },
     {
-      "when": {
-        "stage": "4"
-      },
-      "apply": {
-        "model": "proficiency:block/auto_farmer_plant_pot_sprout_4"
-      }
+      "when": { "stage": "4", "crop_type": "0" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sprout_4" }
+    },
+    {
+      "when": { "stage": "1", "crop_type": "1" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_carrot_1" }
+    },
+    {
+      "when": { "stage": "2", "crop_type": "1" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_carrot_2" }
+    },
+    {
+      "when": { "stage": "3", "crop_type": "1" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_carrot_3" }
+    },
+    {
+      "when": { "stage": "4", "crop_type": "1" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_carrot_4" }
+    },
+    {
+      "when": { "stage": "1", "crop_type": "2" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_potato_1" }
+    },
+    {
+      "when": { "stage": "2", "crop_type": "2" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_potato_2" }
+    },
+    {
+      "when": { "stage": "3", "crop_type": "2" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_potato_3" }
+    },
+    {
+      "when": { "stage": "4", "crop_type": "2" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_potato_4" }
+    },
+    {
+      "when": { "stage": "1", "crop_type": "3" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_beetroot_1" }
+    },
+    {
+      "when": { "stage": "2", "crop_type": "3" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_beetroot_2" }
+    },
+    {
+      "when": { "stage": "3", "crop_type": "3" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_beetroot_3" }
+    },
+    {
+      "when": { "stage": "4", "crop_type": "3" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_beetroot_4" }
+    },
+    {
+      "when": { "stage": "1", "crop_type": "4" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_nether_wart_1" }
+    },
+    {
+      "when": { "stage": "2", "crop_type": "4" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_nether_wart_2" }
+    },
+    {
+      "when": { "stage": "3", "crop_type": "4" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_nether_wart_3" }
+    },
+    {
+      "when": { "stage": "4", "crop_type": "4" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_nether_wart_4" }
+    },
+    {
+      "when": { "stage": "1", "crop_type": "5" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sweet_berries_1" }
+    },
+    {
+      "when": { "stage": "2", "crop_type": "5" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sweet_berries_2" }
+    },
+    {
+      "when": { "stage": "3", "crop_type": "5" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sweet_berries_3" }
+    },
+    {
+      "when": { "stage": "4", "crop_type": "5" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sweet_berries_4" }
+    },
+    {
+      "when": { "stage": "1", "crop_type": "6" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sugar_cane_1" }
+    },
+    {
+      "when": { "stage": "2", "crop_type": "6" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sugar_cane_2" }
+    },
+    {
+      "when": { "stage": "3", "crop_type": "6" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sugar_cane_3" }
+    },
+    {
+      "when": { "stage": "4", "crop_type": "6" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sugar_cane_4" }
     }
   ]
 }

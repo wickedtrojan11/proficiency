@@ -31,6 +31,13 @@ public class AutoFarmerPlantPotBlock extends BaseEntityBlock {
                     4
             );
 
+    public static final IntegerProperty CROP_TYPE =
+            IntegerProperty.create(
+                    "crop_type",
+                    0,
+                    6
+            );
+
     private static final VoxelShape SHAPE =
             Block.box(
                     5.0,
@@ -51,6 +58,10 @@ public class AutoFarmerPlantPotBlock extends BaseEntityBlock {
                 stateDefinition.any()
                         .setValue(
                                 STAGE,
+                                0
+                        )
+                        .setValue(
+                                CROP_TYPE,
                                 0
                         )
         );
@@ -96,7 +107,10 @@ public class AutoFarmerPlantPotBlock extends BaseEntityBlock {
             StateDefinition.Builder<Block, BlockState> builder
     ) {
 
-        builder.add(STAGE);
+        builder.add(
+                STAGE,
+                CROP_TYPE
+        );
     }
 
     @Override

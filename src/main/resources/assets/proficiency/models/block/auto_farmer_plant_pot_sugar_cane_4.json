@@ -1,6 +1,6 @@
 {
   "parent": "proficiency:block/auto_farmer_plant_pot_crop_stage_4",
   "textures": {
-    "crop": "minecraft:block/wheat_stage7"
+    "crop": "minecraft:block/sugar_cane"
   }
 }
