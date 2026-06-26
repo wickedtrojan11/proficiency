@@ -68,7 +68,7 @@ public class FarmingPerks {
             perk(
                     "greenhouse_genius",
                     "Greenhouse Genius",
-                    "You can coax abundance from any patch of soil.",
+                    "Unlocks the Proficient Pot and Auto Composter for automated farming.",
                     "Normal crops grow 50% faster in total.",
                     40,
                     125,
