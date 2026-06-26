@@ -982,7 +982,13 @@ public class SkillScreen extends Screen {
         ResourceLocation woodcuttingBackground =
                 ResourceLocation.fromNamespaceAndPath(
                         "proficiency",
-                        "textures/gui/woodcutting_axe_stump_bg.png"
+                        "textures/gui/woodcutting_bg.png"
+                );
+
+        ResourceLocation farmingBackground =
+                ResourceLocation.fromNamespaceAndPath(
+                        "proficiency",
+                        "textures/gui/farming_bg.png"
                 );
 
         int miningXp =
@@ -1075,6 +1081,35 @@ public class SkillScreen extends Screen {
                     TREE_BACKGROUND_HEIGHT,
                     TREE_BACKGROUND_WIDTH,
                     TREE_BACKGROUND_HEIGHT
+            );
+        }
+
+        if (
+                selectedSkill == 2
+                        && backgroundEnabled
+                        && minecraft.getResourceManager()
+                                .getResource(farmingBackground)
+                                .isPresent()
+        ) {
+
+            graphics.blit(
+                    farmingBackground,
+                    TREE_X,
+                    TREE_Y,
+                    0,
+                    0,
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT,
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT
+            );
+
+            graphics.fill(
+                    TREE_X,
+                    TREE_Y,
+                    TREE_X + TREE_BACKGROUND_WIDTH,
+                    TREE_Y + TREE_BACKGROUND_HEIGHT,
+                    0x33000000
             );
         }
 
