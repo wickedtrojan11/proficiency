@@ -109,11 +109,17 @@ public class MiningPerkEffects {
                     );
                 }
 
-                if (!holdingPickaxe) {
+                if (
+                        !holdingPickaxe
+                                && SkillManager.getMiningStreak(
+                                player.getUUID()
+                        ) > 0
+                ) {
 
                     SkillManager.resetMiningStreak(
                             player.getUUID()
                     );
+                    SkillManager.sendSkillState(player);
                 }
             }
 

@@ -3,16 +3,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
-import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.client.ClientSkillState;
 import com.trojan.proficiency.skill.MiningSkill;
 import com.trojan.proficiency.perk.MiningPerks;
-import com.trojan.proficiency.perk.PerkUnlockResult;
 import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
 import com.trojan.proficiency.perk.FarmingPerks;
 import com.trojan.proficiency.skill.SkillType;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -291,22 +289,22 @@ public class SkillScreen extends Screen {
                 switch (toggleRow) {
 
                     case 0 ->
-                            SkillManager.toggleWoodcuttingLeafDecay(
+                            ClientSkillState.toggleWoodcuttingLeafDecay(
                                     playerId
                             );
 
                     case 1 ->
-                            SkillManager.toggleWoodcuttingWholeTree(
+                            ClientSkillState.toggleWoodcuttingWholeTree(
                                     playerId
                             );
 
                     case 2 ->
-                            SkillManager.toggleWoodcuttingBonusDrops(
+                            ClientSkillState.toggleWoodcuttingBonusDrops(
                                     playerId
                             );
 
                     case 3 ->
-                            SkillManager.toggleWoodcuttingCleanFloor(
+                            ClientSkillState.toggleWoodcuttingCleanFloor(
                                     playerId
                             );
 
@@ -341,32 +339,32 @@ public class SkillScreen extends Screen {
                 switch (toggleRow) {
 
                     case 0 ->
-                            SkillManager.toggleFarmingBonusHarvests(
+                            ClientSkillState.toggleFarmingBonusHarvests(
                                     playerId
                             );
 
                     case 1 ->
-                            SkillManager.toggleFarmingAnimalFollow(
+                            ClientSkillState.toggleFarmingAnimalFollow(
                                     playerId
                             );
 
                     case 2 ->
-                            SkillManager.toggleFarmingAutoReplant(
+                            ClientSkillState.toggleFarmingAutoReplant(
                                     playerId
                             );
 
                     case 3 ->
-                            SkillManager.toggleFarmingGatheringBonusDrops(
+                            ClientSkillState.toggleFarmingGatheringBonusDrops(
                                     playerId
                             );
 
                     case 4 ->
-                            SkillManager.toggleFarmingAnimalDrops(
+                            ClientSkillState.toggleFarmingAnimalDrops(
                                     playerId
                             );
 
                     case 5 ->
-                            SkillManager.toggleFarmingBeekeeping(
+                            ClientSkillState.toggleFarmingBeekeeping(
                                     playerId
                             );
 
@@ -405,34 +403,10 @@ public class SkillScreen extends Screen {
 
                 if (hovering) {
 
-                    PerkUnlockResult unlockResult =
-                            SkillManager.unlockPerk(
-                                    minecraft.player.getUUID(),
-                                    SkillType.MINING,
-                                    perk.getId()
-                            );
-
-                    if (unlockResult.success()) {
-
-                        showPerkUnlockToast(perk);
-
-                        minecraft.player.sendSystemMessage(
-                                Component.literal(
-                                        "§6Unlocked "
-                                                + perk.getName()
-                                                + "!"
-                                )
+                    ClientSkillState.requestPerkUnlock(
+                            SkillType.MINING,
+                            perk.getId()
                         );
-
-                    } else {
-
-                        minecraft.player.sendSystemMessage(
-                                Component.literal(
-                                        "§cCannot unlock "
-                                                + perk.getName()
-                                )
-                        );
-                    }
 
                     return true;
                 }
@@ -459,34 +433,10 @@ public class SkillScreen extends Screen {
 
                 if (hovering) {
 
-                    PerkUnlockResult unlockResult =
-                            SkillManager.unlockPerk(
-                                    minecraft.player.getUUID(),
-                                    SkillType.WOODCUTTING,
-                                    perk.getId()
-                            );
-
-                    if (unlockResult.success()) {
-
-                        showPerkUnlockToast(perk);
-
-                        minecraft.player.sendSystemMessage(
-                                Component.literal(
-                                        "§6Unlocked "
-                                                + perk.getName()
-                                                + "!"
-                                )
+                    ClientSkillState.requestPerkUnlock(
+                            SkillType.WOODCUTTING,
+                            perk.getId()
                         );
-
-                    } else {
-
-                        minecraft.player.sendSystemMessage(
-                                Component.literal(
-                                        "§cCannot unlock "
-                                                + perk.getName()
-                                )
-                        );
-                    }
 
                     return true;
                 }
@@ -514,33 +464,10 @@ public class SkillScreen extends Screen {
 
                 if (hovering) {
 
-                    PerkUnlockResult unlockResult =
-                            SkillManager.unlockPerk(
-                                    minecraft.player.getUUID(),
-                                    SkillType.FARMING,
-                                    perk.getId()
-                            );
-
-                    if (unlockResult.success()) {
-
-                        showPerkUnlockToast(perk);
-
-                        minecraft.player.sendSystemMessage(
-                                Component.literal(
-                                        "\u00A76Unlocked "
-                                                + perk.getName()
-                                                + "!"
-                                )
+                    ClientSkillState.requestPerkUnlock(
+                            SkillType.FARMING,
+                            perk.getId()
                         );
-                    } else {
-
-                        minecraft.player.sendSystemMessage(
-                                Component.literal(
-                                        "\u00A7c"
-                                                + unlockResult.message()
-                                )
-                        );
-                    }
 
                     return true;
                 }
@@ -568,7 +495,7 @@ public class SkillScreen extends Screen {
                      "copper",
                      "lapis" ->
 
-                        SkillManager.hasMiningPerk(
+                        ClientSkillState.hasMiningPerk(
                                 minecraft.player.getUUID(),
                                 "it_smells_2"
                         );
@@ -577,14 +504,14 @@ public class SkillScreen extends Screen {
                      "emerald",
                      "diamond" ->
 
-                        SkillManager.hasMiningPerk(
+                        ClientSkillState.hasMiningPerk(
                                 minecraft.player.getUUID(),
                                 "it_smells_3"
                         );
 
                 case "ancient_debris" ->
 
-                        SkillManager.hasMiningPerk(
+                        ClientSkillState.hasMiningPerk(
                                 minecraft.player.getUUID(),
                                 "it_smells_4"
                         );
@@ -603,7 +530,7 @@ public class SkillScreen extends Screen {
                             && mouseY <= oreY + ORE_ROW_HEIGHT
             ) {
 
-                SkillManager.toggleOreSense(
+                ClientSkillState.toggleOreSense(
                         minecraft.player.getUUID(),
                         ore
                 );
@@ -738,7 +665,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Leaf Decay",
-                    SkillManager.isWoodcuttingLeafDecayEnabled(
+                    ClientSkillState.isWoodcuttingLeafDecayEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -747,7 +674,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Whole Tree",
-                    SkillManager.isWoodcuttingWholeTreeEnabled(
+                    ClientSkillState.isWoodcuttingWholeTreeEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -757,7 +684,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Bonus Drops",
-                    SkillManager.isWoodcuttingBonusDropsEnabled(
+                    ClientSkillState.isWoodcuttingBonusDropsEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -767,7 +694,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Clean Floor",
-                    SkillManager.isWoodcuttingCleanFloorEnabled(
+                    ClientSkillState.isWoodcuttingCleanFloorEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -783,7 +710,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Bonus Harvests",
-                    SkillManager.isFarmingBonusHarvestsEnabled(
+                    ClientSkillState.isFarmingBonusHarvestsEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -792,7 +719,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Animal Follow",
-                    SkillManager.isFarmingAnimalFollowEnabled(
+                    ClientSkillState.isFarmingAnimalFollowEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -802,7 +729,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Auto Replant",
-                    SkillManager.isFarmingAutoReplantEnabled(
+                    ClientSkillState.isFarmingAutoReplantEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -812,7 +739,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Gathering Drops",
-                    SkillManager.isFarmingGatheringBonusDropsEnabled(
+                    ClientSkillState.isFarmingGatheringBonusDropsEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -822,7 +749,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Animal Drops",
-                    SkillManager.isFarmingAnimalDropsEnabled(
+                    ClientSkillState.isFarmingAnimalDropsEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -832,7 +759,7 @@ public class SkillScreen extends Screen {
             drawWoodcuttingFeatureToggle(
                     graphics,
                     "Beekeeping",
-                    SkillManager.isFarmingBeekeepingEnabled(
+                    ClientSkillState.isFarmingBeekeepingEnabled(
                             playerId
                     ),
                     WOODCUTTING_TOGGLE_START_Y
@@ -888,7 +815,7 @@ public class SkillScreen extends Screen {
         );
 
         int miningLevel =
-                SkillManager.getMiningLevel(
+                ClientSkillState.getMiningLevel(
                         minecraft.player.getUUID()
                 );
         ResourceLocation background;
@@ -946,57 +873,57 @@ public class SkillScreen extends Screen {
                 );
 
         int miningXp =
-                SkillManager.getMiningXp(
+                ClientSkillState.getMiningXp(
                         minecraft.player.getUUID()
                 );
 
         int miningXpRequired =
-                SkillManager.getMiningXpRequired(
+                ClientSkillState.getMiningXpRequired(
                         minecraft.player.getUUID()
                 );
 
         int miningPerkPoints =
-                SkillManager.getMiningPerkPoints(
+                ClientSkillState.getMiningPerkPoints(
                         minecraft.player.getUUID()
                 );
 
         int woodcuttingLevel =
-                SkillManager.getWoodcuttingLevel(
+                ClientSkillState.getWoodcuttingLevel(
                         minecraft.player.getUUID()
                 );
 
         int woodcuttingXp =
-                SkillManager.getWoodcuttingXp(
+                ClientSkillState.getWoodcuttingXp(
                         minecraft.player.getUUID()
                 );
 
         int woodcuttingXpRequired =
-                SkillManager.getWoodcuttingXpRequired(
+                ClientSkillState.getWoodcuttingXpRequired(
                         minecraft.player.getUUID()
                 );
 
         int woodcuttingPerkPoints =
-                SkillManager.getWoodcuttingPerkPoints(
+                ClientSkillState.getWoodcuttingPerkPoints(
                         minecraft.player.getUUID()
                 );
 
         int farmingLevel =
-                SkillManager.getFarmingLevel(
+                ClientSkillState.getFarmingLevel(
                         minecraft.player.getUUID()
                 );
 
         int farmingXp =
-                SkillManager.getFarmingXp(
+                ClientSkillState.getFarmingXp(
                         minecraft.player.getUUID()
                 );
 
         int farmingXpRequired =
-                SkillManager.getFarmingXpRequired(
+                ClientSkillState.getFarmingXpRequired(
                         minecraft.player.getUUID()
                 );
 
         int farmingPerkPoints =
-                SkillManager.getFarmingPerkPoints(
+                ClientSkillState.getFarmingPerkPoints(
                         minecraft.player.getUUID()
                 );
         if (
@@ -1324,7 +1251,7 @@ public class SkillScreen extends Screen {
                     }
                 }
             Set<String> selectedOres =
-                    SkillManager.getSelectedOreSense(
+                    ClientSkillState.getSelectedOreSense(
                             minecraft.player.getUUID()
                     );
 
@@ -1366,7 +1293,7 @@ public class SkillScreen extends Screen {
 // =========================
 
             if (
-                    SkillManager.hasMiningPerk(
+                    ClientSkillState.hasMiningPerk(
                             minecraft.player.getUUID(),
                             "it_smells_2"
                     )
@@ -1402,7 +1329,7 @@ public class SkillScreen extends Screen {
 // =========================
 
             if (
-                    SkillManager.hasMiningPerk(
+                    ClientSkillState.hasMiningPerk(
                             minecraft.player.getUUID(),
                             "it_smells_3"
                     )
@@ -1438,7 +1365,7 @@ public class SkillScreen extends Screen {
 // =========================
 
             if (
-                    SkillManager.hasMiningPerk(
+                    ClientSkillState.hasMiningPerk(
                             minecraft.player.getUUID(),
                             "it_smells_4"
                     )
@@ -1969,7 +1896,7 @@ public class SkillScreen extends Screen {
         int hasteLevel = 0;
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "stonecutter"
                 )
@@ -1979,14 +1906,14 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "miners_momentum"
                 )
         ) {
 
             int streak =
-                    SkillManager.getMiningStreak(
+                    ClientSkillState.getMiningStreak(
                             playerId
                     );
 
@@ -2022,7 +1949,7 @@ public class SkillScreen extends Screen {
     private int getMiningFortuneBonus(UUID playerId) {
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "no_ore_escapes"
                 )
@@ -2037,7 +1964,7 @@ public class SkillScreen extends Screen {
     private int getMiningDurabilityBonusPercent(UUID playerId) {
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "nearly_indestructible"
                 )
@@ -2047,7 +1974,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "tempered_tools"
                 )
@@ -2057,7 +1984,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "reinforced_grip"
                 )
@@ -2067,7 +1994,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "better_handling"
                 )
@@ -2082,7 +2009,7 @@ public class SkillScreen extends Screen {
     private int getOreSenseTier(UUID playerId) {
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "it_smells_4"
                 )
@@ -2092,7 +2019,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "it_smells_3"
                 )
@@ -2102,7 +2029,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "it_smells_2"
                 )
@@ -2112,7 +2039,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasMiningPerk(
+                ClientSkillState.hasMiningPerk(
                         playerId,
                         "they_have_a_scent"
                 )
@@ -2126,7 +2053,7 @@ public class SkillScreen extends Screen {
 
     private boolean hasCaveVision(UUID playerId) {
 
-        return SkillManager.hasMiningPerk(
+        return ClientSkillState.hasMiningPerk(
                 playerId,
                 "deep_delver"
         );
@@ -2135,7 +2062,7 @@ public class SkillScreen extends Screen {
     private int getWoodcuttingChopSpeedBonusPercent(UUID playerId) {
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "rhythm_of_the_forest"
                 )
@@ -2145,7 +2072,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "felling_momentum"
                 )
@@ -2155,7 +2082,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "clean_swing"
                 )
@@ -2165,7 +2092,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "lumberjacks_stance"
                 )
@@ -2175,7 +2102,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "timber_training"
                 )
@@ -2192,7 +2119,7 @@ public class SkillScreen extends Screen {
         int bonus = 0;
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "twigs_everywhere"
                 )
@@ -2202,7 +2129,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "green_thumb"
                 )
@@ -2212,7 +2139,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "apple_picker"
                 )
@@ -2222,7 +2149,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "natures_gift"
                 )
@@ -2232,7 +2159,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "fast_decay"
                 )
@@ -2242,7 +2169,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "autumn_winds"
                 )
@@ -2252,7 +2179,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "clean_forest_floor"
                 )
@@ -2267,7 +2194,7 @@ public class SkillScreen extends Screen {
     private int getWoodcuttingDurabilityBonusPercent(UUID playerId) {
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "veteran_woodsman"
                 )
@@ -2277,7 +2204,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "seasoned_haft"
                 )
@@ -2287,7 +2214,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "callused_hands"
                 )
@@ -2297,7 +2224,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "reinforced_haft"
                 )
@@ -2307,7 +2234,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "proper_grip"
                 )
@@ -2322,7 +2249,7 @@ public class SkillScreen extends Screen {
     private int getWoodcuttingBonusDropsTier(UUID playerId) {
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "natures_gift"
                 )
@@ -2332,7 +2259,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "apple_picker"
                 )
@@ -2342,7 +2269,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "green_thumb"
                 )
@@ -2352,7 +2279,7 @@ public class SkillScreen extends Screen {
         }
 
         if (
-                SkillManager.hasWoodcuttingPerk(
+                ClientSkillState.hasWoodcuttingPerk(
                         playerId,
                         "twigs_everywhere"
                 )
@@ -2382,7 +2309,7 @@ public class SkillScreen extends Screen {
         for (String perkId : combatPerks) {
 
             if (
-                    SkillManager.hasWoodcuttingPerk(
+                    ClientSkillState.hasWoodcuttingPerk(
                             playerId,
                             perkId
                     )
@@ -2399,7 +2326,7 @@ public class SkillScreen extends Screen {
             UUID playerId
     ) {
 
-        return SkillManager.getFarmingGrowthBonusPercent(
+        return ClientSkillState.getFarmingGrowthBonusPercent(
                 playerId
         );
     }
@@ -2408,7 +2335,7 @@ public class SkillScreen extends Screen {
             UUID playerId
     ) {
 
-        return SkillManager.hasFarmingPerk(
+        return ClientSkillState.hasFarmingPerk(
                 playerId,
                 "better_yields"
         )
@@ -2420,24 +2347,10 @@ public class SkillScreen extends Screen {
             UUID playerId
     ) {
 
-        return SkillManager
+        return ClientSkillState
                 .getFarmingAnimalGrowthBonusPercent(
                         playerId
                 );
-    }
-
-    private void showPerkUnlockToast(SkillPerk perk) {
-
-        SystemToast.add(
-                minecraft.getToasts(),
-                SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                Component.literal("NEW PERK UNLOCKED!"),
-                Component.literal(
-                        perk.getName()
-                                + ": "
-                                + perk.getDescription()
-                )
-        );
     }
 
     private int getConnectionColor(
@@ -2529,7 +2442,7 @@ public class SkillScreen extends Screen {
 
     private boolean isPerkUnlocked(SkillPerk perk) {
 
-        return SkillManager.hasMiningPerk(
+        return ClientSkillState.hasMiningPerk(
                 minecraft.player.getUUID(),
                 perk.getId()
         );
@@ -2542,7 +2455,7 @@ public class SkillScreen extends Screen {
             return true;
         }
 
-        return SkillManager.hasMiningPerk(
+        return ClientSkillState.hasMiningPerk(
                 minecraft.player.getUUID(),
                 perk.getParentId()
         );
@@ -2734,7 +2647,7 @@ public class SkillScreen extends Screen {
 
     private boolean isWoodcuttingPerkUnlocked(SkillPerk perk) {
 
-        return SkillManager.hasWoodcuttingPerk(
+        return ClientSkillState.hasWoodcuttingPerk(
                 minecraft.player.getUUID(),
                 perk.getId()
         );
@@ -2747,7 +2660,7 @@ public class SkillScreen extends Screen {
             return true;
         }
 
-        return SkillManager.hasWoodcuttingPerk(
+        return ClientSkillState.hasWoodcuttingPerk(
                 minecraft.player.getUUID(),
                 perk.getParentId()
         );
@@ -2844,7 +2757,7 @@ public class SkillScreen extends Screen {
             SkillPerk perk
     ) {
 
-        return SkillManager.hasFarmingPerk(
+        return ClientSkillState.hasFarmingPerk(
                 minecraft.player.getUUID(),
                 perk.getId()
         );
@@ -2859,7 +2772,7 @@ public class SkillScreen extends Screen {
             return true;
         }
 
-        return SkillManager.hasFarmingPerk(
+        return ClientSkillState.hasFarmingPerk(
                 minecraft.player.getUUID(),
                 perk.getParentId()
         );
@@ -2872,7 +2785,7 @@ public class SkillScreen extends Screen {
     ) {
 
         Set<String> selectedOres =
-                SkillManager.getSelectedOreSense(
+                ClientSkillState.getSelectedOreSense(
                         minecraft.player.getUUID()
                 );
 

@@ -21,6 +21,10 @@ import org.slf4j.LoggerFactory;
 import com.trojan.proficiency.perk.OreSenseEffects;
 import com.trojan.proficiency.network.XpGainPayload;
 import com.trojan.proficiency.network.WellRestedPayload;
+import com.trojan.proficiency.network.SkillStatePayload;
+import com.trojan.proficiency.network.PerkUnlockRequestPayload;
+import com.trojan.proficiency.network.ToggleChangeRequestPayload;
+import com.trojan.proficiency.network.SkillNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 public class ProficiencyMod implements ModInitializer {
 
@@ -42,6 +46,19 @@ public class ProficiencyMod implements ModInitializer {
 				WellRestedPayload.TYPE,
 				WellRestedPayload.STREAM_CODEC
 		);
+		PayloadTypeRegistry.playS2C().register(
+				SkillStatePayload.TYPE,
+				SkillStatePayload.STREAM_CODEC
+		);
+		PayloadTypeRegistry.playC2S().register(
+				PerkUnlockRequestPayload.TYPE,
+				PerkUnlockRequestPayload.STREAM_CODEC
+		);
+		PayloadTypeRegistry.playC2S().register(
+				ToggleChangeRequestPayload.TYPE,
+				ToggleChangeRequestPayload.STREAM_CODEC
+		);
+		SkillNetworking.registerServerHandlers();
 
 		ModBlocks.register();
 		ModMenus.register();
@@ -62,11 +79,12 @@ public class ProficiencyMod implements ModInitializer {
 				SkillManager.clearPlayerDataCache()
 		);
 
-		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-				SkillManager.loadPlayerData(
-						handler.player.getUUID()
-				)
-		);
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			SkillManager.loadPlayerData(
+					handler.player.getUUID()
+			);
+			SkillManager.sendSkillState(handler.player);
+		});
 
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
 

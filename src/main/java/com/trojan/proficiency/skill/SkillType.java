@@ -1,17 +1,35 @@
 package com.trojan.proficiency.skill;
 
 public enum SkillType {
-    MINING("Mining"),
-    WOODCUTTING("Woodcutting"),
-    FARMING("Farming");
+    MINING("mining", "Mining"),
+    WOODCUTTING("woodcutting", "Woodcutting"),
+    FARMING("farming", "Farming");
 
+    private final String id;
     private final String displayName;
 
-    SkillType(String displayName) {
+    SkillType(String id, String displayName) {
+        this.id = id;
         this.displayName = displayName;
+    }
+
+    public String getId() {
+        return id;
     }
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public static SkillType fromId(String id) {
+
+        for (SkillType skillType : values()) {
+
+            if (skillType.id.equals(id)) {
+                return skillType;
+            }
+        }
+
+        return null;
     }
 }

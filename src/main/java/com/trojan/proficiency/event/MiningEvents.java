@@ -107,11 +107,11 @@ public class MiningEvents {
                 ServerPlayer serverPlayer =
                         (ServerPlayer) player;
 
-                boolean leveledUp =
-                        SkillManager.addMiningXp(serverPlayer, 1);
                 SkillManager.increaseMiningStreak(
                         player.getUUID()
                 );
+                boolean leveledUp =
+                        SkillManager.addMiningXp(serverPlayer, 1);
             int streak =
                     SkillManager.getMiningStreak(
                             player.getUUID()

@@ -23,9 +23,11 @@ import com.trojan.proficiency.skill.WoodcuttingSkill;
 import com.trojan.proficiency.skill.SkillType;
 import com.trojan.proficiency.network.XpGainPayload;
 import com.trojan.proficiency.network.WellRestedPayload;
+import com.trojan.proficiency.network.SkillStatePayload;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.UUID;
 import java.util.HashMap;
 import net.minecraft.sounds.SoundEvents;
@@ -41,6 +43,18 @@ public class SkillManager {
     private static final int WELL_RESTED_DURATION_TICKS =
             10 * 60 * 20;
     private static final int WELL_RESTED_XP_MULTIPLIER = 2;
+    private static final Set<String> ORE_TOGGLE_IDS =
+            Set.of(
+                    "coal",
+                    "redstone",
+                    "iron",
+                    "copper",
+                    "lapis",
+                    "gold",
+                    "emerald",
+                    "diamond",
+                    "ancient_debris"
+            );
 
     public static void clearPlayerDataCache() {
 
@@ -131,6 +145,187 @@ public class SkillManager {
         }
 
         return playerDataMap.get(playerId);
+    }
+
+    public static void sendSkillState(
+            ServerPlayer player
+    ) {
+
+        PlayerData data = getPlayerData(player.getUUID());
+        Map<String, Boolean> miningToggles = new HashMap<>();
+
+        for (String oreId : ORE_TOGGLE_IDS) {
+
+            miningToggles.put(
+                    oreId,
+                    data.getSelectedOreSense().contains(oreId)
+            );
+        }
+
+        SkillStatePayload.send(
+                player,
+                new SkillStatePayload(
+                        new SkillStatePayload.SkillState(
+                                data.getMiningLevel(),
+                                data.getMiningXp(),
+                                MiningSkill.getXpRequired(
+                                        data.getMiningLevel()
+                                ),
+                                data.getMiningPerkPoints(),
+                                data.getUnlockedMiningPerks(),
+                                miningToggles
+                        ),
+                        new SkillStatePayload.SkillState(
+                                data.getWoodcuttingLevel(),
+                                data.getWoodcuttingXp(),
+                                WoodcuttingSkill.getXpRequired(
+                                        data.getWoodcuttingLevel()
+                                ),
+                                data.getWoodcuttingPerkPoints(),
+                                data.getUnlockedWoodcuttingPerks(),
+                                Map.of(
+                                        "leaf_decay",
+                                        data.isWoodcuttingLeafDecayEnabled(),
+                                        "whole_tree",
+                                        data.isWoodcuttingWholeTreeEnabled(),
+                                        "bonus_drops",
+                                        data.isWoodcuttingBonusDropsEnabled(),
+                                        "clean_floor",
+                                        data.isWoodcuttingCleanFloorEnabled()
+                                )
+                        ),
+                        new SkillStatePayload.SkillState(
+                                data.getFarmingLevel(),
+                                data.getFarmingXp(),
+                                FarmingSkill.getXpRequired(
+                                        data.getFarmingLevel()
+                                ),
+                                data.getFarmingPerkPoints(),
+                                data.getUnlockedFarmingPerks(),
+                                Map.of(
+                                        "bonus_harvests",
+                                        data.isFarmingBonusHarvestsEnabled(),
+                                        "animal_follow",
+                                        data.isFarmingAnimalFollowEnabled(),
+                                        "animal_drops",
+                                        data.isFarmingAnimalDropsEnabled(),
+                                        "auto_replant",
+                                        data.isFarmingAutoReplantEnabled(),
+                                        "bee_growth",
+                                        data.isFarmingBeeGrowthEnabled(),
+                                        "gathering_bonus_drops",
+                                        data.isFarmingBeeGrowthEnabled(),
+                                        "beekeeping",
+                                        data.isFarmingBeekeepingEnabled()
+                                )
+                        ),
+                        getMiningStreak(player.getUUID())
+                )
+        );
+    }
+
+    public static boolean setToggle(
+            UUID playerId,
+            SkillType skillType,
+            String toggleId,
+            boolean desiredState
+    ) {
+
+        PlayerData data = getPlayerData(playerId);
+        boolean valid = switch (skillType) {
+            case MINING -> setMiningToggle(
+                    data,
+                    toggleId,
+                    desiredState
+            );
+            case WOODCUTTING -> setWoodcuttingToggle(
+                    data,
+                    toggleId,
+                    desiredState
+            );
+            case FARMING -> setFarmingToggle(
+                    data,
+                    toggleId,
+                    desiredState
+            );
+        };
+
+        if (valid) {
+            savePlayerData(playerId);
+        }
+
+        return valid;
+    }
+
+    private static boolean setMiningToggle(
+            PlayerData data,
+            String toggleId,
+            boolean desiredState
+    ) {
+
+        if (!ORE_TOGGLE_IDS.contains(toggleId)) {
+            return false;
+        }
+
+        if (desiredState) {
+            data.getSelectedOreSense().add(toggleId);
+        } else {
+            data.getSelectedOreSense().remove(toggleId);
+        }
+
+        return true;
+    }
+
+    private static boolean setWoodcuttingToggle(
+            PlayerData data,
+            String toggleId,
+            boolean desiredState
+    ) {
+
+        switch (toggleId) {
+            case "leaf_decay" ->
+                    data.setWoodcuttingLeafDecayEnabled(desiredState);
+            case "whole_tree" ->
+                    data.setWoodcuttingWholeTreeEnabled(desiredState);
+            case "bonus_drops" ->
+                    data.setWoodcuttingBonusDropsEnabled(desiredState);
+            case "clean_floor" ->
+                    data.setWoodcuttingCleanFloorEnabled(desiredState);
+            default -> {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static boolean setFarmingToggle(
+            PlayerData data,
+            String toggleId,
+            boolean desiredState
+    ) {
+
+        switch (toggleId) {
+            case "bonus_harvests" ->
+                    data.setFarmingBonusHarvestsEnabled(desiredState);
+            case "animal_follow" ->
+                    data.setFarmingAnimalFollowEnabled(desiredState);
+            case "animal_drops" ->
+                    data.setFarmingAnimalDropsEnabled(desiredState);
+            case "auto_replant" ->
+                    data.setFarmingAutoReplantEnabled(desiredState);
+            case "bee_growth" ->
+                    data.setFarmingBeeGrowthEnabled(desiredState);
+            case "gathering_bonus_drops" ->
+                    data.setFarmingBeeGrowthEnabled(desiredState);
+            case "beekeeping" ->
+                    data.setFarmingBeekeepingEnabled(desiredState);
+            default -> {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // =========================
@@ -257,6 +452,7 @@ public class SkillManager {
         data.setMiningXp(currentXp);
 
         savePlayerData(playerId);
+        sendSkillState(player);
 
         return leveledUp;
     }
@@ -415,6 +611,7 @@ public class SkillManager {
         data.setWoodcuttingXp(currentXp);
 
         savePlayerData(playerId);
+        sendSkillState(player);
 
         return leveledUp;
     }
@@ -695,6 +892,7 @@ public class SkillManager {
 
         data.setFarmingXp(currentXp);
         savePlayerData(playerId);
+        sendSkillState(player);
 
         return leveledUp;
     }
