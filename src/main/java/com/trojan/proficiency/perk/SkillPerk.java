@@ -59,6 +59,46 @@ public class SkillPerk {
         return requiredLevel;
     }
 
+    public int getPointCost() {
+
+        return getPointCostForLevel(requiredLevel);
+    }
+
+    public static int getPointCostForLevel(
+            int requiredLevel
+    ) {
+
+        if (requiredLevel <= 5) {
+            return 1;
+        }
+
+        if (requiredLevel <= 10) {
+            return 2;
+        }
+
+        if (requiredLevel <= 15) {
+            return 4;
+        }
+
+        if (requiredLevel <= 20) {
+            return 8;
+        }
+
+        if (requiredLevel <= 25) {
+            return 16;
+        }
+
+        if (requiredLevel <= 30) {
+            return 32;
+        }
+
+        if (requiredLevel <= 35) {
+            return 64;
+        }
+
+        return 128;
+    }
+
     public int getX() {
         return x;
     }

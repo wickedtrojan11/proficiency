@@ -234,7 +234,10 @@ public class SkillManager {
                     data.getMiningPerkPoints();
 
             data.setMiningPerkPoints(
-                    currentPerkPoints + 1
+                    currentPerkPoints
+                            + getPerkPointsAwardForLevel(
+                                    currentLevel
+                            )
             );
 
             leveledUp = true;
@@ -332,8 +335,13 @@ public class SkillManager {
             return false;
         }
 
-        // No perk points
-        if (data.getMiningPerkPoints() <= 0) {
+        int pointCost =
+                SkillPerk.getPointCostForLevel(
+                        requiredLevel
+                );
+
+        // Not enough perk points
+        if (data.getMiningPerkPoints() < pointCost) {
             return false;
         }
 
@@ -342,7 +350,7 @@ public class SkillManager {
 
         // Spend perk point
         data.setMiningPerkPoints(
-                data.getMiningPerkPoints() - 1
+                data.getMiningPerkPoints() - pointCost
         );
 
         savePlayerData(playerId);
@@ -405,7 +413,10 @@ public class SkillManager {
             );
 
             data.setWoodcuttingPerkPoints(
-                    data.getWoodcuttingPerkPoints() + 1
+                    data.getWoodcuttingPerkPoints()
+                            + getPerkPointsAwardForLevel(
+                                    currentLevel
+                            )
             );
 
             leveledUp = true;
@@ -521,14 +532,19 @@ public class SkillManager {
             return false;
         }
 
-        if (data.getWoodcuttingPerkPoints() <= 0) {
+        int pointCost =
+                SkillPerk.getPointCostForLevel(
+                        requiredLevel
+                );
+
+        if (data.getWoodcuttingPerkPoints() < pointCost) {
             return false;
         }
 
         data.unlockWoodcuttingPerk(perkId);
 
         data.setWoodcuttingPerkPoints(
-                data.getWoodcuttingPerkPoints() - 1
+                data.getWoodcuttingPerkPoints() - pointCost
         );
 
         savePlayerData(playerId);
@@ -681,7 +697,9 @@ public class SkillManager {
 
             data.setFarmingPerkPoints(
                     data.getFarmingPerkPoints()
-                            + 1
+                            + getPerkPointsAwardForLevel(
+                                    currentLevel
+                            )
             );
 
             announceFarmingLevelUp(
@@ -719,7 +737,9 @@ public class SkillManager {
 
         player.sendSystemMessage(
                 Component.literal(
-                        "\u00A7bPerk Point earned! Total: "
+                        "\u00A7bPerk points earned: "
+                                + getPerkPointsAwardForLevel(level)
+                                + ". Total: "
                                 + perkPoints
                 )
         );
@@ -805,12 +825,17 @@ public class SkillManager {
         PlayerData data =
                 getPlayerData(playerId);
 
+        int pointCost =
+                SkillPerk.getPointCostForLevel(
+                        requiredLevel
+                );
+
         if (
                 data.hasFarmingPerk(perkId)
                         || data.getFarmingLevel()
                         < requiredLevel
                         || data.getFarmingPerkPoints()
-                        <= 0
+                        < pointCost
         ) {
 
             return false;
@@ -820,11 +845,26 @@ public class SkillManager {
 
         data.setFarmingPerkPoints(
                 data.getFarmingPerkPoints()
-                        - 1
+                        - pointCost
         );
 
         savePlayerData(playerId);
         return true;
+    }
+
+    private static int getPerkPointsAwardForLevel(
+            int level
+    ) {
+
+        if (level <= 10) {
+            return 1;
+        }
+
+        if (level <= 25) {
+            return 2;
+        }
+
+        return 3;
     }
 
     public static boolean hasFarmingPerk(

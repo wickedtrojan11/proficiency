@@ -403,6 +403,20 @@ public class SkillScreen extends Screen {
 
                 if (hovering) {
 
+                    int miningPerkPoints =
+                            SkillManager.getMiningPerkPoints(
+                                    minecraft.player.getUUID()
+                            );
+
+                    if (miningPerkPoints < perk.getPointCost()) {
+
+                        showInsufficientPerkPoints(
+                                perk,
+                                miningPerkPoints
+                        );
+                        return true;
+                    }
+
                     boolean success =
                             SkillManager.unlockMiningPerk(
                                     minecraft.player.getUUID(),
@@ -466,6 +480,18 @@ public class SkillScreen extends Screen {
                             SkillManager.getWoodcuttingPerkPoints(
                                     minecraft.player.getUUID()
                             );
+
+                    if (
+                            woodcuttingPerkPoints
+                                    < perk.getPointCost()
+                    ) {
+
+                        showInsufficientPerkPoints(
+                                perk,
+                                woodcuttingPerkPoints
+                        );
+                        return true;
+                    }
 
                     if (
                             !isWoodcuttingPerkAvailable(
@@ -549,6 +575,15 @@ public class SkillScreen extends Screen {
                             SkillManager.getFarmingPerkPoints(
                                     minecraft.player.getUUID()
                             );
+
+                    if (farmingPerkPoints < perk.getPointCost()) {
+
+                        showInsufficientPerkPoints(
+                                perk,
+                                farmingPerkPoints
+                        );
+                        return true;
+                    }
 
                     if (
                             !isFarmingPerkAvailable(
@@ -1365,6 +1400,11 @@ public class SkillScreen extends Screen {
                                                         + perk.getRequiredLevel()
                                         ).getVisualOrderText(),
                                         Component.literal(
+                                                "Cost: "
+                                                        + perk.getPointCost()
+                                                        + " Perk Points"
+                                        ).getVisualOrderText(),
+                                        Component.literal(
                                                 perk.getDescription()
                                         ).getVisualOrderText(),
                                         Component.literal(
@@ -1821,6 +1861,11 @@ public class SkillScreen extends Screen {
                                                     + perk.getRequiredLevel()
                                     ).getVisualOrderText(),
                                     Component.literal(
+                                            "Cost: "
+                                                    + perk.getPointCost()
+                                                    + " Perk Points"
+                                    ).getVisualOrderText(),
+                                    Component.literal(
                                             perk.getDescription()
                                     ).getVisualOrderText(),
                                     Component.literal(
@@ -2004,6 +2049,11 @@ public class SkillScreen extends Screen {
                                     Component.literal(
                                             "Requires Farming Level: "
                                                     + perk.getRequiredLevel()
+                                    ).getVisualOrderText(),
+                                    Component.literal(
+                                            "Cost: "
+                                                    + perk.getPointCost()
+                                                    + " Perk Points"
                                     ).getVisualOrderText(),
                                     Component.literal(
                                             perk.getDescription()
@@ -2495,6 +2545,24 @@ public class SkillScreen extends Screen {
         );
     }
 
+    private void showInsufficientPerkPoints(
+            SkillPerk perk,
+            int availablePoints
+    ) {
+
+        minecraft.player.sendSystemMessage(
+                Component.literal(
+                        "\u00A7cCannot unlock "
+                                + perk.getName()
+                                + ": needs "
+                                + perk.getPointCost()
+                                + " perk points (you have "
+                                + availablePoints
+                                + ")."
+                )
+        );
+    }
+
     private int getConnectionColor(
             SkillPerk perk,
             int miningLevel,
@@ -2578,7 +2646,7 @@ public class SkillScreen extends Screen {
 
         return !isPerkUnlocked(perk)
                 && miningLevel >= perk.getRequiredLevel()
-                && miningPerkPoints > 0
+                && miningPerkPoints >= perk.getPointCost()
                 && isParentUnlocked(perk);
     }
 
@@ -2783,7 +2851,7 @@ public class SkillScreen extends Screen {
 
         return !isWoodcuttingPerkUnlocked(perk)
                 && woodcuttingLevel >= perk.getRequiredLevel()
-                && woodcuttingPerkPoints > 0
+                && woodcuttingPerkPoints >= perk.getPointCost()
                 && isWoodcuttingParentUnlocked(perk);
     }
 
@@ -2907,7 +2975,7 @@ public class SkillScreen extends Screen {
 
         return !isFarmingPerkUnlocked(perk)
                 && farmingLevel >= perk.getRequiredLevel()
-                && farmingPerkPoints > 0
+                && farmingPerkPoints >= perk.getPointCost()
                 && isFarmingParentUnlocked(perk);
     }
 
