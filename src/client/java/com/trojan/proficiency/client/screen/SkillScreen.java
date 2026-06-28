@@ -6,9 +6,11 @@ import net.minecraft.client.Minecraft;
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.skill.MiningSkill;
 import com.trojan.proficiency.perk.MiningPerks;
+import com.trojan.proficiency.perk.PerkUnlockResult;
 import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
 import com.trojan.proficiency.perk.FarmingPerks;
+import com.trojan.proficiency.skill.SkillType;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
@@ -403,28 +405,14 @@ public class SkillScreen extends Screen {
 
                 if (hovering) {
 
-                    int miningPerkPoints =
-                            SkillManager.getMiningPerkPoints(
-                                    minecraft.player.getUUID()
-                            );
-
-                    if (miningPerkPoints < perk.getPointCost()) {
-
-                        showInsufficientPerkPoints(
-                                perk,
-                                miningPerkPoints
-                        );
-                        return true;
-                    }
-
-                    boolean success =
-                            SkillManager.unlockMiningPerk(
+                    PerkUnlockResult unlockResult =
+                            SkillManager.unlockPerk(
                                     minecraft.player.getUUID(),
-                                    perk.getId(),
-                                    perk.getRequiredLevel()
+                                    SkillType.MINING,
+                                    perk.getId()
                             );
 
-                    if (success) {
+                    if (unlockResult.success()) {
 
                         showPerkUnlockToast(perk);
 
@@ -471,54 +459,14 @@ public class SkillScreen extends Screen {
 
                 if (hovering) {
 
-                    int woodcuttingLevel =
-                            SkillManager.getWoodcuttingLevel(
-                                    minecraft.player.getUUID()
-                            );
-
-                    int woodcuttingPerkPoints =
-                            SkillManager.getWoodcuttingPerkPoints(
-                                    minecraft.player.getUUID()
-                            );
-
-                    if (
-                            woodcuttingPerkPoints
-                                    < perk.getPointCost()
-                    ) {
-
-                        showInsufficientPerkPoints(
-                                perk,
-                                woodcuttingPerkPoints
-                        );
-                        return true;
-                    }
-
-                    if (
-                            !isWoodcuttingPerkAvailable(
-                                    perk,
-                                    woodcuttingLevel,
-                                    woodcuttingPerkPoints
-                            )
-                    ) {
-
-                        minecraft.player.sendSystemMessage(
-                                Component.literal(
-                                        "§cCannot unlock "
-                                                + perk.getName()
-                                )
-                        );
-
-                        return true;
-                    }
-
-                    boolean success =
-                            SkillManager.unlockWoodcuttingPerk(
+                    PerkUnlockResult unlockResult =
+                            SkillManager.unlockPerk(
                                     minecraft.player.getUUID(),
-                                    perk.getId(),
-                                    perk.getRequiredLevel()
+                                    SkillType.WOODCUTTING,
+                                    perk.getId()
                             );
 
-                    if (success) {
+                    if (unlockResult.success()) {
 
                         showPerkUnlockToast(perk);
 
@@ -566,51 +514,14 @@ public class SkillScreen extends Screen {
 
                 if (hovering) {
 
-                    int farmingLevel =
-                            SkillManager.getFarmingLevel(
-                                    minecraft.player.getUUID()
-                            );
-
-                    int farmingPerkPoints =
-                            SkillManager.getFarmingPerkPoints(
-                                    minecraft.player.getUUID()
-                            );
-
-                    if (farmingPerkPoints < perk.getPointCost()) {
-
-                        showInsufficientPerkPoints(
-                                perk,
-                                farmingPerkPoints
-                        );
-                        return true;
-                    }
-
-                    if (
-                            !isFarmingPerkAvailable(
-                                    perk,
-                                    farmingLevel,
-                                    farmingPerkPoints
-                            )
-                    ) {
-
-                        minecraft.player.sendSystemMessage(
-                                Component.literal(
-                                        "\u00A7cCannot unlock "
-                                                + perk.getName()
-                                )
-                        );
-
-                        return true;
-                    }
-
-                    boolean success =
-                            SkillManager.unlockFarmingPerk(
+                    PerkUnlockResult unlockResult =
+                            SkillManager.unlockPerk(
                                     minecraft.player.getUUID(),
-                                    perk.getId(),
-                                    perk.getRequiredLevel()
+                                    SkillType.FARMING,
+                                    perk.getId()
                             );
 
-                    if (success) {
+                    if (unlockResult.success()) {
 
                         showPerkUnlockToast(perk);
 
@@ -619,6 +530,14 @@ public class SkillScreen extends Screen {
                                         "\u00A76Unlocked "
                                                 + perk.getName()
                                                 + "!"
+                                )
+                        );
+                    } else {
+
+                        minecraft.player.sendSystemMessage(
+                                Component.literal(
+                                        "\u00A7c"
+                                                + unlockResult.message()
                                 )
                         );
                     }
@@ -1275,22 +1194,10 @@ public class SkillScreen extends Screen {
                     continue;
                 }
 
-                SkillPerk parent = null;
-
-                for (SkillPerk possibleParent
-                        : MiningPerks.ALL_PERKS) {
-
-                    if (
-                            possibleParent.getId()
-                                    .equals(
-                                            perk.getParentId()
-                                    )
-                    ) {
-
-                        parent = possibleParent;
-                        break;
-                    }
-                }
+                SkillPerk parent =
+                        MiningPerks.getById(
+                                perk.getParentId()
+                        );
 
                 if (parent == null) {
                     continue;
@@ -1744,22 +1651,10 @@ public class SkillScreen extends Screen {
                     continue;
                 }
 
-                SkillPerk parent = null;
-
-                for (SkillPerk possibleParent
-                        : WoodcuttingPerks.ALL_PERKS) {
-
-                    if (
-                            possibleParent.getId()
-                                    .equals(
-                                            perk.getParentId()
-                                    )
-                    ) {
-
-                        parent = possibleParent;
-                        break;
-                    }
-                }
+                SkillPerk parent =
+                        WoodcuttingPerks.getById(
+                                perk.getParentId()
+                        );
 
                 if (parent == null) {
                     continue;
@@ -1963,7 +1858,7 @@ public class SkillScreen extends Screen {
                 }
 
                 SkillPerk parent =
-                        findFarmingPerk(
+                        FarmingPerks.getById(
                                 perk.getParentId()
                         );
 
@@ -2545,24 +2440,6 @@ public class SkillScreen extends Screen {
         );
     }
 
-    private void showInsufficientPerkPoints(
-            SkillPerk perk,
-            int availablePoints
-    ) {
-
-        minecraft.player.sendSystemMessage(
-                Component.literal(
-                        "\u00A7cCannot unlock "
-                                + perk.getName()
-                                + ": needs "
-                                + perk.getPointCost()
-                                + " perk points (you have "
-                                + availablePoints
-                                + ")."
-                )
-        );
-    }
-
     private int getConnectionColor(
             SkillPerk perk,
             int miningLevel,
@@ -2874,22 +2751,6 @@ public class SkillScreen extends Screen {
                 minecraft.player.getUUID(),
                 perk.getParentId()
         );
-    }
-
-    private SkillPerk findFarmingPerk(
-            String perkId
-    ) {
-
-        for (SkillPerk perk
-                : FarmingPerks.ALL_PERKS) {
-
-            if (perk.getId().equals(perkId)) {
-
-                return perk;
-            }
-        }
-
-        return null;
     }
 
     private int getFarmingConnectionColor(

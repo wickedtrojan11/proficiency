@@ -1,5 +1,9 @@
 package com.trojan.proficiency.perk;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 public class SkillPerk {
     private final String parentId;
     private final String id;
@@ -97,6 +101,33 @@ public class SkillPerk {
         }
 
         return 128;
+    }
+
+    public static Map<String, SkillPerk> indexById(
+            List<SkillPerk> perks
+    ) {
+
+        Map<String, SkillPerk> perksById =
+                new LinkedHashMap<>();
+
+        for (SkillPerk perk : perks) {
+
+            SkillPerk duplicate =
+                    perksById.put(
+                            perk.getId(),
+                            perk
+                    );
+
+            if (duplicate != null) {
+
+                throw new IllegalStateException(
+                        "Duplicate perk ID: "
+                                + perk.getId()
+                );
+            }
+        }
+
+        return Map.copyOf(perksById);
     }
 
     public int getX() {

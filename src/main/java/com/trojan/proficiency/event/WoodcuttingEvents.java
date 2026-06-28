@@ -376,10 +376,10 @@ public class WoodcuttingEvents {
                 );
             }
 
-            if (isLog) {
+            if (isLog && serverPlayer != null) {
 
                 boolean leveledUp =
-                        SkillManager.addWoodcuttingXp(player.getUUID(), 1);
+                        SkillManager.addWoodcuttingXp(serverPlayer, 1);
 
                 int xp =
                         SkillManager.getWoodcuttingXp(player.getUUID());
@@ -392,6 +392,16 @@ public class WoodcuttingEvents {
                     player.sendSystemMessage(
                             Component.literal(
                                     "§2Woodcutting Level Up! → Level " + level
+                            )
+                    );
+                    player.sendSystemMessage(
+                            Component.literal(
+                                    "§bPerk points earned: "
+                                            + SkillManager.getPerkPointsAwardForLevel(level)
+                                            + ". Total: "
+                                            + SkillManager.getWoodcuttingPerkPoints(
+                                            player.getUUID()
+                                    )
                             )
                     );
 

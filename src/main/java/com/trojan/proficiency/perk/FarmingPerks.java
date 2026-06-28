@@ -1,6 +1,7 @@
 package com.trojan.proficiency.perk;
 
 import java.util.List;
+import java.util.Map;
 
 public class FarmingPerks {
 
@@ -332,6 +333,13 @@ public class FarmingPerks {
                     HONEY_MASTERY,
                     MASTER_BEEKEEPER
             );
+
+    public static final Map<String, SkillPerk> PERKS_BY_ID =
+            SkillPerk.indexById(ALL_PERKS);
+
+    public static SkillPerk getById(String perkId) {
+        return PERKS_BY_ID.get(perkId);
+    }
 
     private static SkillPerk perk(
             String id,

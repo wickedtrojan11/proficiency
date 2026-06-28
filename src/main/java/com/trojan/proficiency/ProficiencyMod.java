@@ -19,6 +19,9 @@ import com.trojan.proficiency.save.PlayerDataStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.trojan.proficiency.perk.OreSenseEffects;
+import com.trojan.proficiency.network.XpGainPayload;
+import com.trojan.proficiency.network.WellRestedPayload;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 public class ProficiencyMod implements ModInitializer {
 
 	public static final String MOD_ID = "proficiency";
@@ -30,6 +33,15 @@ public class ProficiencyMod implements ModInitializer {
 	public void onInitialize() {
 
 		LOGGER.info("Proficiency loaded!");
+
+		PayloadTypeRegistry.playS2C().register(
+				XpGainPayload.TYPE,
+				XpGainPayload.STREAM_CODEC
+		);
+		PayloadTypeRegistry.playS2C().register(
+				WellRestedPayload.TYPE,
+				WellRestedPayload.STREAM_CODEC
+		);
 
 		ModBlocks.register();
 		ModMenus.register();

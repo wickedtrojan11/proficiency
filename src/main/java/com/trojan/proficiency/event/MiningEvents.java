@@ -77,6 +77,31 @@ public class MiningEvents {
                 );
             }
 
+            if (MiningUtils.isOre(state)) {
+
+                ServerPlayer serverPlayer =
+                        (ServerPlayer) player;
+
+                int oreXp =
+                        state.is(Blocks.DIAMOND_ORE)
+                                || state.is(
+                                Blocks.DEEPSLATE_DIAMOND_ORE
+                        )
+                                || state.is(Blocks.ANCIENT_DEBRIS)
+                                ? 8
+                                : 2;
+
+                boolean leveledUp =
+                        SkillManager.addMiningXp(
+                                serverPlayer,
+                                oreXp
+                        );
+
+                if (leveledUp) {
+                    announceMiningLevelUp(serverPlayer);
+                }
+            }
+
             if (MiningUtils.isStoneType(state)) {
 
                 ServerPlayer serverPlayer =
@@ -207,9 +232,6 @@ public class MiningEvents {
                                     "§6Mining Level Up! → Level " + level
                             )
                     );
-                }
-
-                if (leveledUp) {
                     player.level().playSound(
                             null,
                             player.blockPosition(),
@@ -220,7 +242,12 @@ public class MiningEvents {
                     );
                     player.sendSystemMessage(
                             Component.literal(
-                                    "§6Mining Level Up! → Level " + level
+                                    "§bPerk points earned: "
+                                            + SkillManager.getPerkPointsAwardForLevel(level)
+                                            + ". Total: "
+                                            + SkillManager.getMiningPerkPoints(
+                                            player.getUUID()
+                                    )
                             )
                     );
 
@@ -241,6 +268,54 @@ public class MiningEvents {
                 }
             }
         });
+    }
+
+    private static void announceMiningLevelUp(
+            ServerPlayer player
+    ) {
+
+        int level = SkillManager.getMiningLevel(
+                player.getUUID()
+        );
+
+        player.sendSystemMessage(
+                Component.literal(
+                        "\u00A76Mining Level Up! \u2192 Level "
+                                + level
+                )
+        );
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.PLAYER_LEVELUP,
+                SoundSource.PLAYERS,
+                0.7f,
+                1.0f
+        );
+        player.sendSystemMessage(
+                Component.literal(
+                        "\u00A7bPerk points earned: "
+                                + SkillManager
+                                .getPerkPointsAwardForLevel(level)
+                                + ". Total: "
+                                + SkillManager.getMiningPerkPoints(
+                                player.getUUID()
+                        )
+                )
+        );
+
+        for (SkillPerk perk : MiningPerks.ALL_PERKS) {
+
+            if (level == perk.getRequiredLevel()) {
+
+                player.sendSystemMessage(
+                        Component.literal(
+                                "\u00A7aNEW PERK AVAILABLE: "
+                                        + perk.getName()
+                        )
+                );
+            }
+        }
     }
 
 }

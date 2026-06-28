@@ -1,6 +1,7 @@
 package com.trojan.proficiency.perk;
 
 import java.util.List;
+import java.util.Map;
 
 public class MiningPerks {
 
@@ -209,4 +210,11 @@ public class MiningPerks {
                     NEARLY_INDESTRUCTIBLE,
                     DEEP_DELVER
             );
+
+    public static final Map<String, SkillPerk> PERKS_BY_ID =
+            SkillPerk.indexById(ALL_PERKS);
+
+    public static SkillPerk getById(String perkId) {
+        return PERKS_BY_ID.get(perkId);
+    }
 }

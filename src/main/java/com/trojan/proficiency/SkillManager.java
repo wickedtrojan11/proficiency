@@ -1,7 +1,9 @@
 package com.trojan.proficiency;
 import com.trojan.proficiency.perk.MiningPerks;
 import com.trojan.proficiency.perk.FarmingPerks;
+import com.trojan.proficiency.perk.PerkUnlockResult;
 import com.trojan.proficiency.perk.SkillPerk;
+import com.trojan.proficiency.perk.WoodcuttingPerks;
 import java.util.Set;
 import net.minecraft.network.chat.Component;
 
@@ -18,6 +20,9 @@ import com.trojan.proficiency.save.PlayerDataStorage;
 import com.trojan.proficiency.skill.MiningSkill;
 import com.trojan.proficiency.skill.FarmingSkill;
 import com.trojan.proficiency.skill.WoodcuttingSkill;
+import com.trojan.proficiency.skill.SkillType;
+import com.trojan.proficiency.network.XpGainPayload;
+import com.trojan.proficiency.network.WellRestedPayload;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -201,6 +206,12 @@ public class SkillManager {
                         amount
                 );
 
+        XpGainPayload.send(
+                player,
+                SkillType.MINING,
+                amount
+        );
+
         PlayerData data =
                 getPlayerData(playerId);
 
@@ -322,40 +333,11 @@ public class SkillManager {
             int requiredLevel
     ) {
 
-        PlayerData data =
-                getPlayerData(playerId);
-
-        // Already unlocked
-        if (data.hasMiningPerk(perkId)) {
-            return false;
-        }
-
-        // Not high enough level
-        if (data.getMiningLevel() < requiredLevel) {
-            return false;
-        }
-
-        int pointCost =
-                SkillPerk.getPointCostForLevel(
-                        requiredLevel
-                );
-
-        // Not enough perk points
-        if (data.getMiningPerkPoints() < pointCost) {
-            return false;
-        }
-
-        // Unlock perk
-        data.unlockMiningPerk(perkId);
-
-        // Spend perk point
-        data.setMiningPerkPoints(
-                data.getMiningPerkPoints() - pointCost
-        );
-
-        savePlayerData(playerId);
-
-        return true;
+        return unlockPerk(
+                playerId,
+                SkillType.MINING,
+                perkId
+        ).success();
     }
 
     public static boolean hasMiningPerk(
@@ -374,15 +356,23 @@ public class SkillManager {
     // =========================
 
     public static boolean addWoodcuttingXp(
-            UUID playerId,
+            ServerPlayer player,
             int amount
     ) {
+
+        UUID playerId = player.getUUID();
 
         amount =
                 applySkillXpMultiplier(
                         playerId,
                         amount
                 );
+
+        XpGainPayload.send(
+                player,
+                SkillType.WOODCUTTING,
+                amount
+        );
 
         PlayerData data =
                 getPlayerData(playerId);
@@ -435,6 +425,11 @@ public class SkillManager {
 
         wellRestedRemainingTicks.put(
                 player.getUUID(),
+                WELL_RESTED_DURATION_TICKS
+        );
+
+        WellRestedPayload.send(
+                player,
                 WELL_RESTED_DURATION_TICKS
         );
 
@@ -521,35 +516,11 @@ public class SkillManager {
             int requiredLevel
     ) {
 
-        PlayerData data =
-                getPlayerData(playerId);
-
-        if (data.hasWoodcuttingPerk(perkId)) {
-            return false;
-        }
-
-        if (data.getWoodcuttingLevel() < requiredLevel) {
-            return false;
-        }
-
-        int pointCost =
-                SkillPerk.getPointCostForLevel(
-                        requiredLevel
-                );
-
-        if (data.getWoodcuttingPerkPoints() < pointCost) {
-            return false;
-        }
-
-        data.unlockWoodcuttingPerk(perkId);
-
-        data.setWoodcuttingPerkPoints(
-                data.getWoodcuttingPerkPoints() - pointCost
-        );
-
-        savePlayerData(playerId);
-
-        return true;
+        return unlockPerk(
+                playerId,
+                SkillType.WOODCUTTING,
+                perkId
+        ).success();
     }
 
     public static boolean hasWoodcuttingPerk(
@@ -668,6 +639,12 @@ public class SkillManager {
                         playerId,
                         amount
                 );
+
+        XpGainPayload.send(
+                player,
+                SkillType.FARMING,
+                amount
+        );
 
         PlayerData data =
                 getPlayerData(playerId);
@@ -822,37 +799,192 @@ public class SkillManager {
             int requiredLevel
     ) {
 
-        PlayerData data =
-                getPlayerData(playerId);
-
-        int pointCost =
-                SkillPerk.getPointCostForLevel(
-                        requiredLevel
-                );
-
-        if (
-                data.hasFarmingPerk(perkId)
-                        || data.getFarmingLevel()
-                        < requiredLevel
-                        || data.getFarmingPerkPoints()
-                        < pointCost
-        ) {
-
-            return false;
-        }
-
-        data.unlockFarmingPerk(perkId);
-
-        data.setFarmingPerkPoints(
-                data.getFarmingPerkPoints()
-                        - pointCost
-        );
-
-        savePlayerData(playerId);
-        return true;
+        return unlockPerk(
+                playerId,
+                SkillType.FARMING,
+                perkId
+        ).success();
     }
 
-    private static int getPerkPointsAwardForLevel(
+    public static PerkUnlockResult unlockPerk(
+            UUID playerId,
+            SkillType skillType,
+            String perkId
+    ) {
+
+        PlayerData data = getPlayerData(playerId);
+        SkillPerk perk = getPerk(skillType, perkId);
+
+        if (perk == null) {
+
+            return new PerkUnlockResult(
+                    PerkUnlockResult.Status.PERK_NOT_FOUND,
+                    "Unknown "
+                            + skillType.getDisplayName()
+                            + " perk: "
+                            + perkId
+            );
+        }
+
+        if (hasPerk(data, skillType, perkId)) {
+
+            return new PerkUnlockResult(
+                    PerkUnlockResult.Status.ALREADY_UNLOCKED,
+                    perk.getName()
+                            + " is already unlocked."
+            );
+        }
+
+        int playerLevel = getLevel(data, skillType);
+
+        if (playerLevel < perk.getRequiredLevel()) {
+
+            return new PerkUnlockResult(
+                    PerkUnlockResult.Status.LEVEL_REQUIRED,
+                    perk.getName()
+                            + " requires "
+                            + skillType.getDisplayName()
+                            + " Level "
+                            + perk.getRequiredLevel()
+                            + "."
+            );
+        }
+
+        if (
+                perk.getParentId() != null
+                        && !hasPerk(
+                        data,
+                        skillType,
+                        perk.getParentId()
+                )
+        ) {
+
+            SkillPerk parent =
+                    getPerk(
+                            skillType,
+                            perk.getParentId()
+                    );
+
+            return new PerkUnlockResult(
+                    PerkUnlockResult.Status.PARENT_REQUIRED,
+                    "Unlock "
+                            + (parent == null
+                            ? perk.getParentId()
+                            : parent.getName())
+                            + " first."
+            );
+        }
+
+        int availablePoints =
+                getPerkPoints(data, skillType);
+        int pointCost = perk.getPointCost();
+
+        if (availablePoints < pointCost) {
+
+            return new PerkUnlockResult(
+                    PerkUnlockResult.Status.INSUFFICIENT_POINTS,
+                    perk.getName()
+                            + " needs "
+                            + pointCost
+                            + " perk points (you have "
+                            + availablePoints
+                            + ")."
+            );
+        }
+
+        unlockPerk(data, skillType, perkId);
+        setPerkPoints(
+                data,
+                skillType,
+                availablePoints - pointCost
+        );
+        savePlayerData(playerId);
+
+        return new PerkUnlockResult(
+                PerkUnlockResult.Status.SUCCESS,
+                "Unlocked "
+                        + perk.getName()
+                        + "!"
+        );
+    }
+
+    private static SkillPerk getPerk(
+            SkillType skillType,
+            String perkId
+    ) {
+
+        return switch (skillType) {
+            case MINING -> MiningPerks.getById(perkId);
+            case WOODCUTTING -> WoodcuttingPerks.getById(perkId);
+            case FARMING -> FarmingPerks.getById(perkId);
+        };
+    }
+
+    private static int getLevel(
+            PlayerData data,
+            SkillType skillType
+    ) {
+
+        return switch (skillType) {
+            case MINING -> data.getMiningLevel();
+            case WOODCUTTING -> data.getWoodcuttingLevel();
+            case FARMING -> data.getFarmingLevel();
+        };
+    }
+
+    private static int getPerkPoints(
+            PlayerData data,
+            SkillType skillType
+    ) {
+
+        return switch (skillType) {
+            case MINING -> data.getMiningPerkPoints();
+            case WOODCUTTING -> data.getWoodcuttingPerkPoints();
+            case FARMING -> data.getFarmingPerkPoints();
+        };
+    }
+
+    private static boolean hasPerk(
+            PlayerData data,
+            SkillType skillType,
+            String perkId
+    ) {
+
+        return switch (skillType) {
+            case MINING -> data.hasMiningPerk(perkId);
+            case WOODCUTTING -> data.hasWoodcuttingPerk(perkId);
+            case FARMING -> data.hasFarmingPerk(perkId);
+        };
+    }
+
+    private static void unlockPerk(
+            PlayerData data,
+            SkillType skillType,
+            String perkId
+    ) {
+
+        switch (skillType) {
+            case MINING -> data.unlockMiningPerk(perkId);
+            case WOODCUTTING -> data.unlockWoodcuttingPerk(perkId);
+            case FARMING -> data.unlockFarmingPerk(perkId);
+        }
+    }
+
+    private static void setPerkPoints(
+            PlayerData data,
+            SkillType skillType,
+            int perkPoints
+    ) {
+
+        switch (skillType) {
+            case MINING -> data.setMiningPerkPoints(perkPoints);
+            case WOODCUTTING ->
+                    data.setWoodcuttingPerkPoints(perkPoints);
+            case FARMING -> data.setFarmingPerkPoints(perkPoints);
+        }
+    }
+
+    public static int getPerkPointsAwardForLevel(
             int level
     ) {
 

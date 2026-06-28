@@ -11,6 +11,7 @@
 		"MushroomGrowthMixin",
 		"NetherWartGrowthMixin",
 		"SheepShearingMixin",
+		"SaplingGrowthMixin",
 		"SweetBerryGrowthMixin"
 	],
 	"injectors": {
