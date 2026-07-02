@@ -25,6 +25,7 @@ import com.trojan.proficiency.network.SkillStatePayload;
 import com.trojan.proficiency.network.PerkUnlockRequestPayload;
 import com.trojan.proficiency.network.ToggleChangeRequestPayload;
 import com.trojan.proficiency.network.SkillNetworking;
+import com.trojan.proficiency.event.SaplingOwnershipTracker;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 public class ProficiencyMod implements ModInitializer {
 
@@ -75,9 +76,10 @@ public class ProficiencyMod implements ModInitializer {
 			SkillManager.saveAllPlayerData();
 		});
 
-		ServerLifecycleEvents.SERVER_STOPPED.register(server ->
-				SkillManager.clearPlayerDataCache()
-		);
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+			SkillManager.clearPlayerDataCache();
+			SaplingOwnershipTracker.clear();
+		});
 
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			SkillManager.loadPlayerData(
@@ -105,6 +107,7 @@ public class ProficiencyMod implements ModInitializer {
 		FarmingAnimalDropEffects.register();
 		FarmingBeekeepingEffects.register();
 		FarmingUtilityEvents.register();
+		SaplingOwnershipTracker.register();
 		MiningPerkEffects.register();
 		WoodcuttingPerkEffects.register();
 		MiningDurabilityEvents.register();

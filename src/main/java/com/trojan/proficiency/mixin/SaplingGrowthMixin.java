@@ -1,6 +1,7 @@
 package com.trojan.proficiency.mixin;
 
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.event.SaplingOwnershipTracker;
 import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
 import net.minecraft.core.BlockPos;
@@ -19,15 +20,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Comparator;
+import java.util.UUID;
 
 @Mixin(SaplingBlock.class)
 public abstract class SaplingGrowthMixin {
 
     private static final int TREE_XP = 3;
-    private static final double PLAYER_RADIUS_SQUARED =
-            24.0 * 24.0;
-
     @Inject(
             method = "advanceTree",
             at = @At("TAIL")
@@ -48,40 +46,26 @@ public abstract class SaplingGrowthMixin {
             return;
         }
 
-        ServerPlayer nearestPlayer =
-                level.getPlayers(
-                        player ->
-                                player.distanceToSqr(
-                                        pos.getX() + 0.5,
-                                        pos.getY() + 0.5,
-                                        pos.getZ() + 0.5
-                                ) <= PLAYER_RADIUS_SQUARED
-                )
-                        .stream()
-                        .min(
-                                Comparator.comparingDouble(
-                                        player ->
-                                                player.distanceToSqr(
-                                                        pos.getX() + 0.5,
-                                                        pos.getY() + 0.5,
-                                                        pos.getZ() + 0.5
-                                                )
-                                )
-                        )
-                        .orElse(null);
+        UUID ownerId =
+                SaplingOwnershipTracker.takeOwner(level, pos);
+        ServerPlayer owner = ownerId == null
+                ? null
+                : level.getServer()
+                .getPlayerList()
+                .getPlayer(ownerId);
 
-        if (nearestPlayer == null) {
+        if (owner == null) {
             return;
         }
 
         boolean leveledUp =
                 SkillManager.addWoodcuttingXp(
-                        nearestPlayer,
+                        owner,
                         TREE_XP
                 );
 
         if (leveledUp) {
-            announceLevelUp(nearestPlayer);
+            announceLevelUp(owner);
         }
     }
 

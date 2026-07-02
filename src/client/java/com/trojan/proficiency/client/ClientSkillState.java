@@ -36,6 +36,7 @@ public final class ClientSkillState {
     private static SkillStatePayload.SkillState farming = DEFAULT_STATE;
     private static int miningStreak;
     private static boolean initialized;
+    private static UUID syncedPlayerId;
 
     private ClientSkillState() {
     }
@@ -53,9 +54,30 @@ public final class ClientSkillState {
         ClientPlayConnectionEvents.DISCONNECT.register(
                 (handler, client) -> reset()
         );
+        ClientPlayConnectionEvents.JOIN.register(
+                (handler, sender, client) -> reset()
+        );
     }
 
     private static void apply(SkillStatePayload payload) {
+
+        Minecraft minecraft = Minecraft.getInstance();
+
+        if (
+                minecraft.player == null
+                        || !minecraft.player.getUUID()
+                        .equals(payload.playerId())
+        ) {
+            reset();
+            return;
+        }
+
+        if (
+                syncedPlayerId == null
+                        || !syncedPlayerId.equals(payload.playerId())
+        ) {
+            reset();
+        }
 
         if (initialized) {
             showNewPerkToasts(mining, payload.mining(), SkillType.MINING);
@@ -71,6 +93,7 @@ public final class ClientSkillState {
         woodcutting = payload.woodcutting();
         farming = payload.farming();
         miningStreak = payload.miningStreak();
+        syncedPlayerId = payload.playerId();
         initialized = true;
     }
 
@@ -151,6 +174,7 @@ public final class ClientSkillState {
         woodcutting = DEFAULT_STATE;
         farming = DEFAULT_STATE;
         miningStreak = 0;
+        syncedPlayerId = null;
         initialized = false;
     }
 
@@ -365,6 +389,14 @@ public final class ClientSkillState {
 
     public static void toggleFarmingBeekeeping(UUID ignored) {
         toggleFarming("beekeeping");
+    }
+
+    public static boolean isFarmingAnimalOverlayEnabled(UUID ignored) {
+        return toggle(farming, "animal_overlay");
+    }
+
+    public static void toggleFarmingAnimalOverlay(UUID ignored) {
+        toggleFarming("animal_overlay");
     }
 
     private static void toggleFarming(String toggleId) {

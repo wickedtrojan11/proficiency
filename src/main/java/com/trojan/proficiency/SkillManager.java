@@ -41,7 +41,7 @@ public class SkillManager {
             wellRestedRemainingTicks = new HashMap<>();
 
     private static final int WELL_RESTED_DURATION_TICKS =
-            10 * 60 * 20;
+            5 * 60 * 20;
     private static final int WELL_RESTED_XP_MULTIPLIER = 2;
     private static final Set<String> ORE_TOGGLE_IDS =
             Set.of(
@@ -165,6 +165,7 @@ public class SkillManager {
         SkillStatePayload.send(
                 player,
                 new SkillStatePayload(
+                        player.getUUID(),
                         new SkillStatePayload.SkillState(
                                 data.getMiningLevel(),
                                 data.getMiningXp(),
@@ -216,7 +217,9 @@ public class SkillManager {
                                         "gathering_bonus_drops",
                                         data.isFarmingBeeGrowthEnabled(),
                                         "beekeeping",
-                                        data.isFarmingBeekeepingEnabled()
+                                        data.isFarmingBeekeepingEnabled(),
+                                        "animal_overlay",
+                                        data.isFarmingAnimalOverlayEnabled()
                                 )
                         ),
                         getMiningStreak(player.getUUID())
@@ -320,6 +323,8 @@ public class SkillManager {
                     data.setFarmingBeeGrowthEnabled(desiredState);
             case "beekeeping" ->
                     data.setFarmingBeekeepingEnabled(desiredState);
+            case "animal_overlay" ->
+                    data.setFarmingAnimalOverlayEnabled(desiredState);
             default -> {
                 return false;
             }
@@ -632,7 +637,7 @@ public class SkillManager {
 
         player.sendSystemMessage(
                 Component.literal(
-                        "You feel well rested. Skill XP doubled for 10 minutes."
+                        "You feel well rested. Skill XP doubled for 5 minutes."
                 )
         );
     }

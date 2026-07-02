@@ -10,7 +10,7 @@ public class FarmingPerks {
                     "cultivation_faster_growth",
                     "Faster Growth",
                     "Your crops respond to careful cultivation.",
-                    "Normal crops grow 10% faster.",
+                    "Vanilla crops grow 10% faster.",
                     5,
                     125,
                     325,
@@ -46,7 +46,7 @@ public class FarmingPerks {
                     "improved_growth",
                     "Improved Growth",
                     "Your fields respond to increasingly careful cultivation.",
-                    "Normal crops grow 25% faster in total.",
+                    "Vanilla crops grow 25% faster in total.",
                     18,
                     105,
                     235,
@@ -58,7 +58,7 @@ public class FarmingPerks {
                     "rapid_growth",
                     "Rapid Growth",
                     "Your crops waste no time reaching the harvest.",
-                    "Normal crops grow 40% faster in total.",
+                    "Vanilla crops grow 40% faster in total.",
                     30,
                     145,
                     145,
@@ -70,7 +70,7 @@ public class FarmingPerks {
                     "greenhouse_genius",
                     "Greenhouse Genius",
                     "Unlocks the Proficient Pot and Auto Composter for automated farming.",
-                    "Normal crops grow 50% faster in total.",
+                    "Vanilla crops grow 50% faster in total.",
                     40,
                     125,
                     95,
@@ -240,9 +240,9 @@ public class FarmingPerks {
                     "You gather from the hive with a steady hand.",
                     "Ready hives have a 15% chance to yield one extra honeycomb.",
                     25,
-                    315,
+                    410,
                     205,
-                    "berry_harvester"
+                    "pollination_expert"
             );
 
     public static final SkillPerk BOUNTIFUL_HARVEST =
@@ -254,7 +254,7 @@ public class FarmingPerks {
                     40,
                     315,
                     95,
-                    "honey_gatherer"
+                    "berry_harvester"
             );
 
     public static final SkillPerk BUSY_BEES =
@@ -286,11 +286,11 @@ public class FarmingPerks {
                     "honey_mastery",
                     "Honey Mastery",
                     "Every hive is managed with practiced precision.",
-                    "Nearby full homes produce honey slightly faster over time.",
+                    "Nearby full hives produce honey slightly faster over time.",
                     25,
                     410,
-                    205,
-                    "pollination_expert"
+                    155,
+                    "honey_gatherer"
             );
 
     public static final SkillPerk MASTER_BEEKEEPER =

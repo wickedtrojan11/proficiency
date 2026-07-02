@@ -54,8 +54,9 @@ public class WoodcuttingEvents {
     private static final int MASTER_ARBORIST_MIN_LOGS = 4;
     private static final int MASTER_ARBORIST_MIN_HEIGHT = 3;
     private static final int MASTER_ARBORIST_MIN_LEAVES = 4;
-    private static final int FAST_DECAY_DELAY_TICKS = 80;
-    private static final int AUTUMN_WINDS_DELAY_TICKS = 40;
+    private static final int FAST_DECAY_DELAY_TICKS = 300;
+    private static final int AUTUMN_WINDS_DELAY_TICKS = 200;
+    private static final int LEAF_DECAY_JITTER_TICKS = 100;
     private static final int LEAF_DECAY_SCAN_RADIUS = 6;
 
     private static final Map<UUID, Integer> CHOPPING_STREAKS =
@@ -488,10 +489,6 @@ public class WoodcuttingEvents {
                         ? AUTUMN_WINDS_DELAY_TICKS
                         : FAST_DECAY_DELAY_TICKS;
 
-        long decayTick =
-                level.getGameTime()
-                        + delay;
-
         Map<BlockPos, Long> pendingForLevel =
                 PENDING_LEAF_DECAY.computeIfAbsent(
                         level,
@@ -527,7 +524,11 @@ public class WoodcuttingEvents {
 
                 pendingForLevel.merge(
                         leafPos.immutable(),
-                        decayTick,
+                        level.getGameTime()
+                                + delay
+                                + level.random.nextInt(
+                                LEAF_DECAY_JITTER_TICKS + 1
+                        ),
                         Math::min
                 );
             }

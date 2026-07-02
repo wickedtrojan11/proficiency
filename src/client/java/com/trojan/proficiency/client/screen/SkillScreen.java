@@ -1,5 +1,6 @@
 package com.trojan.proficiency.client.screen;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
@@ -15,6 +16,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 public class SkillScreen extends Screen {
+    private static final int DESIGN_WIDTH = 960;
+    private static final int DESIGN_HEIGHT = 500;
     private static final int SCREEN_MARGIN_X = 10;
     private static final int SCREEN_TOP = 20;
     private static final int SCREEN_BOTTOM_MARGIN = 20;
@@ -67,7 +70,7 @@ public class SkillScreen extends Screen {
     private static final int WOODCUTTING_TOGGLE_START_Y = 280;
     private static final int WOODCUTTING_TOGGLE_WIDTH = 150;
     private static final int WOODCUTTING_TOGGLE_HEIGHT = 12;
-    private static final int WOODCUTTING_TOGGLE_ROW_STEP = 22;
+    private static final int WOODCUTTING_TOGGLE_ROW_STEP = 15;
 
     private static final int SETTINGS_PANEL_X = 35;
     private static final int SETTINGS_PANEL_FILL_Y = 410;
@@ -140,6 +143,9 @@ public class SkillScreen extends Screen {
     private double lastMouseY;
 
     private int selectedSkill = 0;
+    private float uiScale = 1.0f;
+    private float uiOffsetX;
+    private float uiOffsetY;
 
     public SkillScreen() {
         super(Component.literal("Proficiency"));
@@ -148,6 +154,7 @@ public class SkillScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        updateUiTransform();
     }
 
     private String createProgressBar(int current, int max) {
@@ -216,6 +223,10 @@ public class SkillScreen extends Screen {
             int button
     ) {
 
+        updateUiTransform();
+        mouseX = (mouseX - uiOffsetX) / uiScale;
+        mouseY = (mouseY - uiOffsetY) / uiScale;
+
         // =========================
 // BACKGROUND TOGGLE
 // =========================
@@ -275,43 +286,23 @@ public class SkillScreen extends Screen {
 
         if (selectedSkill == 1) {
 
+            UUID playerId = minecraft.player.getUUID();
+            List<FeatureToggle> toggles =
+                    getVisibleWoodcuttingToggles(playerId);
+
             int toggleRow =
                     getWoodcuttingToggleRow(
                             mouseX,
-                            mouseY
+                            mouseY,
+                            toggles.size()
                     );
 
             if (toggleRow >= 0) {
 
-                UUID playerId =
-                        minecraft.player.getUUID();
-
-                switch (toggleRow) {
-
-                    case 0 ->
-                            ClientSkillState.toggleWoodcuttingLeafDecay(
-                                    playerId
-                            );
-
-                    case 1 ->
-                            ClientSkillState.toggleWoodcuttingWholeTree(
-                                    playerId
-                            );
-
-                    case 2 ->
-                            ClientSkillState.toggleWoodcuttingBonusDrops(
-                                    playerId
-                            );
-
-                    case 3 ->
-                            ClientSkillState.toggleWoodcuttingCleanFloor(
-                                    playerId
-                            );
-
-                    default -> {
-                        return false;
-                    }
-                }
+                toggleWoodcuttingFeature(
+                        playerId,
+                        toggles.get(toggleRow).id()
+                );
 
                 minecraft.player.playSound(
                         net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
@@ -325,53 +316,23 @@ public class SkillScreen extends Screen {
 
         if (selectedSkill == 2) {
 
+            UUID playerId = minecraft.player.getUUID();
+            List<FeatureToggle> toggles =
+                    getVisibleFarmingToggles(playerId);
+
             int toggleRow =
                     getWoodcuttingToggleRow(
                             mouseX,
-                            mouseY
+                            mouseY,
+                            toggles.size()
                     );
 
             if (toggleRow >= 0) {
 
-                UUID playerId =
-                        minecraft.player.getUUID();
-
-                switch (toggleRow) {
-
-                    case 0 ->
-                            ClientSkillState.toggleFarmingBonusHarvests(
-                                    playerId
-                            );
-
-                    case 1 ->
-                            ClientSkillState.toggleFarmingAnimalFollow(
-                                    playerId
-                            );
-
-                    case 2 ->
-                            ClientSkillState.toggleFarmingAutoReplant(
-                                    playerId
-                            );
-
-                    case 3 ->
-                            ClientSkillState.toggleFarmingGatheringBonusDrops(
-                                    playerId
-                            );
-
-                    case 4 ->
-                            ClientSkillState.toggleFarmingAnimalDrops(
-                                    playerId
-                            );
-
-                    case 5 ->
-                            ClientSkillState.toggleFarmingBeekeeping(
-                                    playerId
-                            );
-
-                    default -> {
-                        return false;
-                    }
-                }
+                toggleFarmingFeature(
+                        playerId,
+                        toggles.get(toggleRow).id()
+                );
 
                 minecraft.player.playSound(
                         net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
@@ -571,12 +532,31 @@ public class SkillScreen extends Screen {
             float partialTick
     ) {
 
+        updateUiTransform();
+
         renderBackground(
                 graphics,
                 mouseX,
                 mouseY,
                 partialTick
         );
+
+        int actualWidth = width;
+        int actualHeight = height;
+        int designMouseX = Math.round(
+                (mouseX - uiOffsetX) / uiScale
+        );
+        int designMouseY = Math.round(
+                (mouseY - uiOffsetY) / uiScale
+        );
+
+        graphics.pose().pushPose();
+        graphics.pose().translate(uiOffsetX, uiOffsetY, 0.0f);
+        graphics.pose().scale(uiScale, uiScale, 1.0f);
+        width = DESIGN_WIDTH;
+        height = DESIGN_HEIGHT;
+        mouseX = designMouseX;
+        mouseY = designMouseY;
 
 
         // =========================
@@ -659,111 +639,21 @@ public class SkillScreen extends Screen {
 
         if (selectedSkill == 1) {
 
-            UUID playerId =
-                    minecraft.player.getUUID();
-
-            drawWoodcuttingFeatureToggle(
+            drawFeatureToggles(
                     graphics,
-                    "Leaf Decay",
-                    ClientSkillState.isWoodcuttingLeafDecayEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-            );
-
-            drawWoodcuttingFeatureToggle(
-                    graphics,
-                    "Whole Tree",
-                    ClientSkillState.isWoodcuttingWholeTreeEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-                            + WOODCUTTING_TOGGLE_ROW_STEP
-            );
-
-            drawWoodcuttingFeatureToggle(
-                    graphics,
-                    "Bonus Drops",
-                    ClientSkillState.isWoodcuttingBonusDropsEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-                            + WOODCUTTING_TOGGLE_ROW_STEP * 2
-            );
-
-            drawWoodcuttingFeatureToggle(
-                    graphics,
-                    "Clean Floor",
-                    ClientSkillState.isWoodcuttingCleanFloorEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-                            + WOODCUTTING_TOGGLE_ROW_STEP * 3
+                    getVisibleWoodcuttingToggles(
+                            minecraft.player.getUUID()
+                    )
             );
         }
 
         if (selectedSkill == 2) {
 
-            UUID playerId =
-                    minecraft.player.getUUID();
-
-            drawWoodcuttingFeatureToggle(
+            drawFeatureToggles(
                     graphics,
-                    "Bonus Harvests",
-                    ClientSkillState.isFarmingBonusHarvestsEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-            );
-
-            drawWoodcuttingFeatureToggle(
-                    graphics,
-                    "Animal Follow",
-                    ClientSkillState.isFarmingAnimalFollowEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-                            + WOODCUTTING_TOGGLE_ROW_STEP
-            );
-
-            drawWoodcuttingFeatureToggle(
-                    graphics,
-                    "Auto Replant",
-                    ClientSkillState.isFarmingAutoReplantEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-                            + WOODCUTTING_TOGGLE_ROW_STEP * 2
-            );
-
-            drawWoodcuttingFeatureToggle(
-                    graphics,
-                    "Gathering Drops",
-                    ClientSkillState.isFarmingGatheringBonusDropsEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-                            + WOODCUTTING_TOGGLE_ROW_STEP * 3
-            );
-
-            drawWoodcuttingFeatureToggle(
-                    graphics,
-                    "Animal Drops",
-                    ClientSkillState.isFarmingAnimalDropsEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-                            + WOODCUTTING_TOGGLE_ROW_STEP * 4
-            );
-
-            drawWoodcuttingFeatureToggle(
-                    graphics,
-                    "Beekeeping",
-                    ClientSkillState.isFarmingBeekeepingEnabled(
-                            playerId
-                    ),
-                    WOODCUTTING_TOGGLE_START_Y
-                            + WOODCUTTING_TOGGLE_ROW_STEP * 5
+                    getVisibleFarmingToggles(
+                            minecraft.player.getUUID()
+                    )
             );
         }
 
@@ -1890,7 +1780,25 @@ public class SkillScreen extends Screen {
                 }
             }
         }
+
+        width = actualWidth;
+        height = actualHeight;
+        graphics.pose().popPose();
     }
+
+    private void updateUiTransform() {
+
+        uiScale = Math.min(
+                1.0f,
+                Math.min(
+                        width / (float) DESIGN_WIDTH,
+                        height / (float) DESIGN_HEIGHT
+                )
+        );
+        uiOffsetX = (width - DESIGN_WIDTH * uiScale) / 2.0f;
+        uiOffsetY = (height - DESIGN_HEIGHT * uiScale) / 2.0f;
+    }
+
     private int getMiningSpeedBonusPercent(UUID playerId) {
 
         int hasteLevel = 0;
@@ -2806,7 +2714,8 @@ public class SkillScreen extends Screen {
 
     private int getWoodcuttingToggleRow(
             double mouseX,
-            double mouseY
+            double mouseY,
+            int toggleRows
     ) {
 
         if (
@@ -2817,11 +2726,6 @@ public class SkillScreen extends Screen {
 
             return -1;
         }
-
-        int toggleRows =
-                selectedSkill == 2
-                        ? 6
-                        : 4;
 
         for (int row = 0; row < toggleRows; row++) {
 
@@ -2841,6 +2745,234 @@ public class SkillScreen extends Screen {
         }
 
         return -1;
+    }
+
+    private List<FeatureToggle> getVisibleWoodcuttingToggles(
+            UUID playerId
+    ) {
+
+        List<FeatureToggle> toggles = new ArrayList<>();
+
+        if (hasAnyWoodcuttingPerk(playerId, "fast_decay", "autumn_winds")) {
+            toggles.add(new FeatureToggle(
+                    "leaf_decay",
+                    "Leaf Decay",
+                    ClientSkillState.isWoodcuttingLeafDecayEnabled(playerId)
+            ));
+        }
+
+        if (hasAnyWoodcuttingPerk(playerId, "master_arborist")) {
+            toggles.add(new FeatureToggle(
+                    "whole_tree",
+                    "Whole Tree",
+                    ClientSkillState.isWoodcuttingWholeTreeEnabled(playerId)
+            ));
+        }
+
+        if (hasAnyWoodcuttingPerk(
+                playerId,
+                "twigs_everywhere",
+                "green_thumb",
+                "apple_picker",
+                "natures_gift",
+                "friction_fire"
+        )) {
+            toggles.add(new FeatureToggle(
+                    "bonus_drops",
+                    "Bonus Drops",
+                    ClientSkillState.isWoodcuttingBonusDropsEnabled(playerId)
+            ));
+        }
+
+        if (hasAnyWoodcuttingPerk(playerId, "clean_forest_floor")) {
+            toggles.add(new FeatureToggle(
+                    "clean_floor",
+                    "Clean Floor",
+                    ClientSkillState.isWoodcuttingCleanFloorEnabled(playerId)
+            ));
+        }
+
+        return toggles;
+    }
+
+    private List<FeatureToggle> getVisibleFarmingToggles(
+            UUID playerId
+    ) {
+
+        List<FeatureToggle> toggles = new ArrayList<>();
+
+        if (hasAnyFarmingPerk(playerId, "better_yields", "bountiful_harvest")) {
+            toggles.add(new FeatureToggle(
+                    "bonus_harvests",
+                    "Bonus Harvests",
+                    ClientSkillState.isFarmingBonusHarvestsEnabled(playerId)
+            ));
+        }
+
+        if (hasAnyFarmingPerk(playerId, "auto_replant")) {
+            toggles.add(new FeatureToggle(
+                    "auto_replant",
+                    "Auto Replant",
+                    ClientSkillState.isFarmingAutoReplantEnabled(playerId)
+            ));
+        }
+
+        if (hasAnyFarmingPerk(playerId, "herd_instinct")) {
+            toggles.add(new FeatureToggle(
+                    "animal_follow",
+                    "Animal Follow",
+                    ClientSkillState.isFarmingAnimalFollowEnabled(playerId)
+            ));
+        }
+
+        if (hasAnyFarmingPerk(
+                playerId,
+                "healthy_stock",
+                "prime_cuts",
+                "efficient_rancher",
+                "bountiful_herds"
+        )) {
+            toggles.add(new FeatureToggle(
+                    "animal_drops",
+                    "Animal Drops",
+                    ClientSkillState.isFarmingAnimalDropsEnabled(playerId)
+            ));
+        }
+
+        if (hasAnyFarmingPerk(
+                playerId,
+                "mushroom_expert",
+                "berry_harvester",
+                "bountiful_harvest"
+        )) {
+            toggles.add(new FeatureToggle(
+                    "gathering_bonus_drops",
+                    "Gathering Drops",
+                    ClientSkillState
+                            .isFarmingGatheringBonusDropsEnabled(playerId)
+            ));
+        }
+
+        if (hasAnyFarmingPerk(
+                playerId,
+                "busy_bees",
+                "pollination_expert",
+                "honey_gatherer",
+                "honey_mastery",
+                "master_beekeeper"
+        )) {
+            toggles.add(new FeatureToggle(
+                    "beekeeping",
+                    "Beekeeping",
+                    ClientSkillState.isFarmingBeekeepingEnabled(playerId)
+            ));
+        }
+
+        if (hasAnyFarmingPerk(
+                playerId,
+                "animal_faster_growth",
+                "experienced_breeder",
+                "extra_wool",
+                "healthy_flocks",
+                "herd_instinct",
+                "shepherds_touch",
+                "shepherds_call"
+        )) {
+            toggles.add(new FeatureToggle(
+                    "animal_overlay",
+                    "Animal Overlay",
+                    ClientSkillState.isFarmingAnimalOverlayEnabled(playerId)
+            ));
+        }
+
+        return toggles;
+    }
+
+    private boolean hasAnyWoodcuttingPerk(
+            UUID playerId,
+            String... perkIds
+    ) {
+
+        for (String perkId : perkIds) {
+            if (ClientSkillState.hasWoodcuttingPerk(playerId, perkId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean hasAnyFarmingPerk(
+            UUID playerId,
+            String... perkIds
+    ) {
+
+        for (String perkId : perkIds) {
+            if (ClientSkillState.hasFarmingPerk(playerId, perkId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void toggleWoodcuttingFeature(
+            UUID playerId,
+            String toggleId
+    ) {
+
+        switch (toggleId) {
+            case "leaf_decay" ->
+                    ClientSkillState.toggleWoodcuttingLeafDecay(playerId);
+            case "whole_tree" ->
+                    ClientSkillState.toggleWoodcuttingWholeTree(playerId);
+            case "bonus_drops" ->
+                    ClientSkillState.toggleWoodcuttingBonusDrops(playerId);
+            case "clean_floor" ->
+                    ClientSkillState.toggleWoodcuttingCleanFloor(playerId);
+        }
+    }
+
+    private void toggleFarmingFeature(
+            UUID playerId,
+            String toggleId
+    ) {
+
+        switch (toggleId) {
+            case "bonus_harvests" ->
+                    ClientSkillState.toggleFarmingBonusHarvests(playerId);
+            case "auto_replant" ->
+                    ClientSkillState.toggleFarmingAutoReplant(playerId);
+            case "animal_follow" ->
+                    ClientSkillState.toggleFarmingAnimalFollow(playerId);
+            case "animal_drops" ->
+                    ClientSkillState.toggleFarmingAnimalDrops(playerId);
+            case "gathering_bonus_drops" ->
+                    ClientSkillState.toggleFarmingGatheringBonusDrops(playerId);
+            case "beekeeping" ->
+                    ClientSkillState.toggleFarmingBeekeeping(playerId);
+            case "animal_overlay" ->
+                    ClientSkillState.toggleFarmingAnimalOverlay(playerId);
+        }
+    }
+
+    private void drawFeatureToggles(
+            GuiGraphics graphics,
+            List<FeatureToggle> toggles
+    ) {
+
+        for (int row = 0; row < toggles.size(); row++) {
+
+            FeatureToggle toggle = toggles.get(row);
+
+            drawWoodcuttingFeatureToggle(
+                    graphics,
+                    toggle.label(),
+                    toggle.enabled(),
+                    WOODCUTTING_TOGGLE_START_Y
+                            + row * WOODCUTTING_TOGGLE_ROW_STEP
+            );
+        }
     }
 
     private void drawWoodcuttingFeatureToggle(
@@ -2922,6 +3054,13 @@ public class SkillScreen extends Screen {
                 y + 2,
                 0xFFFFFFFF
         );
+    }
+
+    private record FeatureToggle(
+            String id,
+            String label,
+            boolean enabled
+    ) {
     }
     @Override
     public boolean mouseDragged(

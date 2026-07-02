@@ -7,6 +7,11 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.animal.Bee;
+import net.minecraft.world.entity.animal.Chicken;
+import net.minecraft.world.entity.animal.Cow;
+import net.minecraft.world.entity.animal.Pig;
+import net.minecraft.world.entity.animal.Rabbit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +43,11 @@ public final class AnimalHusbandryOverlay {
                         || minecraft.options.hideGui
                         || !(minecraft.crosshairPickEntity
                         instanceof Animal animal)
+                        || !isFarmAnimal(animal)
+                        || !ClientSkillState
+                        .isFarmingAnimalOverlayEnabled(
+                                minecraft.player.getUUID()
+                        )
         ) {
             return;
         }
@@ -61,6 +71,16 @@ public final class AnimalHusbandryOverlay {
                     0xFFE6D68A
             );
         }
+    }
+
+    private static boolean isFarmAnimal(Animal animal) {
+
+        return animal instanceof Cow
+                || animal instanceof Chicken
+                || animal instanceof Sheep
+                || animal instanceof Pig
+                || animal instanceof Rabbit
+                || animal instanceof Bee;
     }
 
     private static List<String> getStatusLines(

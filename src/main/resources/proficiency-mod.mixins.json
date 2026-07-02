@@ -12,6 +12,7 @@
 		"NetherWartGrowthMixin",
 		"SheepShearingMixin",
 		"SaplingGrowthMixin",
+		"SaplingPlacementMixin",
 		"SweetBerryGrowthMixin"
 	],
 	"injectors": {

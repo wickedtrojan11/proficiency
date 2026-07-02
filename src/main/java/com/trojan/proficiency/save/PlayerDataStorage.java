@@ -33,6 +33,7 @@ public class PlayerDataStorage {
             LEGACY_SAVE_FOLDER;
     private static Path worldFolder;
     private static boolean singleplayer;
+    private static UUID singleplayerOwnerId;
 
     static {
 
@@ -52,6 +53,10 @@ public class PlayerDataStorage {
                 );
         singleplayer =
                 server.isSingleplayer();
+        singleplayerOwnerId =
+                server.getSingleplayerProfile() == null
+                        ? null
+                        : server.getSingleplayerProfile().getId();
 
         saveFolder =
                 worldFolder
@@ -168,6 +173,7 @@ public class PlayerDataStorage {
             if (!playerFile.exists()) {
 
                 migrateLegacyPlayerFile(
+                        playerId,
                         playerFile
                 );
             }
@@ -179,24 +185,7 @@ public class PlayerDataStorage {
                         playerId
                 );
 
-                PlayerData defaultData =
-                        new PlayerData();
-                PlayerData fallbackData =
-                        loadSingleplayerFallback(
-                                playerId,
-                                defaultData
-                        );
-
-                if (fallbackData != defaultData) {
-
-                    savePlayer(
-                            playerId,
-                            fallbackData,
-                            "singleplayer uuid fallback"
-                    );
-                }
-
-                return fallbackData;
+                return new PlayerData();
             }
 
             ProficiencyMod.LOGGER.info(
@@ -224,110 +213,6 @@ public class PlayerDataStorage {
                 return new PlayerData();
             }
 
-            PlayerData fallbackData =
-                    loadSingleplayerFallback(
-                            playerId,
-                            data
-                    );
-
-            if (fallbackData != data) {
-
-                savePlayer(
-                        playerId,
-                        fallbackData,
-                        "singleplayer uuid fallback"
-                );
-            }
-
-            return fallbackData;
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-        }
-
-        return new PlayerData();
-    }
-
-    private static PlayerData loadSingleplayerFallback(
-            UUID playerId,
-            PlayerData currentData
-    ) {
-
-        if (!singleplayer) {
-
-            return currentData;
-        }
-
-        File[] playerFiles =
-                saveFolder.listFiles(
-                        (folder, name) ->
-                                name.endsWith(".json")
-                                        && !name.equals(
-                                                playerId + ".json"
-                                        )
-                );
-
-        if (playerFiles == null) {
-
-            return currentData;
-        }
-
-        PlayerData bestData =
-                currentData;
-        File bestFile = null;
-        int bestScore =
-                getProgressScore(currentData);
-
-        for (File file : playerFiles) {
-
-            PlayerData candidateData =
-                    readPlayerFile(file);
-
-            if (candidateData == null) {
-                continue;
-            }
-
-            int candidateScore =
-                    getProgressScore(candidateData);
-
-            if (candidateScore > bestScore) {
-
-                bestData = candidateData;
-                bestFile = file;
-                bestScore = candidateScore;
-            }
-        }
-
-        if (bestFile != null) {
-
-            ProficiencyMod.LOGGER.info(
-                    "Using singleplayer proficiency fallback for {} from {}",
-                    playerId,
-                    bestFile.getAbsolutePath()
-            );
-        }
-
-        return bestData;
-    }
-
-    private static PlayerData readPlayerFile(
-            File playerFile
-    ) {
-
-        try {
-
-            FileReader reader =
-                    new FileReader(playerFile);
-
-            PlayerData data =
-                    GSON.fromJson(
-                            reader,
-                            PlayerData.class
-                    );
-
-            reader.close();
-
             return data;
 
         } catch (Exception e) {
@@ -335,40 +220,7 @@ public class PlayerDataStorage {
             e.printStackTrace();
         }
 
-        return null;
-    }
-
-    private static int getProgressScore(
-            PlayerData data
-    ) {
-
-        if (data == null) {
-
-            return 0;
-        }
-
-        int unlockedPerks =
-                data.getUnlockedMiningPerks() == null
-                        ? 0
-                        : data.getUnlockedMiningPerks()
-                                .size();
-
-        int unlockedFarmingPerks =
-                data.getUnlockedFarmingPerks() == null
-                        ? 0
-                        : data.getUnlockedFarmingPerks()
-                                .size();
-
-        return data.getMiningLevel() * 100000
-                + data.getMiningXp() * 100
-                + data.getMiningPerkPoints() * 1000
-                + unlockedPerks * 10000
-                + data.getWoodcuttingLevel() * 100
-                + data.getWoodcuttingXp()
-                + data.getFarmingLevel() * 100
-                + data.getFarmingXp()
-                + data.getFarmingPerkPoints() * 1000
-                + unlockedFarmingPerks * 10000;
+        return new PlayerData();
     }
 
     private static File getPlayerFile(
@@ -393,6 +245,7 @@ public class PlayerDataStorage {
     }
 
     private static void migrateLegacyPlayerFile(
+            UUID playerId,
             File playerFile
     ) {
 
@@ -404,6 +257,9 @@ public class PlayerDataStorage {
 
         if (
                 !legacyFile.exists()
+                        || !singleplayer
+                        || singleplayerOwnerId == null
+                        || !singleplayerOwnerId.equals(playerId)
                         || worldFolder == null
                         || isNewerThanLegacyFile(
                                 worldFolder,

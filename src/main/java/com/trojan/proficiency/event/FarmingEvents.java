@@ -31,6 +31,8 @@ import java.util.UUID;
 
 public final class FarmingEvents {
 
+    private static final int HONEY_COLLECTION_XP = 2;
+
     private static final int HARVEST_XP = 1;
     private static final int PLANTING_XP = 1;
     private static final int GATHERING_XP = 1;
@@ -221,6 +223,12 @@ public final class FarmingEvents {
                     ItemStack heldItem =
                             player.getItemInHand(hand);
 
+                    awardHoneyCollectionXp(
+                            serverPlayer,
+                            clickedState,
+                            heldItem
+                    );
+
                     applyHoneyGatherer(
                             serverPlayer,
                             clickedPos,
@@ -361,6 +369,31 @@ public final class FarmingEvents {
         });
     }
 
+    private static void awardHoneyCollectionXp(
+            ServerPlayer player,
+            BlockState state,
+            ItemStack heldItem
+    ) {
+
+        if (
+                !(state.is(Blocks.BEEHIVE)
+                        || state.is(Blocks.BEE_NEST))
+                        || state.getValue(BeehiveBlock.HONEY_LEVEL)
+                        < BeehiveBlock.MAX_HONEY_LEVELS
+                        || !(
+                        heldItem.is(Items.SHEARS)
+                                || heldItem.is(Items.GLASS_BOTTLE)
+                )
+        ) {
+            return;
+        }
+
+        SkillManager.addFarmingXp(
+                player,
+                HONEY_COLLECTION_XP
+        );
+    }
+
     private static void applyBonusMushroom(
             ServerPlayer player,
             BlockPos pos,
@@ -440,7 +473,7 @@ public final class FarmingEvents {
                         BeehiveBlock.HONEY_LEVEL
                 ) < BeehiveBlock.MAX_HONEY_LEVELS
                         || !SkillManager
-                        .isFarmingGatheringBonusDropsEnabled(
+                        .isFarmingBeekeepingEnabled(
                                 player.getUUID()
                         )
                         || !SkillManager.hasFarmingPerk(

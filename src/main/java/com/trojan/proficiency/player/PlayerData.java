@@ -67,6 +67,8 @@ public class PlayerData {
 
     private Boolean farmingBeekeepingEnabled = true;
 
+    private Boolean farmingAnimalOverlayEnabled = true;
+
     private Set<String> selectedOreSense =
             new HashSet<>();
     public Set<String> getSelectedOreSense() {
@@ -392,5 +394,18 @@ public class PlayerData {
     ) {
 
         farmingBeekeepingEnabled = enabled;
+    }
+
+    public boolean isFarmingAnimalOverlayEnabled() {
+
+        return farmingAnimalOverlayEnabled == null
+                || farmingAnimalOverlayEnabled;
+    }
+
+    public void setFarmingAnimalOverlayEnabled(
+            boolean enabled
+    ) {
+
+        farmingAnimalOverlayEnabled = enabled;
     }
 }

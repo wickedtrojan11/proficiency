@@ -12,8 +12,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 public record SkillStatePayload(
+        UUID playerId,
         SkillState mining,
         SkillState woodcutting,
         SkillState farming,
@@ -40,6 +42,7 @@ public record SkillStatePayload(
             SkillStatePayload payload
     ) {
 
+        buffer.writeUUID(payload.playerId);
         writeSkillState(buffer, payload.mining);
         writeSkillState(buffer, payload.woodcutting);
         writeSkillState(buffer, payload.farming);
@@ -51,6 +54,7 @@ public record SkillStatePayload(
     ) {
 
         return new SkillStatePayload(
+                buffer.readUUID(),
                 readSkillState(buffer),
                 readSkillState(buffer),
                 readSkillState(buffer),
