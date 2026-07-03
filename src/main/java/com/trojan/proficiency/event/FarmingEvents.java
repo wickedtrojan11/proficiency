@@ -1,6 +1,7 @@
 package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.skill.SkillType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -410,7 +411,7 @@ public final class FarmingEvents {
                         "mushroom_expert"
                 )
                         || player.getRandom().nextFloat()
-                        >= 0.20f
+                        >= SkillManager.scalePerkChance(player.getUUID(), SkillType.FARMING, 0.20f)
         ) {
             return;
         }
@@ -441,7 +442,7 @@ public final class FarmingEvents {
                         "berry_harvester"
                 )
                         || player.getRandom().nextFloat()
-                        >= 0.20f
+                        >= SkillManager.scalePerkChance(player.getUUID(), SkillType.FARMING, 0.20f)
         ) {
             return;
         }
@@ -481,7 +482,7 @@ public final class FarmingEvents {
                         "honey_gatherer"
                 )
                         || player.getRandom().nextFloat()
-                        >= 0.15f
+                        >= SkillManager.scalePerkChance(player.getUUID(), SkillType.FARMING, 0.15f)
         ) {
             return;
         }
@@ -551,7 +552,7 @@ public final class FarmingEvents {
                         "better_yields"
                 )
                         || player.getRandom().nextFloat()
-                        >= 0.10f
+                        >= SkillManager.scalePerkChance(player.getUUID(), SkillType.FARMING, 0.10f)
         ) {
 
             return;

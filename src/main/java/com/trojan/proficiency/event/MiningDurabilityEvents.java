@@ -11,6 +11,7 @@ import net.minecraft.world.item.PickaxeItem;
 
 import java.util.Random;
 import net.minecraft.network.chat.Component;
+import com.trojan.proficiency.skill.SkillType;
 public class MiningDurabilityEvents {
 
     private static final Random RANDOM =
@@ -102,6 +103,12 @@ public class MiningDurabilityEvents {
             // =========================
 
             if (saveChance > 0.0f) {
+
+                saveChance = SkillManager.scalePerkChance(
+                        serverPlayer.getUUID(),
+                        SkillType.MINING,
+                        saveChance
+                );
 
                 if (RANDOM.nextFloat()
                         <= saveChance) {

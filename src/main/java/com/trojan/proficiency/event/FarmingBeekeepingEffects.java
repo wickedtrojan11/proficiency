@@ -1,6 +1,7 @@
 package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.skill.SkillType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.core.BlockPos;
@@ -29,11 +30,11 @@ public final class FarmingBeekeepingEffects {
     private static final int HONEY_INTERVAL_TICKS = 200;
     private static final int CALM_DELAY_TICKS = 2;
     private static final double BEE_SEARCH_RADIUS = 16.0;
-    private static final double POLLINATION_RADIUS_BUSY_BEES = 4.0;
-    private static final double POLLINATION_RADIUS_EXPERT = 6.0;
+    private static final double POLLINATION_RADIUS_BUSY_BEES = 6.0;
+    private static final double POLLINATION_RADIUS_EXPERT = 9.0;
     private static final double HIVE_SEARCH_RADIUS = 12.0;
-    private static final float BUSY_BEES_GROWTH_CHANCE = 0.18f;
-    private static final float POLLINATION_EXPERT_GROWTH_CHANCE = 0.30f;
+    private static final float BUSY_BEES_GROWTH_CHANCE = 0.28f;
+    private static final float POLLINATION_EXPERT_GROWTH_CHANCE = 0.42f;
     private static final float HONEY_MASTERY_FILL_CHANCE = 0.18f;
     private static final float MASTER_BEEKEEPER_EXTRA_CHANCE = 0.25f;
     private static final float MASTER_BEEKEEPER_CALM_CHANCE = 0.75f;
@@ -101,7 +102,7 @@ public final class FarmingBeekeepingEffects {
             if (
                     heldItem.is(Items.SHEARS)
                             && serverPlayer.getRandom().nextFloat()
-                            < MASTER_BEEKEEPER_EXTRA_CHANCE
+                            < SkillManager.scalePerkChance(serverPlayer.getUUID(), SkillType.FARMING, MASTER_BEEKEEPER_EXTRA_CHANCE)
             ) {
 
                 Block.popResource(
@@ -112,7 +113,7 @@ public final class FarmingBeekeepingEffects {
             } else if (
                     heldItem.is(Items.GLASS_BOTTLE)
                             && serverPlayer.getRandom().nextFloat()
-                            < MASTER_BEEKEEPER_EXTRA_CHANCE
+                            < SkillManager.scalePerkChance(serverPlayer.getUUID(), SkillType.FARMING, MASTER_BEEKEEPER_EXTRA_CHANCE)
             ) {
 
                 Block.popResource(
@@ -124,7 +125,7 @@ public final class FarmingBeekeepingEffects {
 
             if (
                     serverPlayer.getRandom().nextFloat()
-                            < MASTER_BEEKEEPER_CALM_CHANCE
+                            < SkillManager.scalePerkChance(serverPlayer.getUUID(), SkillType.FARMING, MASTER_BEEKEEPER_CALM_CHANCE)
             ) {
 
                 PENDING_BEE_CALMS.add(
@@ -196,6 +197,12 @@ public final class FarmingBeekeepingEffects {
                         ? POLLINATION_EXPERT_GROWTH_CHANCE
                         : BUSY_BEES_GROWTH_CHANCE;
 
+        chance = SkillManager.scalePerkChance(
+                player.getUUID(),
+                SkillType.FARMING,
+                chance
+        );
+
         for (Bee bee : activeBees) {
 
             if (level.random.nextFloat() >= chance) {
@@ -254,7 +261,7 @@ public final class FarmingBeekeepingEffects {
             if (
                     honeyLevel >= BeehiveBlock.MAX_HONEY_LEVELS
                             || level.random.nextFloat()
-                            >= HONEY_MASTERY_FILL_CHANCE
+                            >= SkillManager.scalePerkChance(player.getUUID(), SkillType.FARMING, HONEY_MASTERY_FILL_CHANCE)
             ) {
                 continue;
             }

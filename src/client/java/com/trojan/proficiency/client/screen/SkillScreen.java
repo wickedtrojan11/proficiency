@@ -81,11 +81,15 @@ public class SkillScreen extends Screen {
     private static final int SETTINGS_TITLE_X = 50;
     private static final int SETTINGS_TITLE_Y = 415;
     private static final int BACKGROUND_TOGGLE_X = 40;
-    private static final int BACKGROUND_TOGGLE_Y = 440;
+    private static final int BACKGROUND_TOGGLE_Y = 450;
     private static final int BACKGROUND_TOGGLE_WIDTH = 140;
     private static final int BACKGROUND_TOGGLE_HEIGHT = 15;
     private static final int BACKGROUND_LABEL_X = 50;
-    private static final int BACKGROUND_LABEL_Y = 440;
+    private static final int BACKGROUND_LABEL_Y = 450;
+    private static final int HEAVY_SWINGS_TOGGLE_X = 40;
+    private static final int HEAVY_SWINGS_TOGGLE_Y = 432;
+    private static final int HEAVY_SWINGS_TOGGLE_WIDTH = 150;
+    private static final int HEAVY_SWINGS_TOGGLE_HEIGHT = 12;
 
     private static final int TREE_PANEL_X = 250;
     private static final int TREE_PANEL_Y = 50;
@@ -134,6 +138,14 @@ public class SkillScreen extends Screen {
     private static final int PERK_AVAILABLE_FILL_COLOR = 0xFF665000;
     private static final int PERK_AVAILABLE_BORDER_COLOR = 0xFFFFAA00;
     private static final int PERK_UNLOCKED_COLOR = 0xFFFFD700;
+    private static final int PRESTIGE_BUTTON_X = 810;
+    private static final int PRESTIGE_BUTTON_Y = 375;
+    private static final int PRESTIGE_BUTTON_WIDTH = 110;
+    private static final int PRESTIGE_BUTTON_HEIGHT = 20;
+    private static final int PRESTIGE_DIALOG_X = 300;
+    private static final int PRESTIGE_DIALOG_Y = 115;
+    private static final int PRESTIGE_DIALOG_WIDTH = 360;
+    private static final int PRESTIGE_DIALOG_HEIGHT = 260;
 
     private boolean backgroundEnabled = true;;
     private boolean dragging = false;
@@ -146,6 +158,7 @@ public class SkillScreen extends Screen {
     private float uiScale = 1.0f;
     private float uiOffsetX;
     private float uiOffsetY;
+    private boolean confirmingPrestige;
 
     public SkillScreen() {
         super(Component.literal("Proficiency"));
@@ -226,6 +239,62 @@ public class SkillScreen extends Screen {
         updateUiTransform();
         mouseX = (mouseX - uiOffsetX) / uiScale;
         mouseY = (mouseY - uiOffsetY) / uiScale;
+
+        if (
+                selectedSkill == 0
+                        && ClientSkillState.hasMiningPerk(
+                        minecraft.player.getUUID(),
+                        "heavy_swings"
+                )
+                        && isInside(
+                        mouseX,
+                        mouseY,
+                        HEAVY_SWINGS_TOGGLE_X,
+                        HEAVY_SWINGS_TOGGLE_Y,
+                        HEAVY_SWINGS_TOGGLE_WIDTH,
+                        HEAVY_SWINGS_TOGGLE_HEIGHT
+                )
+        ) {
+            ClientSkillState.toggleMiningHeavySwings(
+                    minecraft.player.getUUID()
+            );
+            minecraft.player.playSound(
+                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                    1.0f,
+                    1.0f
+            );
+            return true;
+        }
+
+        if (confirmingPrestige) {
+            if (isInside(mouseX, mouseY, 390, 335, 80, 22)) {
+                ClientSkillState.requestPrestige(getSelectedSkillType());
+                confirmingPrestige = false;
+                return true;
+            }
+
+            if (isInside(mouseX, mouseY, 490, 335, 80, 22)) {
+                confirmingPrestige = false;
+                return true;
+            }
+
+            return true;
+        }
+
+        if (
+                getSelectedSkillLevel() >= 150
+                        && isInside(
+                        mouseX,
+                        mouseY,
+                        PRESTIGE_BUTTON_X,
+                        PRESTIGE_BUTTON_Y,
+                        PRESTIGE_BUTTON_WIDTH,
+                        PRESTIGE_BUTTON_HEIGHT
+                )
+        ) {
+            confirmingPrestige = true;
+            return true;
+        }
 
         // =========================
 // BACKGROUND TOGGLE
@@ -1268,6 +1337,27 @@ public class SkillScreen extends Screen {
                 );
             }
         }
+        if (
+                selectedSkill == 0
+                        && ClientSkillState.hasMiningPerk(
+                        minecraft.player.getUUID(),
+                        "heavy_swings"
+                )
+        ) {
+            boolean heavySwingsEnabled =
+                    ClientSkillState.isMiningHeavySwingsEnabled(
+                            minecraft.player.getUUID()
+                    );
+            graphics.drawString(
+                    font,
+                    "Heavy Swings: "
+                            + (heavySwingsEnabled ? "ON" : "OFF"),
+                    HEAVY_SWINGS_TOGGLE_X,
+                    HEAVY_SWINGS_TOGGLE_Y,
+                    heavySwingsEnabled ? 0x55FF55 : 0xFF5555
+            );
+        }
+
         graphics.drawString(
                 font,
                 "Background: "
@@ -1781,6 +1871,12 @@ public class SkillScreen extends Screen {
             }
         }
 
+        drawPrestigeControls(graphics);
+
+        if (confirmingPrestige) {
+            drawPrestigeConfirmation(graphics);
+        }
+
         width = actualWidth;
         height = actualHeight;
         graphics.pose().popPose();
@@ -1797,6 +1893,160 @@ public class SkillScreen extends Screen {
         );
         uiOffsetX = (width - DESIGN_WIDTH * uiScale) / 2.0f;
         uiOffsetY = (height - DESIGN_HEIGHT * uiScale) / 2.0f;
+    }
+
+    private void drawPrestigeControls(GuiGraphics graphics) {
+
+        int prestige = getSelectedPrestige();
+        int rankColor = getPrestigeColor(prestige);
+
+        graphics.drawString(
+                font,
+                "Prestige: " + getPrestigeRank(prestige),
+                BOTTOM_INFO_X,
+                height - 90,
+                rankColor
+        );
+        graphics.drawString(
+                font,
+                "Perk Effectiveness: +" + prestige + "%",
+                BOTTOM_INFO_X,
+                height - 76,
+                0xFFDDDDDD
+        );
+
+        if (getSelectedSkillLevel() < 150) {
+            return;
+        }
+
+        graphics.fill(
+                PRESTIGE_BUTTON_X,
+                PRESTIGE_BUTTON_Y,
+                PRESTIGE_BUTTON_X + PRESTIGE_BUTTON_WIDTH,
+                PRESTIGE_BUTTON_Y + PRESTIGE_BUTTON_HEIGHT,
+                0xFF6A4A10
+        );
+        graphics.renderOutline(
+                PRESTIGE_BUTTON_X,
+                PRESTIGE_BUTTON_Y,
+                PRESTIGE_BUTTON_WIDTH,
+                PRESTIGE_BUTTON_HEIGHT,
+                0xFFFFD700
+        );
+        graphics.drawCenteredString(
+                font,
+                "Prestige Skill",
+                PRESTIGE_BUTTON_X + PRESTIGE_BUTTON_WIDTH / 2,
+                PRESTIGE_BUTTON_Y + 6,
+                0xFFFFD700
+        );
+    }
+
+    private void drawPrestigeConfirmation(GuiGraphics graphics) {
+
+        graphics.fill(0, 0, width, height, 0x99000000);
+        graphics.fill(
+                PRESTIGE_DIALOG_X,
+                PRESTIGE_DIALOG_Y,
+                PRESTIGE_DIALOG_X + PRESTIGE_DIALOG_WIDTH,
+                PRESTIGE_DIALOG_Y + PRESTIGE_DIALOG_HEIGHT,
+                0xFF151515
+        );
+        graphics.renderOutline(
+                PRESTIGE_DIALOG_X,
+                PRESTIGE_DIALOG_Y,
+                PRESTIGE_DIALOG_WIDTH,
+                PRESTIGE_DIALOG_HEIGHT,
+                0xFFFFD700
+        );
+
+        int x = PRESTIGE_DIALOG_X + 20;
+        int y = PRESTIGE_DIALOG_Y + 18;
+        graphics.drawString(font, "Prestige " + getSelectedSkillType().getDisplayName() + "?", x, y, 0xFFFFD700);
+        graphics.drawString(font, "Prestiging will:", x, y + 24, 0xFFFFFFFF);
+        graphics.drawString(font, "- Reset this skill to Level 1", x, y + 40, 0xFFDD7777);
+        graphics.drawString(font, "- Reset XP to 0", x, y + 54, 0xFFDD7777);
+        graphics.drawString(font, "- Reset unlocked perks", x, y + 68, 0xFFDD7777);
+        graphics.drawString(font, "You will KEEP:", x, y + 92, 0xFFFFFFFF);
+        graphics.drawString(font, "- All earned perk points", x, y + 108, 0xFF77DD77);
+        graphics.drawString(font, "- Skill toggles/settings", x, y + 122, 0xFF77DD77);
+        graphics.drawString(font, "- Your prestige rank", x, y + 136, 0xFF77DD77);
+        graphics.drawString(font, "Each prestige adds +1% perk effectiveness.", x, y + 158, 0xFFDDDDDD);
+        graphics.drawString(font, "Current Rank: " + getPrestigeRank(getSelectedPrestige()), x, y + 178, getPrestigeColor(getSelectedPrestige()));
+        graphics.drawString(font, "Current Bonus: +" + getSelectedPrestige() + "%", x, y + 192, 0xFFFFFFFF);
+
+        drawDialogButton(graphics, 390, 335, "Confirm", 0xFF6A4A10);
+        drawDialogButton(graphics, 490, 335, "Cancel", 0xFF333333);
+    }
+
+    private void drawDialogButton(
+            GuiGraphics graphics,
+            int x,
+            int y,
+            String label,
+            int fill
+    ) {
+        graphics.fill(x, y, x + 80, y + 22, fill);
+        graphics.renderOutline(x, y, 80, 22, 0xFFAAAAAA);
+        graphics.drawCenteredString(font, label, x + 40, y + 7, 0xFFFFFFFF);
+    }
+
+    private SkillType getSelectedSkillType() {
+        return SkillType.values()[selectedSkill];
+    }
+
+    private int getSelectedSkillLevel() {
+        UUID playerId = minecraft.player.getUUID();
+        return switch (getSelectedSkillType()) {
+            case MINING -> ClientSkillState.getMiningLevel(playerId);
+            case WOODCUTTING -> ClientSkillState.getWoodcuttingLevel(playerId);
+            case FARMING -> ClientSkillState.getFarmingLevel(playerId);
+        };
+    }
+
+    private int getSelectedPrestige() {
+        UUID playerId = minecraft.player.getUUID();
+        return switch (getSelectedSkillType()) {
+            case MINING -> ClientSkillState.getMiningPrestige(playerId);
+            case WOODCUTTING -> ClientSkillState.getWoodcuttingPrestige(playerId);
+            case FARMING -> ClientSkillState.getFarmingPrestige(playerId);
+        };
+    }
+
+    private String getPrestigeRank(int prestige) {
+        if (prestige <= 0) {
+            return "None";
+        }
+
+        String tier = prestige <= 3 ? "Bronze" : prestige <= 6 ? "Silver" : "Gold";
+        int stars = prestige <= 9 ? ((prestige - 1) % 3) + 1 : 3;
+        return tier + " " + "★".repeat(stars)
+                + (prestige > 9 ? " +" + (prestige - 9) : "");
+    }
+
+    private int getPrestigeColor(int prestige) {
+        if (prestige <= 0) {
+            return 0xFFAAAAAA;
+        }
+        if (prestige <= 3) {
+            return 0xFFCD7F32;
+        }
+        if (prestige <= 6) {
+            return 0xFFC0C0C0;
+        }
+        return 0xFFFFD700;
+    }
+
+    private boolean isInside(
+            double mouseX,
+            double mouseY,
+            int x,
+            int y,
+            int width,
+            int height
+    ) {
+        return mouseX >= x && mouseX <= x + width
+                && mouseY >= y && mouseY <= y + height;
     }
 
     private int getMiningSpeedBonusPercent(UUID playerId) {
@@ -2267,7 +2517,7 @@ public class SkillScreen extends Screen {
             int miningPerkPoints
     ) {
 
-        if (isPerkUnlocked(perk)) {
+        if (isPerkUnlocked(perk) && isParentUnlocked(perk)) {
 
             return PERK_UNLOCKED_COLOR;
         }
@@ -2375,7 +2625,10 @@ public class SkillScreen extends Screen {
             int woodcuttingPerkPoints
     ) {
 
-        if (isWoodcuttingPerkUnlocked(perk)) {
+        if (
+                isWoodcuttingPerkUnlocked(perk)
+                        && isWoodcuttingParentUnlocked(perk)
+        ) {
 
             return PERK_UNLOCKED_COLOR;
         }
@@ -2580,7 +2833,10 @@ public class SkillScreen extends Screen {
             int farmingPerkPoints
     ) {
 
-        if (isFarmingPerkUnlocked(perk)) {
+        if (
+                isFarmingPerkUnlocked(perk)
+                        && isFarmingParentUnlocked(perk)
+        ) {
 
             return PERK_UNLOCKED_COLOR;
         }

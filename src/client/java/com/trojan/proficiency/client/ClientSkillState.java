@@ -13,11 +13,15 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import com.trojan.proficiency.network.PrestigeRosterPayload;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.HashMap;
 
 public final class ClientSkillState {
 
@@ -26,6 +30,7 @@ public final class ClientSkillState {
                     1,
                     0,
                     10,
+                    0,
                     0,
                     Set.of(),
                     Map.of()
@@ -37,6 +42,7 @@ public final class ClientSkillState {
     private static int miningStreak;
     private static boolean initialized;
     private static UUID syncedPlayerId;
+    private static final Map<UUID, Integer> prestigeRoster = new HashMap<>();
 
     private ClientSkillState() {
     }
@@ -50,6 +56,52 @@ public final class ClientSkillState {
                                 () -> apply(payload)
                         )
         );
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                PrestigeRosterPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    prestigeRoster.clear();
+                    prestigeRoster.putAll(payload.prestigeByPlayer());
+                })
+        );
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.getConnection() == null) {
+                return;
+            }
+
+            client.getConnection().getOnlinePlayers().forEach(playerInfo -> {
+                int prestige = prestigeRoster.getOrDefault(
+                        playerInfo.getProfile().getId(),
+                        0
+                );
+
+                if (prestige <= 0) {
+                    playerInfo.setTabListDisplayName(null);
+                    return;
+                }
+
+                ChatFormatting color = prestige <= 3
+                        ? ChatFormatting.GOLD
+                        : prestige <= 6
+                        ? ChatFormatting.GRAY
+                        : ChatFormatting.YELLOW;
+                int stars = prestige <= 9
+                        ? ((prestige - 1) % 3) + 1
+                        : 3;
+                String suffix = prestige > 9
+                        ? " +" + (prestige - 9)
+                        : "";
+
+                playerInfo.setTabListDisplayName(
+                        Component.literal("★".repeat(stars) + suffix + " ")
+                                .withStyle(color)
+                                .append(Component.literal(
+                                        playerInfo.getProfile().getName()
+                                ).withStyle(ChatFormatting.WHITE))
+                );
+            });
+        });
 
         ClientPlayConnectionEvents.DISCONNECT.register(
                 (handler, client) -> reset()
@@ -149,6 +201,19 @@ public final class ClientSkillState {
         }
     }
 
+    public static void requestPrestige(SkillType skillType) {
+
+        if (ClientPlayNetworking.canSend(
+                com.trojan.proficiency.network.PrestigeRequestPayload.TYPE
+        )) {
+            ClientPlayNetworking.send(
+                    new com.trojan.proficiency.network.PrestigeRequestPayload(
+                            skillType.getId()
+                    )
+            );
+        }
+    }
+
     private static void requestToggle(
             SkillType skillType,
             String toggleId,
@@ -176,6 +241,7 @@ public final class ClientSkillState {
         miningStreak = 0;
         syncedPlayerId = null;
         initialized = false;
+        prestigeRoster.clear();
     }
 
     public static int getMiningLevel(UUID ignored) {
@@ -194,12 +260,28 @@ public final class ClientSkillState {
         return mining.perkPoints();
     }
 
+    public static int getMiningPrestige(UUID ignored) {
+        return mining.prestige();
+    }
+
     public static int getMiningStreak(UUID ignored) {
         return miningStreak;
     }
 
     public static boolean hasMiningPerk(UUID ignored, String perkId) {
         return mining.unlockedPerks().contains(perkId);
+    }
+
+    public static boolean isMiningHeavySwingsEnabled(UUID ignored) {
+        return mining.toggles().getOrDefault("heavy_swings", true);
+    }
+
+    public static void toggleMiningHeavySwings(UUID ignored) {
+        requestToggle(
+                SkillType.MINING,
+                "heavy_swings",
+                !isMiningHeavySwingsEnabled(ignored)
+        );
     }
 
     public static int getWoodcuttingLevel(UUID ignored) {
@@ -216,6 +298,10 @@ public final class ClientSkillState {
 
     public static int getWoodcuttingPerkPoints(UUID ignored) {
         return woodcutting.perkPoints();
+    }
+
+    public static int getWoodcuttingPrestige(UUID ignored) {
+        return woodcutting.prestige();
     }
 
     public static boolean hasWoodcuttingPerk(
@@ -239,6 +325,10 @@ public final class ClientSkillState {
 
     public static int getFarmingPerkPoints(UUID ignored) {
         return farming.perkPoints();
+    }
+
+    public static int getFarmingPrestige(UUID ignored) {
+        return farming.prestige();
     }
 
     public static boolean hasFarmingPerk(UUID ignored, String perkId) {
@@ -285,7 +375,10 @@ public final class ClientSkillState {
         for (Map.Entry<String, Boolean> toggle
                 : mining.toggles().entrySet()) {
 
-            if (toggle.getValue()) {
+            if (
+                    toggle.getValue()
+                            && !"heavy_swings".equals(toggle.getKey())
+            ) {
                 selectedOres.add(toggle.getKey());
             }
         }

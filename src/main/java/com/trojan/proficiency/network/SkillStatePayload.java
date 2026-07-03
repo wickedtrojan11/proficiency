@@ -81,6 +81,7 @@ public record SkillStatePayload(
         buffer.writeVarInt(state.xp);
         buffer.writeVarInt(state.requiredXp);
         buffer.writeVarInt(state.perkPoints);
+        buffer.writeVarInt(state.prestige);
 
         buffer.writeVarInt(state.unlockedPerks.size());
 
@@ -106,6 +107,7 @@ public record SkillStatePayload(
         int xp = buffer.readVarInt();
         int requiredXp = buffer.readVarInt();
         int perkPoints = buffer.readVarInt();
+        int prestige = buffer.readVarInt();
 
         int perkCount = buffer.readVarInt();
         Set<String> unlockedPerks = new HashSet<>();
@@ -130,6 +132,7 @@ public record SkillStatePayload(
                 xp,
                 requiredXp,
                 perkPoints,
+                prestige,
                 unlockedPerks,
                 toggles
         );
@@ -145,6 +148,7 @@ public record SkillStatePayload(
             int xp,
             int requiredXp,
             int perkPoints,
+            int prestige,
             Set<String> unlockedPerks,
             Map<String, Boolean> toggles
     ) {

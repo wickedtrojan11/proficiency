@@ -18,7 +18,13 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import com.trojan.proficiency.skill.SkillType;
 public class MiningEvents {
+
+    private static final Set<UUID> HEAVY_SWING_BREAKS = new HashSet<>();
 
     public static void register() {
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
@@ -33,7 +39,12 @@ public class MiningEvents {
                                     player.getUUID(),
                                     "no_ore_escapes"
                             )
-                            && world.random.nextFloat() < 0.10f
+                            && world.random.nextFloat()
+                            < SkillManager.scalePerkChance(
+                            player.getUUID(),
+                            SkillType.MINING,
+                            0.10f
+                    )
             ) {
 
                 ServerLevel serverLevel =
@@ -162,30 +173,26 @@ public class MiningEvents {
 // =========================
 
             if (
+                    !HEAVY_SWING_BREAKS.contains(player.getUUID())
+                            &&
+                    SkillManager.isMiningHeavySwingsEnabled(
+                            player.getUUID()
+                    )
+                            &&
                     SkillManager.hasMiningPerk(
                             player.getUUID(),
                             "heavy_swings"
                     )
             ) {
 
-                if (world.random.nextFloat() < 0.15f) {
-
-                    world.destroyBlock(
-                            pos,
-                            true,
-                            player
-                    );
-                    BlockPos[] nearbyBlocks = {
-
-                            pos.above(),
-                            pos.below(),
-                            pos.north(),
-                            pos.south(),
-                            pos.east(),
-                            pos.west()
-                    };
-
-                    // Direction player is facing
+                if (
+                        world.random.nextFloat()
+                                < SkillManager.scalePerkChance(
+                                player.getUUID(),
+                                SkillType.MINING,
+                                0.15f
+                        )
+                ) {
                     BlockPos behindPos =
                             pos.relative(
                                     player.getDirection()
@@ -200,13 +207,20 @@ public class MiningEvents {
                             MiningUtils.isStoneType(
                                     behindState
                             )
+                                    || MiningUtils.isOre(
+                                    behindState
+                            )
                     ) {
 
-                        world.destroyBlock(
-                                behindPos,
-                                true,
-                                player
-                        );
+                        HEAVY_SWING_BREAKS.add(player.getUUID());
+
+                        try {
+                            ((ServerPlayer) player).gameMode.destroyBlock(
+                                    behindPos
+                            );
+                        } finally {
+                            HEAVY_SWING_BREAKS.remove(player.getUUID());
+                        }
                     }
                     player.level().playSound(
                             null,

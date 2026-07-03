@@ -25,6 +25,10 @@ public final class SkillNetworking {
                 ToggleChangeRequestPayload.TYPE,
                 SkillNetworking::handleToggleChange
         );
+        ServerPlayNetworking.registerGlobalReceiver(
+                PrestigeRequestPayload.TYPE,
+                SkillNetworking::handlePrestige
+        );
     }
 
     private static void handlePerkUnlock(
@@ -92,6 +96,25 @@ public final class SkillNetworking {
         }
 
         SkillManager.sendSkillState(player);
+    }
+
+    private static void handlePrestige(
+            PrestigeRequestPayload payload,
+            ServerPlayNetworking.Context context
+    ) {
+
+        ServerPlayer player = context.player();
+        SkillType skillType = getValidSkillType(payload.skillId());
+
+        if (
+                skillType == null
+                        || !SkillManager.prestigeSkill(player, skillType)
+        ) {
+            player.sendSystemMessage(Component.literal(
+                    "\u00A7cThat skill is not ready to prestige."
+            ));
+            SkillManager.sendSkillState(player);
+        }
     }
 
     private static SkillType getValidSkillType(String skillId) {

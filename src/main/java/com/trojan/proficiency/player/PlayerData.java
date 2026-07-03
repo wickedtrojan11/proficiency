@@ -18,6 +18,10 @@ public class PlayerData {
 
     private int miningPerkPoints = 0;
 
+    private int miningPrestige = 0;
+
+    private Boolean miningHeavySwingsEnabled = true;
+
     private final Set<String> unlockedMiningPerks =
             new HashSet<>();
 
@@ -30,6 +34,8 @@ public class PlayerData {
     private int woodcuttingLevel = 1;
 
     private int woodcuttingPerkPoints = 0;
+
+    private int woodcuttingPrestige = 0;
 
     private final Set<String> unlockedWoodcuttingPerks =
             new HashSet<>();
@@ -51,6 +57,8 @@ public class PlayerData {
     private int farmingLevel = 1;
 
     private int farmingPerkPoints = 0;
+
+    private int farmingPrestige = 0;
 
     private Set<String> unlockedFarmingPerks =
             new HashSet<>();
@@ -407,5 +415,50 @@ public class PlayerData {
     ) {
 
         farmingAnimalOverlayEnabled = enabled;
+    }
+
+    public int getMiningPrestige() {
+        return miningPrestige;
+    }
+
+    public void setMiningPrestige(int prestige) {
+        miningPrestige = Math.max(0, prestige);
+    }
+
+    public int getWoodcuttingPrestige() {
+        return woodcuttingPrestige;
+    }
+
+    public void setWoodcuttingPrestige(int prestige) {
+        woodcuttingPrestige = Math.max(0, prestige);
+    }
+
+    public int getFarmingPrestige() {
+        return farmingPrestige;
+    }
+
+    public void setFarmingPrestige(int prestige) {
+        farmingPrestige = Math.max(0, prestige);
+    }
+
+    public void clearMiningPerks() {
+        unlockedMiningPerks.clear();
+    }
+
+    public boolean isMiningHeavySwingsEnabled() {
+        return miningHeavySwingsEnabled == null
+                || miningHeavySwingsEnabled;
+    }
+
+    public void setMiningHeavySwingsEnabled(boolean enabled) {
+        miningHeavySwingsEnabled = enabled;
+    }
+
+    public void clearWoodcuttingPerks() {
+        unlockedWoodcuttingPerks.clear();
+    }
+
+    public void clearFarmingPerks() {
+        getUnlockedFarmingPerks().clear();
     }
 }

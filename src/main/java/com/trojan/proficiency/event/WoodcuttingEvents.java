@@ -1,6 +1,7 @@
 package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.skill.SkillType;
 import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerkEffects;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
@@ -158,7 +159,11 @@ public class WoodcuttingEvents {
                     holdingAxe
                             && durabilitySaveChance > 0.0f
                             && world.random.nextFloat()
-                                    < durabilitySaveChance
+                                    < SkillManager.scalePerkChance(
+                                    player.getUUID(),
+                                    SkillType.WOODCUTTING,
+                                    durabilitySaveChance
+                            )
             ) {
 
                 int damage =
@@ -246,7 +251,7 @@ public class WoodcuttingEvents {
                                     "twigs_everywhere"
                             )
                             && world.random.nextFloat()
-                                    < TWIGS_EVERYWHERE_CHANCE
+                                    < SkillManager.scalePerkChance(player.getUUID(), SkillType.WOODCUTTING, TWIGS_EVERYWHERE_CHANCE)
             ) {
 
                 Block.popResource(
@@ -266,7 +271,7 @@ public class WoodcuttingEvents {
                                     "green_thumb"
                             )
                             && world.random.nextFloat()
-                                    < GREEN_THUMB_CHANCE
+                                    < SkillManager.scalePerkChance(player.getUUID(), SkillType.WOODCUTTING, GREEN_THUMB_CHANCE)
             ) {
 
                 Block.popResource(
@@ -287,7 +292,7 @@ public class WoodcuttingEvents {
                                     "apple_picker"
                             )
                             && world.random.nextFloat()
-                                    < APPLE_PICKER_CHANCE
+                                    < SkillManager.scalePerkChance(player.getUUID(), SkillType.WOODCUTTING, APPLE_PICKER_CHANCE)
             ) {
 
                 Block.popResource(
@@ -308,7 +313,7 @@ public class WoodcuttingEvents {
                                     "friction_fire"
                             )
                             && world.random.nextFloat()
-                            < FRICTION_FIRE_CHANCE
+                            < SkillManager.scalePerkChance(player.getUUID(), SkillType.WOODCUTTING, FRICTION_FIRE_CHANCE)
             ) {
 
                 Block.popResource(
@@ -364,7 +369,7 @@ public class WoodcuttingEvents {
                                     "natures_gift"
                             )
                             && world.random.nextFloat()
-                                    < NATURES_GIFT_CHANCE
+                                    < SkillManager.scalePerkChance(player.getUUID(), SkillType.WOODCUTTING, NATURES_GIFT_CHANCE)
             ) {
 
                 Block.popResource(

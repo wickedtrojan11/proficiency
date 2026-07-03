@@ -133,8 +133,8 @@ public class MiningPerks {
             new SkillPerk(
                     "heavy_swings",
                     "Heavy Swings",
-                    "You stopped fighting the stone and started BREAKING through it.",
-                    "15% chance to break blocks instantly",
+                    "Sometimes breaks the block behind the one you're mining.",
+                    "The extra block grants its normal Mining XP.",
                     15,
                     300,
                     140,

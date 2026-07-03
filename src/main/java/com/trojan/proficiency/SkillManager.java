@@ -24,6 +24,8 @@ import com.trojan.proficiency.skill.SkillType;
 import com.trojan.proficiency.network.XpGainPayload;
 import com.trojan.proficiency.network.WellRestedPayload;
 import com.trojan.proficiency.network.SkillStatePayload;
+import com.trojan.proficiency.network.PrestigeRosterPayload;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +35,7 @@ import java.util.HashMap;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 public class SkillManager {
+    public static final int PRESTIGE_LEVEL_REQUIREMENT = 150;
     private static final HashMap<UUID, PlayerData>
             playerDataMap = new HashMap<>();
     private static final HashMap<UUID, Integer>
@@ -162,6 +165,11 @@ public class SkillManager {
             );
         }
 
+        miningToggles.put(
+                "heavy_swings",
+                data.isMiningHeavySwingsEnabled()
+        );
+
         SkillStatePayload.send(
                 player,
                 new SkillStatePayload(
@@ -173,6 +181,7 @@ public class SkillManager {
                                         data.getMiningLevel()
                                 ),
                                 data.getMiningPerkPoints(),
+                                data.getMiningPrestige(),
                                 data.getUnlockedMiningPerks(),
                                 miningToggles
                         ),
@@ -183,6 +192,7 @@ public class SkillManager {
                                         data.getWoodcuttingLevel()
                                 ),
                                 data.getWoodcuttingPerkPoints(),
+                                data.getWoodcuttingPrestige(),
                                 data.getUnlockedWoodcuttingPerks(),
                                 Map.of(
                                         "leaf_decay",
@@ -202,6 +212,7 @@ public class SkillManager {
                                         data.getFarmingLevel()
                                 ),
                                 data.getFarmingPerkPoints(),
+                                data.getFarmingPrestige(),
                                 data.getUnlockedFarmingPerks(),
                                 Map.of(
                                         "bonus_harvests",
@@ -265,6 +276,14 @@ public class SkillManager {
             String toggleId,
             boolean desiredState
     ) {
+
+        if ("heavy_swings".equals(toggleId)) {
+            if (!data.hasMiningPerk("heavy_swings")) {
+                return false;
+            }
+            data.setMiningHeavySwingsEnabled(desiredState);
+            return true;
+        }
 
         if (!ORE_TOGGLE_IDS.contains(toggleId)) {
             return false;
@@ -619,6 +638,10 @@ public class SkillManager {
         sendSkillState(player);
 
         return leveledUp;
+    }
+
+    public static boolean isMiningHeavySwingsEnabled(UUID playerId) {
+        return getPlayerData(playerId).isMiningHeavySwingsEnabled();
     }
 
     public static void grantWellRested(
@@ -1135,6 +1158,159 @@ public class SkillManager {
         };
     }
 
+    public static int getPrestige(UUID playerId, SkillType skillType) {
+
+        PlayerData data = getPlayerData(playerId);
+
+        return switch (skillType) {
+            case MINING -> data.getMiningPrestige();
+            case WOODCUTTING -> data.getWoodcuttingPrestige();
+            case FARMING -> data.getFarmingPrestige();
+        };
+    }
+
+    public static double getPerkEffectMultiplier(
+            UUID playerId,
+            SkillType skillType
+    ) {
+
+        return 1.0 + getPrestige(playerId, skillType) / 100.0;
+    }
+
+    public static int getTotalPrestige(UUID playerId) {
+        PlayerData data = getPlayerData(playerId);
+        return data.getMiningPrestige()
+                + data.getWoodcuttingPrestige()
+                + data.getFarmingPrestige();
+    }
+
+    public static boolean meetsProgressionRequirements(
+            UUID playerId,
+            Map<SkillType, Integer> requiredPrestige,
+            Map<SkillType, Integer> requiredSavedPerkPoints
+    ) {
+
+        PlayerData data = getPlayerData(playerId);
+
+        for (SkillType skillType : SkillType.values()) {
+            if (
+                    getPrestige(playerId, skillType)
+                            < requiredPrestige.getOrDefault(skillType, 0)
+                            || getPerkPoints(data, skillType)
+                            < requiredSavedPerkPoints.getOrDefault(skillType, 0)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static void sendPrestigeRoster(MinecraftServer server) {
+        Map<UUID, Integer> roster = new HashMap<>();
+
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            roster.put(player.getUUID(), getTotalPrestige(player.getUUID()));
+        }
+
+        PrestigeRosterPayload payload = new PrestigeRosterPayload(roster);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (ServerPlayNetworking.canSend(player, PrestigeRosterPayload.TYPE)) {
+                ServerPlayNetworking.send(player, payload);
+            }
+        }
+    }
+
+    public static float scalePerkChance(
+            UUID playerId,
+            SkillType skillType,
+            float baseChance
+    ) {
+
+        return (float) Math.min(
+                1.0,
+                baseChance * getPerkEffectMultiplier(playerId, skillType)
+        );
+    }
+
+    public static double scalePerkValue(
+            UUID playerId,
+            SkillType skillType,
+            double baseValue
+    ) {
+
+        return baseValue * getPerkEffectMultiplier(playerId, skillType);
+    }
+
+    public static boolean prestigeSkill(
+            ServerPlayer player,
+            SkillType skillType
+    ) {
+
+        PlayerData data = getPlayerData(player.getUUID());
+
+        if (getLevel(data, skillType) < PRESTIGE_LEVEL_REQUIREMENT) {
+            return false;
+        }
+
+        int refundedPoints = 0;
+        for (String perkId : getUnlockedPerks(data, skillType)) {
+            SkillPerk perk = getPerk(skillType, perkId);
+            if (perk != null) {
+                refundedPoints += perk.getPointCost();
+            }
+        }
+        setPerkPoints(
+                data,
+                skillType,
+                getPerkPoints(data, skillType) + refundedPoints
+        );
+
+        switch (skillType) {
+            case MINING -> {
+                data.setMiningLevel(1);
+                data.setMiningXp(0);
+                data.clearMiningPerks();
+                data.setMiningPrestige(data.getMiningPrestige() + 1);
+                resetMiningStreak(player.getUUID());
+            }
+            case WOODCUTTING -> {
+                data.setWoodcuttingLevel(1);
+                data.setWoodcuttingXp(0);
+                data.clearWoodcuttingPerks();
+                data.setWoodcuttingPrestige(
+                        data.getWoodcuttingPrestige() + 1
+                );
+            }
+            case FARMING -> {
+                data.setFarmingLevel(1);
+                data.setFarmingXp(0);
+                data.clearFarmingPerks();
+                data.setFarmingPrestige(data.getFarmingPrestige() + 1);
+            }
+        }
+
+        savePlayerData(player.getUUID());
+        sendSkillState(player);
+        sendPrestigeRoster(player.getServer());
+        player.sendSystemMessage(Component.literal(
+                "\u00A76" + skillType.getDisplayName()
+                        + " Prestige " + getPrestige(
+                        player.getUUID(),
+                        skillType
+                ) + " achieved!"
+        ));
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.PLAYER_LEVELUP,
+                SoundSource.PLAYERS,
+                1.0f,
+                0.8f
+        );
+        return true;
+    }
+
     private static int getPerkPoints(
             PlayerData data,
             SkillType skillType
@@ -1157,6 +1333,17 @@ public class SkillManager {
             case MINING -> data.hasMiningPerk(perkId);
             case WOODCUTTING -> data.hasWoodcuttingPerk(perkId);
             case FARMING -> data.hasFarmingPerk(perkId);
+        };
+    }
+
+    private static Set<String> getUnlockedPerks(
+            PlayerData data,
+            SkillType skillType
+    ) {
+        return switch (skillType) {
+            case MINING -> data.getUnlockedMiningPerks();
+            case WOODCUTTING -> data.getUnlockedWoodcuttingPerks();
+            case FARMING -> data.getUnlockedFarmingPerks();
         };
     }
 
@@ -1215,6 +1402,8 @@ public class SkillManager {
             UUID playerId
     ) {
 
+        int baseBonus;
+
         if (
                 hasFarmingPerk(
                         playerId,
@@ -1222,7 +1411,8 @@ public class SkillManager {
                 )
         ) {
 
-            return 50;
+            baseBonus = 50;
+            return (int) Math.round(scalePerkValue(playerId, SkillType.FARMING, baseBonus));
         }
 
         if (
@@ -1232,7 +1422,8 @@ public class SkillManager {
                 )
         ) {
 
-            return 40;
+            baseBonus = 40;
+            return (int) Math.round(scalePerkValue(playerId, SkillType.FARMING, baseBonus));
         }
 
         if (
@@ -1242,7 +1433,8 @@ public class SkillManager {
                 )
         ) {
 
-            return 25;
+            baseBonus = 25;
+            return (int) Math.round(scalePerkValue(playerId, SkillType.FARMING, baseBonus));
         }
 
         if (
@@ -1252,7 +1444,8 @@ public class SkillManager {
                 )
         ) {
 
-            return 10;
+            baseBonus = 10;
+            return (int) Math.round(scalePerkValue(playerId, SkillType.FARMING, baseBonus));
         }
 
         return 0;
@@ -1262,6 +1455,8 @@ public class SkillManager {
             UUID playerId
     ) {
 
+        int baseBonus;
+
         if (
                 hasFarmingPerk(
                         playerId,
@@ -1269,7 +1464,8 @@ public class SkillManager {
                 )
         ) {
 
-            return 75;
+            baseBonus = 75;
+            return (int) Math.round(scalePerkValue(playerId, SkillType.FARMING, baseBonus));
         }
 
         if (
@@ -1279,7 +1475,8 @@ public class SkillManager {
                 )
         ) {
 
-            return 50;
+            baseBonus = 50;
+            return (int) Math.round(scalePerkValue(playerId, SkillType.FARMING, baseBonus));
         }
 
         if (
@@ -1289,7 +1486,8 @@ public class SkillManager {
                 )
         ) {
 
-            return 25;
+            baseBonus = 25;
+            return (int) Math.round(scalePerkValue(playerId, SkillType.FARMING, baseBonus));
         }
 
         return 0;

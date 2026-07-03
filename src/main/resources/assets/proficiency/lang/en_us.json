@@ -1,4 +1,7 @@
 {
+  "item.proficiency.mining_skill_book": "Mining Skill Book",
+  "item.proficiency.woodcutting_skill_book": "Woodcutting Skill Book",
+  "item.proficiency.farming_skill_book": "Farming Skill Book",
   "block.proficiency.auto_farmer_plant_pot": "Proficient Pot",
   "block.proficiency.solar_composter": "Auto Composter"
 }

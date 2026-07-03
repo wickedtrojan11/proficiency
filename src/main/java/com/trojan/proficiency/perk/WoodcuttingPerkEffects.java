@@ -1,6 +1,7 @@
 package com.trojan.proficiency.perk;
 
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.skill.SkillType;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.level.ServerPlayer;
@@ -395,8 +396,12 @@ public class WoodcuttingPerkEffects {
             applyBonusDamage(
                     target,
                     player,
-                    AXE_TRAINING_BONUS_DAMAGE
-                            + BATTLE_AXE_MASTERY_BONUS_DAMAGE
+                    (float) SkillManager.scalePerkValue(
+                            player.getUUID(),
+                            SkillType.WOODCUTTING,
+                            AXE_TRAINING_BONUS_DAMAGE
+                                    + BATTLE_AXE_MASTERY_BONUS_DAMAGE
+                    )
             );
 
         } else if (
@@ -410,7 +415,11 @@ public class WoodcuttingPerkEffects {
             applyBonusDamage(
                     target,
                     player,
-                    AXE_TRAINING_BONUS_DAMAGE
+                    (float) SkillManager.scalePerkValue(
+                            player.getUUID(),
+                            SkillType.WOODCUTTING,
+                            AXE_TRAINING_BONUS_DAMAGE
+                    )
             );
         }
 
@@ -421,7 +430,7 @@ public class WoodcuttingPerkEffects {
                                 "heavy_chop"
                         )
                         && player.getRandom().nextFloat()
-                        < HEAVY_CHOP_CHANCE
+                        < SkillManager.scalePerkChance(player.getUUID(), SkillType.WOODCUTTING, HEAVY_CHOP_CHANCE)
         ) {
 
             target.addEffect(
@@ -439,7 +448,7 @@ public class WoodcuttingPerkEffects {
                         "cleaving_swing"
                 )
                         && player.getRandom().nextFloat()
-                        < CLEAVING_SWING_CHANCE
+                        < SkillManager.scalePerkChance(player.getUUID(), SkillType.WOODCUTTING, CLEAVING_SWING_CHANCE)
         ) {
 
             applyingAxeCombatDamage = true;
@@ -536,7 +545,7 @@ public class WoodcuttingPerkEffects {
                         "decapitation_chance"
                 )
                         || player.getRandom().nextFloat()
-                        >= DECAPITATION_CHANCE
+                        >= SkillManager.scalePerkChance(player.getUUID(), SkillType.WOODCUTTING, DECAPITATION_CHANCE)
         ) {
 
             return;

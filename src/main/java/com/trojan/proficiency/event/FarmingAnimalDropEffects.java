@@ -1,6 +1,7 @@
 package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.skill.SkillType;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -52,7 +53,11 @@ public final class FarmingAnimalDropEffects {
         }
 
         Item meatItem = getMeatItem(target);
-        float meatChance = getMeatChance(player);
+        float meatChance = SkillManager.scalePerkChance(
+                player.getUUID(),
+                SkillType.FARMING,
+                getMeatChance(player)
+        );
 
         if (
                 meatItem != null
@@ -66,8 +71,11 @@ public final class FarmingAnimalDropEffects {
             );
         }
 
-        float secondaryChance =
-                getSecondaryChance(player);
+        float secondaryChance = SkillManager.scalePerkChance(
+                player.getUUID(),
+                SkillType.FARMING,
+                getSecondaryChance(player)
+        );
 
         if (
                 secondaryChance <= 0.0f

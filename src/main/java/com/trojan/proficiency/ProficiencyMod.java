@@ -24,8 +24,13 @@ import com.trojan.proficiency.network.WellRestedPayload;
 import com.trojan.proficiency.network.SkillStatePayload;
 import com.trojan.proficiency.network.PerkUnlockRequestPayload;
 import com.trojan.proficiency.network.ToggleChangeRequestPayload;
+import com.trojan.proficiency.network.PrestigeRequestPayload;
+import com.trojan.proficiency.network.PrestigeRosterPayload;
 import com.trojan.proficiency.network.SkillNetworking;
 import com.trojan.proficiency.event.SaplingOwnershipTracker;
+import com.trojan.proficiency.event.SkillBookEvents;
+import com.trojan.proficiency.event.PrestigeEffectEvents;
+import com.trojan.proficiency.item.ModItems;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 public class ProficiencyMod implements ModInitializer {
 
@@ -51,6 +56,10 @@ public class ProficiencyMod implements ModInitializer {
 				SkillStatePayload.TYPE,
 				SkillStatePayload.STREAM_CODEC
 		);
+		PayloadTypeRegistry.playS2C().register(
+				PrestigeRosterPayload.TYPE,
+				PrestigeRosterPayload.STREAM_CODEC
+		);
 		PayloadTypeRegistry.playC2S().register(
 				PerkUnlockRequestPayload.TYPE,
 				PerkUnlockRequestPayload.STREAM_CODEC
@@ -59,9 +68,14 @@ public class ProficiencyMod implements ModInitializer {
 				ToggleChangeRequestPayload.TYPE,
 				ToggleChangeRequestPayload.STREAM_CODEC
 		);
+		PayloadTypeRegistry.playC2S().register(
+				PrestigeRequestPayload.TYPE,
+				PrestigeRequestPayload.STREAM_CODEC
+		);
 		SkillNetworking.registerServerHandlers();
 
 		ModBlocks.register();
+		ModItems.register();
 		ModMenus.register();
 
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -86,6 +100,7 @@ public class ProficiencyMod implements ModInitializer {
 					handler.player.getUUID()
 			);
 			SkillManager.sendSkillState(handler.player);
+			SkillManager.sendPrestigeRoster(server);
 		});
 
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
@@ -108,6 +123,8 @@ public class ProficiencyMod implements ModInitializer {
 		FarmingBeekeepingEffects.register();
 		FarmingUtilityEvents.register();
 		SaplingOwnershipTracker.register();
+		SkillBookEvents.register();
+		PrestigeEffectEvents.register();
 		MiningPerkEffects.register();
 		WoodcuttingPerkEffects.register();
 		MiningDurabilityEvents.register();
