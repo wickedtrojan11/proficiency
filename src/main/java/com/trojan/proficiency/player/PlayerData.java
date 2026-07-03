@@ -22,7 +22,7 @@ public class PlayerData {
 
     private Boolean miningHeavySwingsEnabled = true;
 
-    private final Set<String> unlockedMiningPerks =
+    private Set<String> unlockedMiningPerks =
             new HashSet<>();
 
     // =========================
@@ -37,7 +37,7 @@ public class PlayerData {
 
     private int woodcuttingPrestige = 0;
 
-    private final Set<String> unlockedWoodcuttingPerks =
+    private Set<String> unlockedWoodcuttingPerks =
             new HashSet<>();
 
     private Boolean woodcuttingLeafDecayEnabled = true;
@@ -76,6 +76,16 @@ public class PlayerData {
     private Boolean farmingBeekeepingEnabled = true;
 
     private Boolean farmingAnimalOverlayEnabled = true;
+
+    private int oneHandedXp = 0;
+    private int oneHandedLevel = 1;
+    private int oneHandedPerkPoints = 0;
+    private int oneHandedPrestige = 0;
+    private Set<String> unlockedOneHandedPerks = new HashSet<>();
+    private Boolean oneHandedDualWieldEnabled = true;
+    private Boolean oneHandedParryEnabled = true;
+    private Boolean oneHandedShieldEffectsEnabled = true;
+    private Boolean oneHandedBonusLootEnabled = true;
 
     private Set<String> selectedOreSense =
             new HashSet<>();
@@ -134,6 +144,9 @@ public class PlayerData {
     // =========================
 
     public Set<String> getUnlockedMiningPerks() {
+        if (unlockedMiningPerks == null) {
+            unlockedMiningPerks = new HashSet<>();
+        }
         return unlockedMiningPerks;
     }
 
@@ -141,7 +154,7 @@ public class PlayerData {
             String perkId
     ) {
 
-        return unlockedMiningPerks.contains(
+        return getUnlockedMiningPerks().contains(
                 perkId
         );
     }
@@ -150,7 +163,7 @@ public class PlayerData {
             String perkId
     ) {
 
-        unlockedMiningPerks.add(
+        getUnlockedMiningPerks().add(
                 perkId
         );
     }
@@ -193,6 +206,9 @@ public class PlayerData {
     }
 
     public Set<String> getUnlockedWoodcuttingPerks() {
+        if (unlockedWoodcuttingPerks == null) {
+            unlockedWoodcuttingPerks = new HashSet<>();
+        }
         return unlockedWoodcuttingPerks;
     }
 
@@ -200,7 +216,7 @@ public class PlayerData {
             String perkId
     ) {
 
-        return unlockedWoodcuttingPerks.contains(
+        return getUnlockedWoodcuttingPerks().contains(
                 perkId
         );
     }
@@ -209,7 +225,7 @@ public class PlayerData {
             String perkId
     ) {
 
-        unlockedWoodcuttingPerks.add(
+        getUnlockedWoodcuttingPerks().add(
                 perkId
         );
     }
@@ -442,7 +458,7 @@ public class PlayerData {
     }
 
     public void clearMiningPerks() {
-        unlockedMiningPerks.clear();
+        getUnlockedMiningPerks().clear();
     }
 
     public boolean isMiningHeavySwingsEnabled() {
@@ -455,10 +471,93 @@ public class PlayerData {
     }
 
     public void clearWoodcuttingPerks() {
-        unlockedWoodcuttingPerks.clear();
+        getUnlockedWoodcuttingPerks().clear();
     }
 
     public void clearFarmingPerks() {
         getUnlockedFarmingPerks().clear();
+    }
+
+    public int getOneHandedXp() {
+        return oneHandedXp;
+    }
+
+    public void setOneHandedXp(int xp) {
+        oneHandedXp = xp;
+    }
+
+    public int getOneHandedLevel() {
+        return oneHandedLevel;
+    }
+
+    public void setOneHandedLevel(int level) {
+        oneHandedLevel = level;
+    }
+
+    public int getOneHandedPerkPoints() {
+        return oneHandedPerkPoints;
+    }
+
+    public void setOneHandedPerkPoints(int perkPoints) {
+        oneHandedPerkPoints = perkPoints;
+    }
+
+    public int getOneHandedPrestige() {
+        return oneHandedPrestige;
+    }
+
+    public void setOneHandedPrestige(int prestige) {
+        oneHandedPrestige = Math.max(0, prestige);
+    }
+
+    public Set<String> getUnlockedOneHandedPerks() {
+        if (unlockedOneHandedPerks == null) {
+            unlockedOneHandedPerks = new HashSet<>();
+        }
+        return unlockedOneHandedPerks;
+    }
+
+    public boolean hasOneHandedPerk(String perkId) {
+        return getUnlockedOneHandedPerks().contains(perkId);
+    }
+
+    public void unlockOneHandedPerk(String perkId) {
+        getUnlockedOneHandedPerks().add(perkId);
+    }
+
+    public void clearOneHandedPerks() {
+        getUnlockedOneHandedPerks().clear();
+    }
+
+    public boolean isOneHandedDualWieldEnabled() {
+        return oneHandedDualWieldEnabled == null || oneHandedDualWieldEnabled;
+    }
+
+    public void setOneHandedDualWieldEnabled(boolean enabled) {
+        oneHandedDualWieldEnabled = enabled;
+    }
+
+    public boolean isOneHandedParryEnabled() {
+        return oneHandedParryEnabled == null || oneHandedParryEnabled;
+    }
+
+    public void setOneHandedParryEnabled(boolean enabled) {
+        oneHandedParryEnabled = enabled;
+    }
+
+    public boolean isOneHandedShieldEffectsEnabled() {
+        return oneHandedShieldEffectsEnabled == null || oneHandedShieldEffectsEnabled;
+    }
+
+    public void setOneHandedShieldEffectsEnabled(boolean enabled) {
+        oneHandedShieldEffectsEnabled = enabled;
+    }
+
+    public boolean isOneHandedBonusLootEnabled() {
+        return oneHandedBonusLootEnabled == null || oneHandedBonusLootEnabled;
+    }
+
+    public void setOneHandedBonusLootEnabled(boolean enabled) {
+        oneHandedBonusLootEnabled = enabled;
     }
 }

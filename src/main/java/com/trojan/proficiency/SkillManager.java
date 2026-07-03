@@ -4,6 +4,7 @@ import com.trojan.proficiency.perk.FarmingPerks;
 import com.trojan.proficiency.perk.PerkUnlockResult;
 import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
+import com.trojan.proficiency.perk.OneHandedPerks;
 import java.util.Set;
 import net.minecraft.network.chat.Component;
 
@@ -21,6 +22,7 @@ import com.trojan.proficiency.skill.MiningSkill;
 import com.trojan.proficiency.skill.FarmingSkill;
 import com.trojan.proficiency.skill.WoodcuttingSkill;
 import com.trojan.proficiency.skill.SkillType;
+import com.trojan.proficiency.skill.OneHandedSkill;
 import com.trojan.proficiency.network.XpGainPayload;
 import com.trojan.proficiency.network.WellRestedPayload;
 import com.trojan.proficiency.network.SkillStatePayload;
@@ -233,6 +235,26 @@ public class SkillManager {
                                         data.isFarmingAnimalOverlayEnabled()
                                 )
                         ),
+                        new SkillStatePayload.SkillState(
+                                data.getOneHandedLevel(),
+                                data.getOneHandedXp(),
+                                OneHandedSkill.getXpRequired(
+                                        data.getOneHandedLevel()
+                                ),
+                                data.getOneHandedPerkPoints(),
+                                data.getOneHandedPrestige(),
+                                data.getUnlockedOneHandedPerks(),
+                                Map.of(
+                                        "dual_wield",
+                                        data.isOneHandedDualWieldEnabled(),
+                                        "parry",
+                                        data.isOneHandedParryEnabled(),
+                                        "shield_effects",
+                                        data.isOneHandedShieldEffectsEnabled(),
+                                        "bonus_loot",
+                                        data.isOneHandedBonusLootEnabled()
+                                )
+                        ),
                         getMiningStreak(player.getUUID())
                 )
         );
@@ -258,6 +280,11 @@ public class SkillManager {
                     desiredState
             );
             case FARMING -> setFarmingToggle(
+                    data,
+                    toggleId,
+                    desiredState
+            );
+            case ONE_HANDED -> setOneHandedToggle(
                     data,
                     toggleId,
                     desiredState
@@ -349,6 +376,23 @@ public class SkillManager {
             }
         }
 
+        return true;
+    }
+
+    private static boolean setOneHandedToggle(
+            PlayerData data,
+            String toggleId,
+            boolean desiredState
+    ) {
+        switch (toggleId) {
+            case "dual_wield" -> data.setOneHandedDualWieldEnabled(desiredState);
+            case "parry" -> data.setOneHandedParryEnabled(desiredState);
+            case "shield_effects" -> data.setOneHandedShieldEffectsEnabled(desiredState);
+            case "bonus_loot" -> data.setOneHandedBonusLootEnabled(desiredState);
+            default -> {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -1032,6 +1076,88 @@ public class SkillManager {
         ).success();
     }
 
+    public static boolean addOneHandedXp(
+            ServerPlayer player,
+            int amount
+    ) {
+        UUID playerId = player.getUUID();
+        amount = applySkillXpMultiplier(playerId, amount);
+        XpGainPayload.send(player, SkillType.ONE_HANDED, amount);
+
+        PlayerData data = getPlayerData(playerId);
+        int currentXp = data.getOneHandedXp() + amount;
+        int currentLevel = data.getOneHandedLevel();
+        boolean leveledUp = false;
+
+        if (currentXp >= OneHandedSkill.getXpRequired(currentLevel)) {
+            currentXp = 0;
+            currentLevel++;
+            data.setOneHandedLevel(currentLevel);
+            data.setOneHandedPerkPoints(
+                    data.getOneHandedPerkPoints()
+                            + getPerkPointsAwardForLevel(currentLevel)
+            );
+            announceOneHandedLevelUp(player, currentLevel, data);
+            leveledUp = true;
+        }
+
+        data.setOneHandedXp(currentXp);
+        savePlayerData(playerId);
+        sendSkillState(player);
+        return leveledUp;
+    }
+
+    private static void announceOneHandedLevelUp(
+            ServerPlayer player,
+            int level,
+            PlayerData data
+    ) {
+        player.sendSystemMessage(Component.literal(
+                "\u00A7cOne-Handed Level Up! \u2192 Level " + level
+        ));
+        player.sendSystemMessage(Component.literal(
+                "\u00A7bPerk points earned: "
+                        + getPerkPointsAwardForLevel(level)
+                        + ". Total: " + data.getOneHandedPerkPoints()
+        ));
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.PLAYER_LEVELUP,
+                SoundSource.PLAYERS,
+                0.7f,
+                1.0f
+        );
+
+        for (SkillPerk perk : OneHandedPerks.ALL_PERKS) {
+            if (level == perk.getRequiredLevel()) {
+                player.sendSystemMessage(Component.literal(
+                        "\u00A7aNEW PERK AVAILABLE: " + perk.getName()
+                ));
+            }
+        }
+    }
+
+    public static int getOneHandedXp(UUID playerId) {
+        return getPlayerData(playerId).getOneHandedXp();
+    }
+
+    public static int getOneHandedLevel(UUID playerId) {
+        return getPlayerData(playerId).getOneHandedLevel();
+    }
+
+    public static int getOneHandedXpRequired(UUID playerId) {
+        return OneHandedSkill.getXpRequired(getOneHandedLevel(playerId));
+    }
+
+    public static int getOneHandedPerkPoints(UUID playerId) {
+        return getPlayerData(playerId).getOneHandedPerkPoints();
+    }
+
+    public static boolean hasOneHandedPerk(UUID playerId, String perkId) {
+        return getPlayerData(playerId).hasOneHandedPerk(perkId);
+    }
+
     public static PerkUnlockResult unlockPerk(
             UUID playerId,
             SkillType skillType,
@@ -1143,6 +1269,7 @@ public class SkillManager {
             case MINING -> MiningPerks.getById(perkId);
             case WOODCUTTING -> WoodcuttingPerks.getById(perkId);
             case FARMING -> FarmingPerks.getById(perkId);
+            case ONE_HANDED -> OneHandedPerks.getById(perkId);
         };
     }
 
@@ -1155,6 +1282,7 @@ public class SkillManager {
             case MINING -> data.getMiningLevel();
             case WOODCUTTING -> data.getWoodcuttingLevel();
             case FARMING -> data.getFarmingLevel();
+            case ONE_HANDED -> data.getOneHandedLevel();
         };
     }
 
@@ -1166,6 +1294,7 @@ public class SkillManager {
             case MINING -> data.getMiningPrestige();
             case WOODCUTTING -> data.getWoodcuttingPrestige();
             case FARMING -> data.getFarmingPrestige();
+            case ONE_HANDED -> data.getOneHandedPrestige();
         };
     }
 
@@ -1181,7 +1310,8 @@ public class SkillManager {
         PlayerData data = getPlayerData(playerId);
         return data.getMiningPrestige()
                 + data.getWoodcuttingPrestige()
-                + data.getFarmingPrestige();
+                + data.getFarmingPrestige()
+                + data.getOneHandedPrestige();
     }
 
     public static boolean meetsProgressionRequirements(
@@ -1288,6 +1418,14 @@ public class SkillManager {
                 data.clearFarmingPerks();
                 data.setFarmingPrestige(data.getFarmingPrestige() + 1);
             }
+            case ONE_HANDED -> {
+                data.setOneHandedLevel(1);
+                data.setOneHandedXp(0);
+                data.clearOneHandedPerks();
+                data.setOneHandedPrestige(
+                        data.getOneHandedPrestige() + 1
+                );
+            }
         }
 
         savePlayerData(player.getUUID());
@@ -1320,6 +1458,7 @@ public class SkillManager {
             case MINING -> data.getMiningPerkPoints();
             case WOODCUTTING -> data.getWoodcuttingPerkPoints();
             case FARMING -> data.getFarmingPerkPoints();
+            case ONE_HANDED -> data.getOneHandedPerkPoints();
         };
     }
 
@@ -1333,6 +1472,7 @@ public class SkillManager {
             case MINING -> data.hasMiningPerk(perkId);
             case WOODCUTTING -> data.hasWoodcuttingPerk(perkId);
             case FARMING -> data.hasFarmingPerk(perkId);
+            case ONE_HANDED -> data.hasOneHandedPerk(perkId);
         };
     }
 
@@ -1344,6 +1484,7 @@ public class SkillManager {
             case MINING -> data.getUnlockedMiningPerks();
             case WOODCUTTING -> data.getUnlockedWoodcuttingPerks();
             case FARMING -> data.getUnlockedFarmingPerks();
+            case ONE_HANDED -> data.getUnlockedOneHandedPerks();
         };
     }
 
@@ -1357,6 +1498,7 @@ public class SkillManager {
             case MINING -> data.unlockMiningPerk(perkId);
             case WOODCUTTING -> data.unlockWoodcuttingPerk(perkId);
             case FARMING -> data.unlockFarmingPerk(perkId);
+            case ONE_HANDED -> data.unlockOneHandedPerk(perkId);
         }
     }
 
@@ -1371,6 +1513,7 @@ public class SkillManager {
             case WOODCUTTING ->
                     data.setWoodcuttingPerkPoints(perkPoints);
             case FARMING -> data.setFarmingPerkPoints(perkPoints);
+            case ONE_HANDED -> data.setOneHandedPerkPoints(perkPoints);
         }
     }
 

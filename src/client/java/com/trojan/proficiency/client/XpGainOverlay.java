@@ -153,6 +153,7 @@ public final class XpGainOverlay {
             case MINING -> 0xFFFFD24A;
             case WOODCUTTING -> 0xFF55FF55;
             case FARMING -> 0xFFFFCC55;
+            case ONE_HANDED -> 0xFFFF5555;
         };
     }
 

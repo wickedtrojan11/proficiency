@@ -19,6 +19,7 @@ public record SkillStatePayload(
         SkillState mining,
         SkillState woodcutting,
         SkillState farming,
+        SkillState oneHanded,
         int miningStreak
 ) implements CustomPacketPayload {
 
@@ -46,6 +47,7 @@ public record SkillStatePayload(
         writeSkillState(buffer, payload.mining);
         writeSkillState(buffer, payload.woodcutting);
         writeSkillState(buffer, payload.farming);
+        writeSkillState(buffer, payload.oneHanded);
         buffer.writeVarInt(payload.miningStreak);
     }
 
@@ -55,6 +57,7 @@ public record SkillStatePayload(
 
         return new SkillStatePayload(
                 buffer.readUUID(),
+                readSkillState(buffer),
                 readSkillState(buffer),
                 readSkillState(buffer),
                 readSkillState(buffer),

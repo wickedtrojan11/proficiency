@@ -10,6 +10,7 @@ import com.trojan.proficiency.perk.MiningPerks;
 import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
 import com.trojan.proficiency.perk.FarmingPerks;
+import com.trojan.proficiency.perk.OneHandedPerks;
 import com.trojan.proficiency.skill.SkillType;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -41,6 +42,12 @@ public class SkillScreen extends Screen {
     private static final int FARMING_TAB_WIDTH = 140;
     private static final int FARMING_TAB_HEIGHT = 25;
     private static final int FARMING_TAB_LABEL_X = 450;
+
+    private static final int ONE_HANDED_TAB_X = 530;
+    private static final int ONE_HANDED_TAB_Y = 22;
+    private static final int ONE_HANDED_TAB_WIDTH = 180;
+    private static final int ONE_HANDED_TAB_HEIGHT = 25;
+    private static final int ONE_HANDED_TAB_LABEL_X = 620;
 
     private static final int STATS_PANEL_X = 35;
     private static final int STATS_PANEL_Y = 90;
@@ -204,7 +211,7 @@ public class SkillScreen extends Screen {
             selectedSkill--;
 
             if (selectedSkill < 0) {
-                selectedSkill = 2;
+                selectedSkill = 3;
             }
 
             return true;
@@ -215,7 +222,7 @@ public class SkillScreen extends Screen {
 
             selectedSkill++;
 
-            if (selectedSkill > 2) {
+            if (selectedSkill > 3) {
                 selectedSkill = 0;
             }
 
@@ -353,6 +360,16 @@ public class SkillScreen extends Screen {
             return true;
         }
 
+        if (
+                mouseX >= ONE_HANDED_TAB_X
+                        && mouseX <= ONE_HANDED_TAB_X + ONE_HANDED_TAB_WIDTH
+                        && mouseY >= ONE_HANDED_TAB_Y
+                        && mouseY <= ONE_HANDED_TAB_Y + ONE_HANDED_TAB_HEIGHT
+        ) {
+            selectedSkill = 3;
+            return true;
+        }
+
         if (selectedSkill == 1) {
 
             UUID playerId = minecraft.player.getUUID();
@@ -409,6 +426,27 @@ public class SkillScreen extends Screen {
                         1.0f
                 );
 
+                return true;
+            }
+        }
+
+        if (selectedSkill == 3) {
+            List<FeatureToggle> toggles =
+                    getVisibleOneHandedToggles(minecraft.player.getUUID());
+            int toggleRow = getWoodcuttingToggleRow(
+                    mouseX,
+                    mouseY,
+                    toggles.size()
+            );
+            if (toggleRow >= 0) {
+                ClientSkillState.toggleOneHanded(
+                        toggles.get(toggleRow).id()
+                );
+                minecraft.player.playSound(
+                        net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                        1.0f,
+                        1.0f
+                );
                 return true;
             }
         }
@@ -499,6 +537,24 @@ public class SkillScreen extends Screen {
                             perk.getId()
                         );
 
+                    return true;
+                }
+            }
+        }
+        if (selectedSkill == 3) {
+            for (SkillPerk perk : OneHandedPerks.ALL_PERKS) {
+                int perkX = perk.getX() + TREE_OFFSET_X;
+                int perkY = perk.getY() + TREE_OFFSET_Y;
+                if (
+                        mouseX >= perkX
+                                && mouseX <= perkX + PERK_NODE_SIZE
+                                && mouseY >= perkY
+                                && mouseY <= perkY + PERK_NODE_SIZE
+                ) {
+                    ClientSkillState.requestPerkUnlock(
+                            SkillType.ONE_HANDED,
+                            perk.getId()
+                    );
                     return true;
                 }
             }
@@ -700,6 +756,8 @@ public class SkillScreen extends Screen {
                         ? "FORAGING"
                         : selectedSkill == 2
                         ? "FARM OPTIONS"
+                        : selectedSkill == 3
+                        ? "COMBAT OPTIONS"
                         : "ORE SENSING",
                 ORE_TITLE_X,
                 ORE_TITLE_Y,
@@ -721,6 +779,15 @@ public class SkillScreen extends Screen {
             drawFeatureToggles(
                     graphics,
                     getVisibleFarmingToggles(
+                            minecraft.player.getUUID()
+                    )
+            );
+        }
+
+        if (selectedSkill == 3) {
+            drawFeatureToggles(
+                    graphics,
+                    getVisibleOneHandedToggles(
                             minecraft.player.getUUID()
                     )
             );
@@ -885,6 +952,18 @@ public class SkillScreen extends Screen {
                 ClientSkillState.getFarmingPerkPoints(
                         minecraft.player.getUUID()
                 );
+        int oneHandedLevel = ClientSkillState.getOneHandedLevel(
+                minecraft.player.getUUID()
+        );
+        int oneHandedXp = ClientSkillState.getOneHandedXp(
+                minecraft.player.getUUID()
+        );
+        int oneHandedXpRequired = ClientSkillState.getOneHandedXpRequired(
+                minecraft.player.getUUID()
+        );
+        int oneHandedPerkPoints = ClientSkillState.getOneHandedPerkPoints(
+                minecraft.player.getUUID()
+        );
         if (
                 selectedSkill == 0
                         && backgroundEnabled
@@ -1091,6 +1170,7 @@ public class SkillScreen extends Screen {
 
                 int color =
                         getConnectionColor(
+                                parent,
                                 perk,
                                 miningLevel,
                                 miningPerkPoints
@@ -1120,14 +1200,24 @@ public class SkillScreen extends Screen {
                         Math.min(x1, x2),
                         Math.max(x1, x2),
                         y1,
-                        color
+                        resolveConnectionSegmentColor(
+                                SkillType.MINING,
+                                parent,
+                                perk,
+                                color
+                        )
                 );
 
                 graphics.vLine(
                         x2,
                         Math.min(y1, y2),
                         Math.max(y1, y2),
-                        color
+                        resolveConnectionSegmentColor(
+                                SkillType.MINING,
+                                parent,
+                                perk,
+                                color
+                        )
                 );
             }
                 // =========================
@@ -1433,6 +1523,21 @@ public class SkillScreen extends Screen {
                 TAB_OUTLINE_COLOR
         );
 
+        graphics.fill(
+                ONE_HANDED_TAB_X,
+                ONE_HANDED_TAB_Y,
+                ONE_HANDED_TAB_X + ONE_HANDED_TAB_WIDTH,
+                ONE_HANDED_TAB_Y + ONE_HANDED_TAB_HEIGHT,
+                selectedSkill == 3 ? ACTIVE_TAB_FILL_COLOR : PANEL_FILL_COLOR
+        );
+        graphics.renderOutline(
+                ONE_HANDED_TAB_X,
+                ONE_HANDED_TAB_Y,
+                ONE_HANDED_TAB_WIDTH,
+                ONE_HANDED_TAB_HEIGHT,
+                TAB_OUTLINE_COLOR
+        );
+
 // Tab text
         graphics.drawCenteredString(
                 font,
@@ -1462,6 +1567,14 @@ public class SkillScreen extends Screen {
                 selectedSkill == 2
                         ? 0xFFFF55
                         : 0xAAAAAA
+        );
+
+        graphics.drawCenteredString(
+                font,
+                "ONE-HANDED",
+                ONE_HANDED_TAB_LABEL_X,
+                TAB_LABEL_Y,
+                selectedSkill == 3 ? 0xFFFF5555 : 0xAAAAAA
         );
 
 
@@ -1569,6 +1682,7 @@ public class SkillScreen extends Screen {
 
                 int color =
                         getWoodcuttingConnectionColor(
+                                parent,
                                 perk,
                                 woodcuttingLevel,
                                 woodcuttingPerkPoints
@@ -1596,6 +1710,8 @@ public class SkillScreen extends Screen {
 
                 drawWoodcuttingConnection(
                         graphics,
+                        SkillType.WOODCUTTING,
+                        parent,
                         perk,
                         x1,
                         y1,
@@ -1776,6 +1892,7 @@ public class SkillScreen extends Screen {
 
                 int color =
                         getFarmingConnectionColor(
+                                parent,
                                 perk,
                                 farmingLevel,
                                 farmingPerkPoints
@@ -1783,6 +1900,8 @@ public class SkillScreen extends Screen {
 
                 drawWoodcuttingConnection(
                         graphics,
+                        SkillType.FARMING,
+                        parent,
                         perk,
                         parent.getX()
                                 + TREE_OFFSET_X
@@ -1863,6 +1982,92 @@ public class SkillScreen extends Screen {
                                     Component.literal(
                                             perk.getEffectText()
                                     ).getVisualOrderText()
+                            ),
+                            mouseX,
+                            mouseY
+                    );
+                }
+            }
+        }
+
+        if (selectedSkill == 3) {
+            graphics.drawString(font, "One-Handed Level: " + oneHandedLevel,
+                    BOTTOM_INFO_X, height - MINING_LEVEL_Y_OFFSET, 0xFFFF5555);
+            graphics.drawString(font, "Perk Points: " + oneHandedPerkPoints,
+                    BOTTOM_INFO_X, height - PERK_POINTS_Y_OFFSET, 0x55FFFF);
+            drawXpBar(graphics, MINING_XP_BAR_X,
+                    height - MINING_XP_BAR_Y_OFFSET,
+                    MINING_XP_BAR_WIDTH, XP_BAR_HEIGHT,
+                    oneHandedXp, oneHandedXpRequired, 0xFFFF5555);
+
+            graphics.drawString(font, "Melee Damage: +0", MINING_STAT_X,
+                    MINING_SPEED_STAT_Y, 0x55FF55);
+            graphics.drawString(font, "Attack Speed: +0%", MINING_STAT_X,
+                    FORTUNE_STAT_Y, 0x55FFFF);
+            graphics.drawString(font, "Parry: +0%", MINING_STAT_X,
+                    DURABILITY_STAT_Y, 0xAAAAAA);
+            graphics.drawString(font, "Defense: +0%", MINING_STAT_X,
+                    ORE_SENSE_STAT_Y, 0xFFAA00);
+
+            for (SkillPerk perk : OneHandedPerks.ALL_PERKS) {
+                if (perk.getParentId() == null) {
+                    continue;
+                }
+                SkillPerk parent = OneHandedPerks.getById(perk.getParentId());
+                if (parent == null) {
+                    continue;
+                }
+                int color = getOneHandedConnectionColor(
+                        parent,
+                        perk,
+                        oneHandedLevel,
+                        oneHandedPerkPoints
+                );
+                drawWoodcuttingConnection(
+                        graphics,
+                        SkillType.ONE_HANDED,
+                        parent,
+                        perk,
+                        parent.getX() + TREE_OFFSET_X + PERK_LINE_CENTER_OFFSET,
+                        parent.getY() + TREE_OFFSET_Y + PERK_LINE_CENTER_OFFSET,
+                        perk.getX() + TREE_OFFSET_X + PERK_LINE_CENTER_OFFSET,
+                        perk.getY() + TREE_OFFSET_Y + PERK_LINE_CENTER_OFFSET,
+                        color
+                );
+            }
+
+            for (SkillPerk perk : OneHandedPerks.ALL_PERKS) {
+                int perkX = perk.getX() + TREE_OFFSET_X;
+                int perkY = perk.getY() + TREE_OFFSET_Y;
+                graphics.fill(perkX, perkY,
+                        perkX + PERK_NODE_SIZE, perkY + PERK_NODE_SIZE,
+                        getOneHandedPerkFillColor(
+                                perk,
+                                oneHandedLevel,
+                                oneHandedPerkPoints
+                        ));
+                graphics.renderOutline(perkX, perkY,
+                        PERK_NODE_SIZE, PERK_NODE_SIZE,
+                        getOneHandedPerkBorderColor(
+                                perk,
+                                oneHandedLevel,
+                                oneHandedPerkPoints
+                        ));
+
+                if (
+                        mouseX >= perkX
+                                && mouseX <= perkX + PERK_NODE_SIZE
+                                && mouseY >= perkY
+                                && mouseY <= perkY + PERK_NODE_SIZE
+                ) {
+                    graphics.renderTooltip(
+                            font,
+                            List.of(
+                                    Component.literal(perk.getName()).getVisualOrderText(),
+                                    Component.literal("Requires One-Handed Level: " + perk.getRequiredLevel()).getVisualOrderText(),
+                                    Component.literal("Cost: " + perk.getPointCost() + " Perk Points").getVisualOrderText(),
+                                    Component.literal(perk.getDescription()).getVisualOrderText(),
+                                    Component.literal(perk.getEffectText()).getVisualOrderText()
                             ),
                             mouseX,
                             mouseY
@@ -2001,6 +2206,7 @@ public class SkillScreen extends Screen {
             case MINING -> ClientSkillState.getMiningLevel(playerId);
             case WOODCUTTING -> ClientSkillState.getWoodcuttingLevel(playerId);
             case FARMING -> ClientSkillState.getFarmingLevel(playerId);
+            case ONE_HANDED -> ClientSkillState.getOneHandedLevel(playerId);
         };
     }
 
@@ -2010,6 +2216,7 @@ public class SkillScreen extends Screen {
             case MINING -> ClientSkillState.getMiningPrestige(playerId);
             case WOODCUTTING -> ClientSkillState.getWoodcuttingPrestige(playerId);
             case FARMING -> ClientSkillState.getFarmingPrestige(playerId);
+            case ONE_HANDED -> ClientSkillState.getOneHandedPrestige(playerId);
         };
     }
 
@@ -2512,12 +2719,13 @@ public class SkillScreen extends Screen {
     }
 
     private int getConnectionColor(
+            SkillPerk parent,
             SkillPerk perk,
             int miningLevel,
             int miningPerkPoints
     ) {
 
-        if (isPerkUnlocked(perk) && isParentUnlocked(perk)) {
+        if (isConnectionUnlocked(SkillType.MINING, parent, perk)) {
 
             return PERK_UNLOCKED_COLOR;
         }
@@ -2620,15 +2828,13 @@ public class SkillScreen extends Screen {
     }
 
     private int getWoodcuttingConnectionColor(
+            SkillPerk parent,
             SkillPerk perk,
             int woodcuttingLevel,
             int woodcuttingPerkPoints
     ) {
 
-        if (
-                isWoodcuttingPerkUnlocked(perk)
-                        && isWoodcuttingParentUnlocked(perk)
-        ) {
+        if (isConnectionUnlocked(SkillType.WOODCUTTING, parent, perk)) {
 
             return PERK_UNLOCKED_COLOR;
         }
@@ -2649,6 +2855,8 @@ public class SkillScreen extends Screen {
 
     private void drawWoodcuttingConnection(
             GuiGraphics graphics,
+            SkillType skillType,
+            SkillPerk parent,
             SkillPerk perk,
             int x1,
             int y1,
@@ -2661,6 +2869,9 @@ public class SkillScreen extends Screen {
 
             drawWoodcuttingConnectionSegment(
                     graphics,
+                    skillType,
+                    parent,
+                    perk,
                     x1,
                     y1,
                     x2,
@@ -2676,6 +2887,9 @@ public class SkillScreen extends Screen {
 
         drawWoodcuttingConnectionSegment(
                 graphics,
+                skillType,
+                parent,
+                perk,
                 x1,
                 y1,
                 x1,
@@ -2685,6 +2899,9 @@ public class SkillScreen extends Screen {
 
         drawWoodcuttingConnectionSegment(
                 graphics,
+                skillType,
+                parent,
+                perk,
                 x1,
                 middleY,
                 x2,
@@ -2694,6 +2911,9 @@ public class SkillScreen extends Screen {
 
         drawWoodcuttingConnectionSegment(
                 graphics,
+                skillType,
+                parent,
+                perk,
                 x2,
                 middleY,
                 x2,
@@ -2704,12 +2924,22 @@ public class SkillScreen extends Screen {
 
     private void drawWoodcuttingConnectionSegment(
             GuiGraphics graphics,
+            SkillType skillType,
+            SkillPerk parent,
+            SkillPerk child,
             int x1,
             int y1,
             int x2,
             int y2,
             int color
     ) {
+
+        int segmentColor = resolveConnectionSegmentColor(
+                skillType,
+                parent,
+                child,
+                color
+        );
 
         int steps =
                 Math.max(
@@ -2739,7 +2969,7 @@ public class SkillScreen extends Screen {
                     y,
                     x + 2,
                     y + 2,
-                    color
+                    segmentColor
             );
         }
     }
@@ -2828,15 +3058,13 @@ public class SkillScreen extends Screen {
     }
 
     private int getFarmingConnectionColor(
+            SkillPerk parent,
             SkillPerk perk,
             int farmingLevel,
             int farmingPerkPoints
     ) {
 
-        if (
-                isFarmingPerkUnlocked(perk)
-                        && isFarmingParentUnlocked(perk)
-        ) {
+        if (isConnectionUnlocked(SkillType.FARMING, parent, perk)) {
 
             return PERK_UNLOCKED_COLOR;
         }
@@ -2853,6 +3081,44 @@ public class SkillScreen extends Screen {
         }
 
         return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private int resolveConnectionSegmentColor(
+            SkillType skillType,
+            SkillPerk parent,
+            SkillPerk child,
+            int fallbackColor
+    ) {
+        return isConnectionUnlocked(skillType, parent, child)
+                ? PERK_UNLOCKED_COLOR
+                : fallbackColor;
+    }
+
+    private boolean isConnectionUnlocked(
+            SkillType skillType,
+            SkillPerk parent,
+            SkillPerk child
+    ) {
+        UUID playerId = minecraft.player.getUUID();
+
+        return switch (skillType) {
+            case MINING -> ClientSkillState.hasMiningPerk(
+                    playerId,
+                    parent.getId()
+            ) && ClientSkillState.hasMiningPerk(playerId, child.getId());
+            case WOODCUTTING -> ClientSkillState.hasWoodcuttingPerk(
+                    playerId,
+                    parent.getId()
+            ) && ClientSkillState.hasWoodcuttingPerk(playerId, child.getId());
+            case FARMING -> ClientSkillState.hasFarmingPerk(
+                    playerId,
+                    parent.getId()
+            ) && ClientSkillState.hasFarmingPerk(playerId, child.getId());
+            case ONE_HANDED -> ClientSkillState.hasOneHandedPerk(
+                    playerId,
+                    parent.getId()
+            ) && ClientSkillState.hasOneHandedPerk(playerId, child.getId());
+        };
     }
 
     private int getFarmingPerkFillColor(
@@ -2937,6 +3203,73 @@ public class SkillScreen extends Screen {
         }
 
         return ClientSkillState.hasFarmingPerk(
+                minecraft.player.getUUID(),
+                perk.getParentId()
+        );
+    }
+
+    private int getOneHandedConnectionColor(
+            SkillPerk parent,
+            SkillPerk perk,
+            int level,
+            int perkPoints
+    ) {
+        if (isConnectionUnlocked(SkillType.ONE_HANDED, parent, perk)) {
+            return PERK_UNLOCKED_COLOR;
+        }
+        if (isOneHandedPerkAvailable(perk, level, perkPoints)) {
+            return PERK_AVAILABLE_BORDER_COLOR;
+        }
+        return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private int getOneHandedPerkFillColor(
+            SkillPerk perk,
+            int level,
+            int perkPoints
+    ) {
+        if (isOneHandedPerkUnlocked(perk)) {
+            return PERK_UNLOCKED_COLOR;
+        }
+        return isOneHandedPerkAvailable(perk, level, perkPoints)
+                ? PERK_AVAILABLE_FILL_COLOR
+                : PERK_LOCKED_FILL_COLOR;
+    }
+
+    private int getOneHandedPerkBorderColor(
+            SkillPerk perk,
+            int level,
+            int perkPoints
+    ) {
+        if (isOneHandedPerkUnlocked(perk)) {
+            return PERK_UNLOCKED_COLOR;
+        }
+        return isOneHandedPerkAvailable(perk, level, perkPoints)
+                ? PERK_AVAILABLE_BORDER_COLOR
+                : PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private boolean isOneHandedPerkAvailable(
+            SkillPerk perk,
+            int level,
+            int perkPoints
+    ) {
+        return !isOneHandedPerkUnlocked(perk)
+                && level >= perk.getRequiredLevel()
+                && perkPoints >= perk.getPointCost()
+                && isOneHandedParentUnlocked(perk);
+    }
+
+    private boolean isOneHandedPerkUnlocked(SkillPerk perk) {
+        return ClientSkillState.hasOneHandedPerk(
+                minecraft.player.getUUID(),
+                perk.getId()
+        );
+    }
+
+    private boolean isOneHandedParentUnlocked(SkillPerk perk) {
+        return perk.getParentId() == null
+                || ClientSkillState.hasOneHandedPerk(
                 minecraft.player.getUUID(),
                 perk.getParentId()
         );
@@ -3170,6 +3503,43 @@ public class SkillScreen extends Screen {
         }
 
         return false;
+    }
+
+    private List<FeatureToggle> getVisibleOneHandedToggles(
+            UUID playerId
+    ) {
+        List<FeatureToggle> toggles = new ArrayList<>();
+
+        if (ClientSkillState.hasOneHandedPerk(playerId, "offhand_strike")) {
+            toggles.add(new FeatureToggle(
+                    "dual_wield",
+                    "Dual Wield",
+                    ClientSkillState.isOneHandedToggleEnabled("dual_wield")
+            ));
+        }
+        if (ClientSkillState.hasOneHandedPerk(playerId, "parry")) {
+            toggles.add(new FeatureToggle(
+                    "parry",
+                    "Parry",
+                    ClientSkillState.isOneHandedToggleEnabled("parry")
+            ));
+        }
+        if (ClientSkillState.hasOneHandedPerk(playerId, "shield_training")) {
+            toggles.add(new FeatureToggle(
+                    "shield_effects",
+                    "Shield Effects",
+                    ClientSkillState.isOneHandedToggleEnabled("shield_effects")
+            ));
+        }
+        if (ClientSkillState.hasOneHandedPerk(playerId, "monster_hunter")) {
+            toggles.add(new FeatureToggle(
+                    "bonus_loot",
+                    "Bonus Loot",
+                    ClientSkillState.isOneHandedToggleEnabled("bonus_loot")
+            ));
+        }
+
+        return toggles;
     }
 
     private void toggleWoodcuttingFeature(

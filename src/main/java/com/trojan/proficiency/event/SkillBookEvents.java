@@ -1,6 +1,6 @@
 package com.trojan.proficiency.event;
 
-import com.trojan.proficiency.item.ModItems;
+import com.trojan.proficiency.item.SkillBookRegistry;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
 import net.minecraft.resources.ResourceKey;
@@ -19,14 +19,24 @@ import java.util.Set;
 
 public final class SkillBookEvents {
 
-    private static final float HOSTILE_DROP_CHANCE = 0.001f;
-    private static final float CHEST_BOOK_CHANCE = 0.04f;
+    private static final float HOSTILE_DROP_CHANCE = 0.03f;
+    private static final float VILLAGE_CHEST_CHANCE = 0.07f;
+    private static final float MINESHAFT_CHEST_CHANCE = 0.09f;
+    private static final float STRONGHOLD_CHEST_CHANCE = 0.10f;
+    private static final float ANCIENT_CITY_CHEST_CHANCE = 0.125f;
+    private static final float NETHER_CHEST_CHANCE = 0.075f;
+    private static final float DUNGEON_CHEST_CHANCE = 0.08f;
     private static final Set<ResourceKey<LootTable>> SKILL_BOOK_CHESTS = Set.of(
             BuiltInLootTables.SIMPLE_DUNGEON,
             BuiltInLootTables.ABANDONED_MINESHAFT,
             BuiltInLootTables.STRONGHOLD_CORRIDOR,
+            BuiltInLootTables.STRONGHOLD_CROSSING,
+            BuiltInLootTables.STRONGHOLD_LIBRARY,
             BuiltInLootTables.NETHER_BRIDGE,
             BuiltInLootTables.BASTION_TREASURE,
+            BuiltInLootTables.BASTION_BRIDGE,
+            BuiltInLootTables.BASTION_HOGLIN_STABLE,
+            BuiltInLootTables.BASTION_OTHER,
             BuiltInLootTables.ANCIENT_CITY,
             BuiltInLootTables.VILLAGE_PLAINS_HOUSE,
             BuiltInLootTables.VILLAGE_TAIGA_HOUSE,
@@ -39,6 +49,8 @@ public final class SkillBookEvents {
     }
 
     public static void register() {
+        SkillBookRegistry.validate();
+
         LootTableEvents.MODIFY.register((key, tableBuilder, source, registries) -> {
             if (!source.isBuiltin() || !SKILL_BOOK_CHESTS.contains(key)) {
                 return;
@@ -47,11 +59,16 @@ public final class SkillBookEvents {
             LootPool.Builder pool = LootPool.lootPool()
                     .setRolls(ConstantValue.exactly(1.0f))
                     .when(LootItemRandomChanceCondition.randomChance(
-                            CHEST_BOOK_CHANCE
-                    ))
-                    .add(LootItem.lootTableItem(ModItems.MINING_SKILL_BOOK).setWeight(1))
-                    .add(LootItem.lootTableItem(ModItems.WOODCUTTING_SKILL_BOOK).setWeight(1))
-                    .add(LootItem.lootTableItem(ModItems.FARMING_SKILL_BOOK).setWeight(1));
+                            getChestBookChance(key)
+                    ));
+
+            for (SkillBookRegistry.Entry skillBook
+                    : SkillBookRegistry.entries()) {
+                pool.add(
+                        LootItem.lootTableItem(skillBook.item())
+                                .setWeight(1)
+                );
+            }
             tableBuilder.withPool(pool);
         });
 
@@ -64,12 +81,41 @@ public final class SkillBookEvents {
                 return;
             }
 
-            Item book = switch (player.getRandom().nextInt(3)) {
-                case 0 -> ModItems.MINING_SKILL_BOOK;
-                case 1 -> ModItems.WOODCUTTING_SKILL_BOOK;
-                default -> ModItems.FARMING_SKILL_BOOK;
-            };
+            Item book = SkillBookRegistry.getRandomBook(
+                    player.getRandom()
+            );
             entity.spawnAtLocation(new ItemStack(book));
         });
+    }
+
+    private static float getChestBookChance(
+            ResourceKey<LootTable> lootTable
+    ) {
+        if (lootTable.equals(BuiltInLootTables.ABANDONED_MINESHAFT)) {
+            return MINESHAFT_CHEST_CHANCE;
+        }
+        if (
+                lootTable.equals(BuiltInLootTables.STRONGHOLD_CORRIDOR)
+                        || lootTable.equals(BuiltInLootTables.STRONGHOLD_CROSSING)
+                        || lootTable.equals(BuiltInLootTables.STRONGHOLD_LIBRARY)
+        ) {
+            return STRONGHOLD_CHEST_CHANCE;
+        }
+        if (lootTable.equals(BuiltInLootTables.ANCIENT_CITY)) {
+            return ANCIENT_CITY_CHEST_CHANCE;
+        }
+        if (
+                lootTable.equals(BuiltInLootTables.NETHER_BRIDGE)
+                        || lootTable.equals(BuiltInLootTables.BASTION_TREASURE)
+                        || lootTable.equals(BuiltInLootTables.BASTION_BRIDGE)
+                        || lootTable.equals(BuiltInLootTables.BASTION_HOGLIN_STABLE)
+                        || lootTable.equals(BuiltInLootTables.BASTION_OTHER)
+        ) {
+            return NETHER_CHEST_CHANCE;
+        }
+        if (lootTable.equals(BuiltInLootTables.SIMPLE_DUNGEON)) {
+            return DUNGEON_CHEST_CHANCE;
+        }
+        return VILLAGE_CHEST_CHANCE;
     }
 }

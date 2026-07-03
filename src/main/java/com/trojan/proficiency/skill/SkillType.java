@@ -3,7 +3,8 @@ package com.trojan.proficiency.skill;
 public enum SkillType {
     MINING("mining", "Mining"),
     WOODCUTTING("woodcutting", "Woodcutting"),
-    FARMING("farming", "Farming");
+    FARMING("farming", "Farming"),
+    ONE_HANDED("one_handed", "One-Handed");
 
     private final String id;
     private final String displayName;
