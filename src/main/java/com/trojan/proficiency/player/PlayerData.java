@@ -48,6 +48,8 @@ public class PlayerData {
 
     private Boolean woodcuttingCleanFloorEnabled = true;
 
+    private Boolean woodcuttingDecapitationEnabled = true;
+
     // =========================
     // FARMING
     // =========================
@@ -280,6 +282,15 @@ public class PlayerData {
     ) {
 
         woodcuttingCleanFloorEnabled = enabled;
+    }
+
+    public boolean isWoodcuttingDecapitationEnabled() {
+        return woodcuttingDecapitationEnabled == null
+                || woodcuttingDecapitationEnabled;
+    }
+
+    public void setWoodcuttingDecapitationEnabled(boolean enabled) {
+        woodcuttingDecapitationEnabled = enabled;
     }
 
     public int getFarmingXp() {

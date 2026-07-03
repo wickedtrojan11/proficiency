@@ -204,7 +204,9 @@ public class SkillManager {
                                         "bonus_drops",
                                         data.isWoodcuttingBonusDropsEnabled(),
                                         "clean_floor",
-                                        data.isWoodcuttingCleanFloorEnabled()
+                                        data.isWoodcuttingCleanFloorEnabled(),
+                                        "decapitation",
+                                        data.isWoodcuttingDecapitationEnabled()
                                 )
                         ),
                         new SkillStatePayload.SkillState(
@@ -340,6 +342,12 @@ public class SkillManager {
                     data.setWoodcuttingBonusDropsEnabled(desiredState);
             case "clean_floor" ->
                     data.setWoodcuttingCleanFloorEnabled(desiredState);
+            case "decapitation" -> {
+                if (!data.hasWoodcuttingPerk("decapitation_chance")) {
+                    return false;
+                }
+                data.setWoodcuttingDecapitationEnabled(desiredState);
+            }
             default -> {
                 return false;
             }
@@ -877,6 +885,10 @@ public class SkillManager {
                 .isWoodcuttingCleanFloorEnabled();
     }
 
+    public static boolean isWoodcuttingDecapitationEnabled(UUID playerId) {
+        return getPlayerData(playerId).isWoodcuttingDecapitationEnabled();
+    }
+
     public static void toggleWoodcuttingCleanFloor(
             UUID playerId
     ) {
@@ -1156,6 +1168,20 @@ public class SkillManager {
 
     public static boolean hasOneHandedPerk(UUID playerId, String perkId) {
         return getPlayerData(playerId).hasOneHandedPerk(perkId);
+    }
+
+    public static boolean isOneHandedToggleEnabled(
+            UUID playerId,
+            String toggleId
+    ) {
+        PlayerData data = getPlayerData(playerId);
+        return switch (toggleId) {
+            case "dual_wield" -> data.isOneHandedDualWieldEnabled();
+            case "parry" -> data.isOneHandedParryEnabled();
+            case "shield_effects" -> data.isOneHandedShieldEffectsEnabled();
+            case "bonus_loot" -> data.isOneHandedBonusLootEnabled();
+            default -> false;
+        };
     }
 
     public static PerkUnlockResult unlockPerk(

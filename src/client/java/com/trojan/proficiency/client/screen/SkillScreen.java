@@ -1991,6 +1991,46 @@ public class SkillScreen extends Screen {
         }
 
         if (selectedSkill == 3) {
+            UUID oneHandedPlayerId = minecraft.player.getUUID();
+            double oneHandedDamageBonus =
+                    (ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "blade_training") ? 0.5 : 0.0)
+                            + (ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "duelists_focus") ? 0.5 : 0.0);
+            int oneHandedSpeedBonus = ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "offhand_strike")
+                    && ClientSkillState.isOneHandedToggleEnabled("dual_wield") ? 5 : 0;
+            int oneHandedParryBonus = ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "parry")
+                    && ClientSkillState.isOneHandedToggleEnabled("parry") ? 1 : 0;
+            int oneHandedDefenseBonus = ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "shield_training")
+                    && ClientSkillState.isOneHandedToggleEnabled("shield_effects") ? 2 : 0;
+
+            graphics.drawCenteredString(
+                    font,
+                    "BERSERKER",
+                    TREE_OFFSET_X + 130,
+                    65,
+                    0xFFFF7777
+            );
+            graphics.drawCenteredString(
+                    font,
+                    "DUELIST",
+                    TREE_OFFSET_X + 225,
+                    65,
+                    0xFFFFFF77
+            );
+            graphics.drawCenteredString(
+                    font,
+                    "GUARDIAN",
+                    TREE_OFFSET_X + 320,
+                    65,
+                    0xFF77AAFF
+            );
+            graphics.drawCenteredString(
+                    font,
+                    "WEAPON MASTERY",
+                    TREE_OFFSET_X + 415,
+                    65,
+                    0xFFDD99FF
+            );
+
             graphics.drawString(font, "One-Handed Level: " + oneHandedLevel,
                     BOTTOM_INFO_X, height - MINING_LEVEL_Y_OFFSET, 0xFFFF5555);
             graphics.drawString(font, "Perk Points: " + oneHandedPerkPoints,
@@ -2000,13 +2040,13 @@ public class SkillScreen extends Screen {
                     MINING_XP_BAR_WIDTH, XP_BAR_HEIGHT,
                     oneHandedXp, oneHandedXpRequired, 0xFFFF5555);
 
-            graphics.drawString(font, "Melee Damage: +0", MINING_STAT_X,
+            graphics.drawString(font, "Melee Damage: +" + oneHandedDamageBonus, MINING_STAT_X,
                     MINING_SPEED_STAT_Y, 0x55FF55);
-            graphics.drawString(font, "Attack Speed: +0%", MINING_STAT_X,
+            graphics.drawString(font, "Attack Speed: +" + oneHandedSpeedBonus + "%", MINING_STAT_X,
                     FORTUNE_STAT_Y, 0x55FFFF);
-            graphics.drawString(font, "Parry: +0%", MINING_STAT_X,
+            graphics.drawString(font, "Parry: +" + oneHandedParryBonus, MINING_STAT_X,
                     DURABILITY_STAT_Y, 0xAAAAAA);
-            graphics.drawString(font, "Defense: +0%", MINING_STAT_X,
+            graphics.drawString(font, "Defense: +" + oneHandedDefenseBonus, MINING_STAT_X,
                     ORE_SENSE_STAT_Y, 0xFFAA00);
 
             for (SkillPerk perk : OneHandedPerks.ALL_PERKS) {
@@ -3381,6 +3421,14 @@ public class SkillScreen extends Screen {
             ));
         }
 
+        if (hasAnyWoodcuttingPerk(playerId, "decapitation_chance")) {
+            toggles.add(new FeatureToggle(
+                    "decapitation",
+                    "Decapitation",
+                    ClientSkillState.isWoodcuttingDecapitationEnabled(playerId)
+            ));
+        }
+
         return toggles;
     }
 
@@ -3556,6 +3604,8 @@ public class SkillScreen extends Screen {
                     ClientSkillState.toggleWoodcuttingBonusDrops(playerId);
             case "clean_floor" ->
                     ClientSkillState.toggleWoodcuttingCleanFloor(playerId);
+            case "decapitation" ->
+                    ClientSkillState.toggleWoodcuttingDecapitation(playerId);
         }
     }
 

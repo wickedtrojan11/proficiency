@@ -544,6 +544,9 @@ public class WoodcuttingPerkEffects {
                         player.getUUID(),
                         "decapitation_chance"
                 )
+                        || !SkillManager.isWoodcuttingDecapitationEnabled(
+                        player.getUUID()
+                )
                         || player.getRandom().nextFloat()
                         >= SkillManager.scalePerkChance(player.getUUID(), SkillType.WOODCUTTING, DECAPITATION_CHANCE)
         ) {

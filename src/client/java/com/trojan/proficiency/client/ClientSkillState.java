@@ -473,6 +473,14 @@ public final class ClientSkillState {
         toggleWoodcutting("clean_floor");
     }
 
+    public static boolean isWoodcuttingDecapitationEnabled(UUID ignored) {
+        return toggle(woodcutting, "decapitation");
+    }
+
+    public static void toggleWoodcuttingDecapitation(UUID ignored) {
+        toggleWoodcutting("decapitation");
+    }
+
     private static void toggleWoodcutting(String toggleId) {
 
         requestToggle(
