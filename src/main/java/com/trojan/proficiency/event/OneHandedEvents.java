@@ -21,6 +21,9 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.phys.Vec3;
 import com.trojan.proficiency.network.ParryVisualPayload;
 
 import java.util.HashMap;
@@ -35,13 +38,40 @@ public final class OneHandedEvents {
     private static final int PARRY_COOLDOWN_TICKS = 40;
     private static final int RIPOSTE_TIMEOUT_TICKS = 100;
     private static final float RIPOSTE_BONUS_DAMAGE = 2.0f;
+    private static final int GUARDED_STRIKE_TIMEOUT_TICKS = 100;
+    private static final float GUARDED_STRIKE_BONUS_DAMAGE = 1.0f;
+    private static final int SHIELD_BASH_COOLDOWN_TICKS = 60;
+    private static final double SHIELD_BASH_RANGE = 3.0;
+    private static final float SHIELD_TRAINING_SAVE_CHANCE = 0.20f;
+    private static final int RESOLVE_BLOCK_WINDOW_TICKS = 80;
+    private static final int RESOLVE_REQUIRED_BLOCKS = 3;
+    private static final int RESOLVE_DURATION_TICKS = 60;
+    private static final int ADRENALINE_DURATION_TICKS = 100;
+    private static final double BLOODLUST_SPEED_BONUS = 0.05;
+    private static final double RECKLESS_DAMAGE_BONUS = 0.25;
+    private static final double ADRENALINE_SPEED_BONUS = 0.20;
+    private static final float BLOOD_FRENZY_MIN_HEAL = 2.0f;
+    private static final float BLOOD_FRENZY_MAX_HEAL = 4.0f;
+    private static final float LAST_STAND_HEALTH_THRESHOLD = 2.0f;
+    private static final float LAST_STAND_SAVE_CHANCE = 0.50f;
+    private static final int BERSERK_DURATION_TICKS = 100;
+    private static final double BERSERK_DAMAGE_BONUS = 1.0;
+    private static final double BERSERK_SPEED_BONUS = 0.50;
     private static final ResourceLocation DAMAGE_MODIFIER_ID = id("one_handed_damage");
     private static final ResourceLocation SPEED_MODIFIER_ID = id("one_handed_speed");
     private static final ResourceLocation DEFENSE_MODIFIER_ID = id("one_handed_defense");
+    private static final ResourceLocation BULWARK_MODIFIER_ID = id("one_handed_bulwark");
     private static final Map<UUID, Integer> PARRY_WINDOWS = new HashMap<>();
     private static final Map<UUID, Integer> PARRY_COOLDOWNS = new HashMap<>();
     private static final Map<UUID, Integer> RIPOSTE_WINDOWS = new HashMap<>();
+    private static final Map<UUID, Integer> GUARDED_STRIKE_WINDOWS = new HashMap<>();
+    private static final Map<UUID, Integer> SHIELD_BASH_COOLDOWNS = new HashMap<>();
+    private static final Map<UUID, Integer> RESOLVE_BLOCK_COUNTS = new HashMap<>();
+    private static final Map<UUID, Integer> RESOLVE_WINDOWS = new HashMap<>();
+    private static final Map<UUID, Integer> ADRENALINE_WINDOWS = new HashMap<>();
+    private static final Map<UUID, Integer> BERSERK_WINDOWS = new HashMap<>();
     private static boolean applyingRiposteDamage;
+    private static boolean applyingGuardedStrikeDamage;
 
     private OneHandedEvents() {
     }
@@ -55,6 +85,11 @@ public final class OneHandedEvents {
             PARRY_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
             PARRY_COOLDOWNS.entrySet().removeIf(entry -> entry.getValue() < tick);
             RIPOSTE_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
+            GUARDED_STRIKE_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
+            SHIELD_BASH_COOLDOWNS.entrySet().removeIf(entry -> entry.getValue() < tick);
+            RESOLVE_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
+            ADRENALINE_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
+            BERSERK_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
         });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
@@ -66,21 +101,34 @@ public final class OneHandedEvents {
             if (tryActivateParry(serverPlayer, hand)) {
                 return InteractionResultHolder.success(stack);
             }
+            if (tryShieldBash(serverPlayer)) {
+                return InteractionResultHolder.success(stack);
+            }
             return InteractionResultHolder.pass(stack);
         });
 
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
                 !tryParryDamage(entity, source)
+                        && !tryLastStand(entity)
         );
 
         ServerLivingEntityEvents.AFTER_DAMAGE.register(
                 (entity, source, baseDamage, damageTaken, blocked) -> {
-                    if (applyingRiposteDamage) {
+                    if (entity instanceof ServerPlayer defender && blocked) {
+                        handleGuardianBlock(defender);
+                    }
+                    if (entity instanceof ServerPlayer defender
+                            && !blocked
+                            && damageTaken > 0.0f) {
+                        activateAdrenaline(defender);
+                    }
+                    if (applyingRiposteDamage || applyingGuardedStrikeDamage) {
                         return;
                     }
                     ServerPlayer attacker = getOneHandedAttacker(source);
                     if (attacker != null && !blocked && damageTaken > 0.0f) {
                         tryApplyRiposte(attacker, entity);
+                        tryApplyGuardedStrike(attacker, entity);
                     }
                     ServerPlayer player = getEligiblePlayer(entity, source);
                     if (player != null && !blocked && damageTaken > 0.0f) {
@@ -93,6 +141,8 @@ public final class OneHandedEvents {
             ServerPlayer attacker = getOneHandedAttacker(source);
             if (attacker != null) {
                 RIPOSTE_WINDOWS.remove(attacker.getUUID());
+                GUARDED_STRIKE_WINDOWS.remove(attacker.getUUID());
+                handleBloodFrenzy(attacker, entity);
             }
             ServerPlayer player = getEligiblePlayer(entity, source);
             if (player != null) {
@@ -251,6 +301,308 @@ public final class OneHandedEvents {
                 && player.getOffhandItem().isEmpty();
     }
 
+    private static boolean hasGuardianLoadout(ServerPlayer player) {
+        return OneHandedWeapons.isSupported(player.getMainHandItem())
+                && player.getOffhandItem().getItem() instanceof ShieldItem;
+    }
+
+    private static boolean hasBerserkerLoadout(ServerPlayer player) {
+        return OneHandedWeapons.isSupported(player.getMainHandItem())
+                && OneHandedWeapons.isSupported(player.getOffhandItem())
+                && isToggleEnabled(player, "dual_wield");
+    }
+
+    private static void activateAdrenaline(ServerPlayer player) {
+        if (!hasBerserkerLoadout(player)
+                || !SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "berserkers_rhythm"
+        )) {
+            return;
+        }
+        ADRENALINE_WINDOWS.put(
+                player.getUUID(),
+                player.getServer().getTickCount() + ADRENALINE_DURATION_TICKS
+        );
+    }
+
+    private static void handleBloodFrenzy(
+            ServerPlayer player,
+            LivingEntity defeated
+    ) {
+        if (!(defeated instanceof Enemy)
+                || !hasBerserkerLoadout(player)
+                || !SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "blood_frenzy"
+        )) {
+            return;
+        }
+
+        float heal = BLOOD_FRENZY_MIN_HEAL
+                + player.getRandom().nextFloat()
+                * (BLOOD_FRENZY_MAX_HEAL - BLOOD_FRENZY_MIN_HEAL);
+        player.heal((float) scale(player, heal));
+        ADRENALINE_WINDOWS.put(
+                player.getUUID(),
+                player.getServer().getTickCount() + ADRENALINE_DURATION_TICKS
+        );
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.EXPERIENCE_ORB_PICKUP,
+                SoundSource.PLAYERS,
+                0.25f,
+                0.7f
+        );
+        player.serverLevel().sendParticles(
+                ParticleTypes.HEART,
+                player.getX(),
+                player.getY() + 1.0,
+                player.getZ(),
+                3,
+                0.3,
+                0.4,
+                0.3,
+                0.02
+        );
+    }
+
+    private static boolean tryLastStand(LivingEntity target) {
+        if (!(target instanceof ServerPlayer player)
+                || player.getHealth() > LAST_STAND_HEALTH_THRESHOLD
+                || !hasBerserkerLoadout(player)
+                || !SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "last_stand"
+        )
+                || player.getRandom().nextFloat()
+                >= SkillManager.scalePerkChance(
+                player.getUUID(),
+                SkillType.ONE_HANDED,
+                LAST_STAND_SAVE_CHANCE
+        )) {
+            return false;
+        }
+
+        int tick = player.getServer().getTickCount();
+        BERSERK_WINDOWS.put(
+                player.getUUID(),
+                tick + BERSERK_DURATION_TICKS
+        );
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.WARDEN_HEARTBEAT,
+                SoundSource.PLAYERS,
+                0.65f,
+                1.15f
+        );
+        player.serverLevel().sendParticles(
+                ParticleTypes.DAMAGE_INDICATOR,
+                player.getX(),
+                player.getY() + 1.0,
+                player.getZ(),
+                14,
+                0.45,
+                0.6,
+                0.45,
+                0.08
+        );
+        return true;
+    }
+
+    private static void handleGuardianBlock(ServerPlayer player) {
+        if (!hasGuardianLoadout(player)
+                || !isToggleEnabled(player, "shield_effects")) {
+            return;
+        }
+
+        int tick = player.getServer().getTickCount();
+        if (SkillManager.hasOneHandedPerk(player.getUUID(), "guarded_strike")) {
+            GUARDED_STRIKE_WINDOWS.put(
+                    player.getUUID(),
+                    tick + GUARDED_STRIKE_TIMEOUT_TICKS
+            );
+        }
+
+        if (
+                SkillManager.hasOneHandedPerk(player.getUUID(), "shield_training")
+                        && player.getRandom().nextFloat()
+                        < SkillManager.scalePerkChance(
+                        player.getUUID(),
+                        SkillType.ONE_HANDED,
+                        SHIELD_TRAINING_SAVE_CHANCE
+                )
+        ) {
+            ItemStack shield = player.getOffhandItem();
+            if (shield.getDamageValue() > 0) {
+                shield.setDamageValue(shield.getDamageValue() - 1);
+            }
+        }
+
+        if (!SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "guardians_resolve"
+        )) {
+            return;
+        }
+
+        if (RESOLVE_WINDOWS.getOrDefault(player.getUUID(), 0) < tick) {
+            RESOLVE_BLOCK_COUNTS.put(player.getUUID(), 0);
+        }
+        int blocks = RESOLVE_BLOCK_COUNTS.getOrDefault(
+                player.getUUID(),
+                0
+        ) + 1;
+        RESOLVE_BLOCK_COUNTS.put(player.getUUID(), blocks);
+        RESOLVE_WINDOWS.put(
+                player.getUUID(),
+                tick + RESOLVE_BLOCK_WINDOW_TICKS
+        );
+
+        if (blocks >= RESOLVE_REQUIRED_BLOCKS) {
+            RESOLVE_BLOCK_COUNTS.put(player.getUUID(), 0);
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.DAMAGE_RESISTANCE,
+                    RESOLVE_DURATION_TICKS,
+                    0,
+                    false,
+                    false,
+                    true
+            ));
+            player.level().playSound(
+                    null,
+                    player.blockPosition(),
+                    SoundEvents.ANVIL_LAND,
+                    SoundSource.PLAYERS,
+                    0.2f,
+                    1.8f
+            );
+            player.serverLevel().sendParticles(
+                    ParticleTypes.ENCHANT,
+                    player.getX(),
+                    player.getY() + 1.0,
+                    player.getZ(),
+                    8,
+                    0.35,
+                    0.5,
+                    0.35,
+                    0.02
+            );
+        }
+    }
+
+    private static boolean tryShieldBash(ServerPlayer player) {
+        if (
+                !hasGuardianLoadout(player)
+                        || !SkillManager.hasOneHandedPerk(
+                        player.getUUID(),
+                        "shield_bash"
+                )
+                        || !isToggleEnabled(player, "shield_effects")
+        ) {
+            return false;
+        }
+
+        int tick = player.getServer().getTickCount();
+        if (SHIELD_BASH_COOLDOWNS.getOrDefault(player.getUUID(), 0) > tick) {
+            return false;
+        }
+
+        LivingEntity target = findShieldBashTarget(player);
+        if (target == null) {
+            return false;
+        }
+
+        SHIELD_BASH_COOLDOWNS.put(
+                player.getUUID(),
+                tick + SHIELD_BASH_COOLDOWN_TICKS
+        );
+        target.knockback(
+                0.8,
+                player.getX() - target.getX(),
+                player.getZ() - target.getZ()
+        );
+        target.addEffect(new MobEffectInstance(
+                MobEffects.MOVEMENT_SLOWDOWN,
+                20,
+                0,
+                false,
+                false,
+                true
+        ));
+        player.level().playSound(
+                null,
+                target.blockPosition(),
+                SoundEvents.SHIELD_BLOCK,
+                SoundSource.PLAYERS,
+                0.6f,
+                0.8f
+        );
+        player.serverLevel().sendParticles(
+                ParticleTypes.CRIT,
+                target.getX(),
+                target.getY() + target.getBbHeight() * 0.5,
+                target.getZ(),
+                6,
+                0.25,
+                0.3,
+                0.25,
+                0.08
+        );
+        return true;
+    }
+
+    private static LivingEntity findShieldBashTarget(ServerPlayer player) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        LivingEntity bestTarget = null;
+        double bestDistance = SHIELD_BASH_RANGE * SHIELD_BASH_RANGE;
+
+        for (LivingEntity target : player.serverLevel().getEntitiesOfClass(
+                LivingEntity.class,
+                player.getBoundingBox().inflate(SHIELD_BASH_RANGE),
+                target -> target instanceof Enemy && target.isAlive()
+        )) {
+            Vec3 toTarget = target.getEyePosition().subtract(eye);
+            double distance = toTarget.lengthSqr();
+            if (
+                    distance < bestDistance
+                            && look.dot(toTarget.normalize()) > 0.65
+                            && player.hasLineOfSight(target)
+            ) {
+                bestTarget = target;
+                bestDistance = distance;
+            }
+        }
+        return bestTarget;
+    }
+
+    private static void tryApplyGuardedStrike(
+            ServerPlayer player,
+            LivingEntity target
+    ) {
+        int tick = player.getServer().getTickCount();
+        if (
+                GUARDED_STRIKE_WINDOWS.getOrDefault(player.getUUID(), 0) < tick
+                        || !OneHandedWeapons.isSupported(player.getMainHandItem())
+        ) {
+            return;
+        }
+
+        GUARDED_STRIKE_WINDOWS.remove(player.getUUID());
+        applyingGuardedStrikeDamage = true;
+        try {
+            target.hurt(
+                    player.damageSources().playerAttack(player),
+                    (float) scale(player, GUARDED_STRIKE_BONUS_DAMAGE)
+            );
+        } finally {
+            applyingGuardedStrikeDamage = false;
+        }
+    }
+
     private static void updateLoadoutEffects(ServerPlayer player) {
         ItemStack mainHand = player.getMainHandItem();
         ItemStack offHand = player.getOffhandItem();
@@ -260,6 +612,26 @@ public final class OneHandedEvents {
                 && OneHandedWeapons.isSupported(offHand);
         boolean weaponAndShield = supportedMainHand
                 && offHand.getItem() instanceof ShieldItem;
+        boolean activelyBlocking = weaponAndShield
+                && player.isUsingItem()
+                && player.getUseItem().getItem() instanceof ShieldItem;
+        int tick = player.getServer().getTickCount();
+        boolean berserkerActive = dualWield
+                && isToggleEnabled(player, "dual_wield");
+        boolean adrenalineActive = berserkerActive
+                && ADRENALINE_WINDOWS.getOrDefault(
+                player.getUUID(),
+                0
+        ) >= tick;
+        boolean berserkActive = berserkerActive
+                && BERSERK_WINDOWS.getOrDefault(
+                player.getUUID(),
+                0
+        ) >= tick;
+
+        if (berserkActive && tick % 20 == 0) {
+            emitBerserkFeedback(player, tick);
+        }
 
         double damageBonus = 0.0;
         double speedBonus = 0.0;
@@ -310,14 +682,32 @@ public final class OneHandedEvents {
         }
 
         if (
-                dualWield
+                berserkerActive
                         && SkillManager.hasOneHandedPerk(
                         player.getUUID(),
                         "offhand_strike"
                 )
                         && isToggleEnabled(player, "dual_wield")
         ) {
-            speedBonus += 0.05;
+            speedBonus += BLOODLUST_SPEED_BONUS;
+        }
+
+        if (berserkerActive
+                && player.getHealth() < player.getMaxHealth() * 0.5f
+                && SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "twin_blades"
+        )) {
+            damageBonus += RECKLESS_DAMAGE_BONUS;
+        }
+
+        if (adrenalineActive) {
+            speedBonus += ADRENALINE_SPEED_BONUS;
+        }
+
+        if (berserkActive) {
+            damageBonus += BERSERK_DAMAGE_BONUS;
+            speedBonus += BERSERK_SPEED_BONUS;
         }
 
         damageBonus = scale(player, damageBonus);
@@ -342,6 +732,43 @@ public final class OneHandedEvents {
                 defenseBonus,
                 AttributeModifier.Operation.ADD_VALUE
         );
+        updateModifier(
+                player.getAttribute(Attributes.KNOCKBACK_RESISTANCE),
+                BULWARK_MODIFIER_ID,
+                activelyBlocking
+                        && SkillManager.hasOneHandedPerk(
+                        player.getUUID(),
+                        "bulwark"
+                )
+                        && isToggleEnabled(player, "shield_effects")
+                        ? scale(player, 0.10)
+                        : 0.0,
+                AttributeModifier.Operation.ADD_VALUE
+        );
+    }
+
+    private static void emitBerserkFeedback(ServerPlayer player, int tick) {
+        player.serverLevel().sendParticles(
+                ParticleTypes.DAMAGE_INDICATOR,
+                player.getX(),
+                player.getY() + 1.0,
+                player.getZ(),
+                2,
+                0.3,
+                0.45,
+                0.3,
+                0.02
+        );
+        if (tick % 40 == 0) {
+            player.level().playSound(
+                    null,
+                    player.blockPosition(),
+                    SoundEvents.WARDEN_HEARTBEAT,
+                    SoundSource.PLAYERS,
+                    0.25f,
+                    1.25f
+            );
+        }
     }
 
     private static boolean isToggleEnabled(

@@ -83,8 +83,42 @@ public final class OneHandedTooltip {
                     )
                             && ClientSkillState.isOneHandedToggleEnabled("dual_wield")
             ) {
-                addLine(lines, "Berserker: +5% Attack Speed", ChatFormatting.LIGHT_PURPLE);
+                addLine(lines, "Bloodlust: +5% Attack Speed", ChatFormatting.LIGHT_PURPLE);
                 addedBonus = true;
+            }
+
+            if (supportedItem
+                    && dualWield
+                    && heldItem
+                    && ClientSkillState.isOneHandedToggleEnabled("dual_wield")) {
+                if (ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "twin_blades"
+                )) {
+                    addLine(lines, "Reckless Assault: +25% Damage below half health", ChatFormatting.DARK_RED);
+                    addedBonus = true;
+                }
+                if (ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "berserkers_rhythm"
+                )) {
+                    addLine(lines, "Adrenaline Rush: +20% Attack Speed after damage", ChatFormatting.RED);
+                    addedBonus = true;
+                }
+                if (ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "blood_frenzy"
+                )) {
+                    addLine(lines, "Blood Frenzy: Heal 1-2 hearts on hostile kills", ChatFormatting.RED);
+                    addedBonus = true;
+                }
+                if (ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "last_stand"
+                )) {
+                    addLine(lines, "Last Stand: 50% save chance at one heart", ChatFormatting.DARK_RED);
+                    addedBonus = true;
+                }
             }
 
             if (
@@ -98,6 +132,41 @@ public final class OneHandedTooltip {
             ) {
                 addLine(lines, "Guardian: +2 Armor", ChatFormatting.AQUA);
                 addedBonus = true;
+            }
+
+            if (
+                    weaponAndShield
+                            && heldItem
+                            && ClientSkillState.isOneHandedToggleEnabled("shield_effects")
+            ) {
+                if (ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "guarded_strike"
+                )) {
+                    addLine(lines, "Guarded Strike: +1 Damage after blocking", ChatFormatting.BLUE);
+                    addedBonus = true;
+                }
+                if (ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "shield_bash"
+                )) {
+                    addLine(lines, "Shield Bash: Right-click nearby enemies", ChatFormatting.BLUE);
+                    addedBonus = true;
+                }
+                if (ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "bulwark"
+                )) {
+                    addLine(lines, "Bulwark: Knockback resistance while blocking", ChatFormatting.BLUE);
+                    addedBonus = true;
+                }
+                if (ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "guardians_resolve"
+                )) {
+                    addLine(lines, "Guardian's Resolve: Resistance after repeated blocks", ChatFormatting.BLUE);
+                    addedBonus = true;
+                }
             }
 
             int prestige = ClientSkillState.getOneHandedPrestige(
