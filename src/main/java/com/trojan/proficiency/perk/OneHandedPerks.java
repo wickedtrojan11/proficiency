@@ -11,8 +11,8 @@ public final class OneHandedPerks {
     public static final SkillPerk BLOOD_FRENZY = perk("blood_frenzy", "Blood Frenzy", "Victory only sharpens your aggression.", "Berserker capstone reserved for a future update.", 40, 125, 95, "berserkers_rhythm");
 
     public static final SkillPerk DUELISTS_FOCUS = perk("duelists_focus", "Duelist's Focus", "A lone weapon leaves no room for wasted motion.", "Gain 0.5 melee damage with a supported weapon and empty offhand.", 5, 220, 325, null);
-    public static final SkillPerk PARRY = perk("parry", "Parry", "Timing turns an enemy's strength aside.", "Gain 1 armor while dueling with an empty offhand.", 12, 220, 265, "duelists_focus");
-    public static final SkillPerk RIPOSTE = perk("riposte", "Riposte", "Every opening invites an answer.", "Counterattack effects reserved for a future update.", 25, 220, 205, "parry");
+    public static final SkillPerk PARRY = perk("parry", "Parry", "Timing turns an enemy's strength aside.", "Right-click to briefly parry an incoming melee attack.", 12, 220, 265, "duelists_focus");
+    public static final SkillPerk RIPOSTE = perk("riposte", "Riposte", "Every opening invites an answer.", "After a successful parry, your next one-handed hit deals bonus damage.", 25, 220, 205, "parry");
     public static final SkillPerk PERFECT_TIMING = perk("perfect_timing", "Perfect Timing", "The decisive moment never escapes you.", "Duelist capstone reserved for a future update.", 40, 220, 95, "riposte");
 
     public static final SkillPerk SHIELD_TRAINING = perk("shield_training", "Shield Training", "Weapon and shield move in practiced balance.", "Gain 2 armor while using a supported weapon and shield.", 5, 315, 325, null);

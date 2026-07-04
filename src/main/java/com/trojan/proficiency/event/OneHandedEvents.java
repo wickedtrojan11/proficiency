@@ -4,6 +4,7 @@ import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.util.OneHandedWeapons;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import com.trojan.proficiency.ProficiencyMod;
 import com.trojan.proficiency.skill.SkillType;
 import net.minecraft.resources.ResourceLocation;
@@ -16,14 +17,30 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.core.particles.ParticleTypes;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public final class OneHandedEvents {
 
     private static final int DAMAGE_XP = 1;
     private static final int KILL_XP = 4;
+    private static final int PARRY_WINDOW_TICKS = 8;
+    private static final int PARRY_COOLDOWN_TICKS = 40;
+    private static final int RIPOSTE_TIMEOUT_TICKS = 100;
+    private static final float RIPOSTE_BONUS_DAMAGE = 2.0f;
     private static final ResourceLocation DAMAGE_MODIFIER_ID = id("one_handed_damage");
     private static final ResourceLocation SPEED_MODIFIER_ID = id("one_handed_speed");
     private static final ResourceLocation DEFENSE_MODIFIER_ID = id("one_handed_defense");
+    private static final Map<UUID, Integer> PARRY_WINDOWS = new HashMap<>();
+    private static final Map<UUID, Integer> PARRY_COOLDOWNS = new HashMap<>();
+    private static final Map<UUID, Integer> RIPOSTE_WINDOWS = new HashMap<>();
+    private static boolean applyingRiposteDamage;
 
     private OneHandedEvents() {
     }
@@ -33,10 +50,37 @@ public final class OneHandedEvents {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 updateLoadoutEffects(player);
             }
+            int tick = server.getTickCount();
+            PARRY_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
+            PARRY_COOLDOWNS.entrySet().removeIf(entry -> entry.getValue() < tick);
+            RIPOSTE_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
         });
+
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            ItemStack stack = player.getItemInHand(hand);
+            if (!(player instanceof ServerPlayer serverPlayer)) {
+                return InteractionResultHolder.pass(stack);
+            }
+
+            if (tryActivateParry(serverPlayer, hand)) {
+                return InteractionResultHolder.success(stack);
+            }
+            return InteractionResultHolder.pass(stack);
+        });
+
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
+                !tryParryDamage(entity, source)
+        );
 
         ServerLivingEntityEvents.AFTER_DAMAGE.register(
                 (entity, source, baseDamage, damageTaken, blocked) -> {
+                    if (applyingRiposteDamage) {
+                        return;
+                    }
+                    ServerPlayer attacker = getOneHandedAttacker(source);
+                    if (attacker != null && !blocked && damageTaken > 0.0f) {
+                        tryApplyRiposte(attacker, entity);
+                    }
                     ServerPlayer player = getEligiblePlayer(entity, source);
                     if (player != null && !blocked && damageTaken > 0.0f) {
                         SkillManager.addOneHandedXp(player, DAMAGE_XP);
@@ -45,11 +89,164 @@ public final class OneHandedEvents {
         );
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            ServerPlayer attacker = getOneHandedAttacker(source);
+            if (attacker != null) {
+                RIPOSTE_WINDOWS.remove(attacker.getUUID());
+            }
             ServerPlayer player = getEligiblePlayer(entity, source);
             if (player != null) {
                 SkillManager.addOneHandedXp(player, KILL_XP);
             }
         });
+    }
+
+    private static boolean tryActivateParry(
+            ServerPlayer player,
+            net.minecraft.world.InteractionHand hand
+    ) {
+        if (
+                hand != net.minecraft.world.InteractionHand.MAIN_HAND
+                        || !hasDuelistLoadout(player)
+                        || !SkillManager.hasOneHandedPerk(
+                        player.getUUID(),
+                        "parry"
+                )
+                        || !isToggleEnabled(player, "parry")
+        ) {
+            return false;
+        }
+
+        int tick = player.getServer().getTickCount();
+        if (PARRY_COOLDOWNS.getOrDefault(player.getUUID(), 0) > tick) {
+            return false;
+        }
+
+        PARRY_WINDOWS.put(player.getUUID(), tick + PARRY_WINDOW_TICKS);
+        PARRY_COOLDOWNS.put(player.getUUID(), tick + PARRY_COOLDOWN_TICKS);
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.ARMOR_EQUIP_IRON.value(),
+                SoundSource.PLAYERS,
+                0.3f,
+                1.7f
+        );
+        player.serverLevel().sendParticles(
+                ParticleTypes.ENCHANT,
+                player.getX(),
+                player.getY() + 1.0,
+                player.getZ(),
+                3,
+                0.2,
+                0.3,
+                0.2,
+                0.01
+        );
+        return true;
+    }
+
+    private static boolean tryParryDamage(
+            LivingEntity target,
+            DamageSource source
+    ) {
+        if (
+                !(target instanceof ServerPlayer player)
+                        || !(source.getEntity() instanceof LivingEntity attacker)
+                        || source.getDirectEntity() != attacker
+                        || !hasDuelistLoadout(player)
+                        || !SkillManager.hasOneHandedPerk(
+                        player.getUUID(),
+                        "parry"
+                )
+                        || !isToggleEnabled(player, "parry")
+        ) {
+            return false;
+        }
+
+        int tick = player.getServer().getTickCount();
+        if (PARRY_WINDOWS.getOrDefault(player.getUUID(), 0) < tick) {
+            return false;
+        }
+
+        PARRY_WINDOWS.remove(player.getUUID());
+        if (SkillManager.hasOneHandedPerk(player.getUUID(), "riposte")) {
+            RIPOSTE_WINDOWS.put(
+                    player.getUUID(),
+                    tick + RIPOSTE_TIMEOUT_TICKS
+            );
+        }
+
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.SHIELD_BLOCK,
+                SoundSource.PLAYERS,
+                0.6f,
+                1.4f
+        );
+        player.serverLevel().sendParticles(
+                ParticleTypes.CRIT,
+                player.getX(),
+                player.getY() + 1.0,
+                player.getZ(),
+                8,
+                0.35,
+                0.4,
+                0.35,
+                0.05
+        );
+        return true;
+    }
+
+    private static void tryApplyRiposte(
+            ServerPlayer player,
+            LivingEntity target
+    ) {
+        int tick = player.getServer().getTickCount();
+        if (
+                RIPOSTE_WINDOWS.getOrDefault(player.getUUID(), 0) < tick
+                        || !OneHandedWeapons.isSupported(
+                        player.getMainHandItem()
+                )
+        ) {
+            return;
+        }
+
+        RIPOSTE_WINDOWS.remove(player.getUUID());
+        applyingRiposteDamage = true;
+        try {
+            target.hurt(
+                    player.damageSources().playerAttack(player),
+                    (float) scale(player, RIPOSTE_BONUS_DAMAGE)
+            );
+        } finally {
+            applyingRiposteDamage = false;
+        }
+
+        player.level().playSound(
+                null,
+                target.blockPosition(),
+                SoundEvents.PLAYER_ATTACK_CRIT,
+                SoundSource.PLAYERS,
+                0.5f,
+                1.2f
+        );
+        player.serverLevel().sendParticles(
+                ParticleTypes.CRIT,
+                target.getX(),
+                target.getY() + target.getBbHeight() * 0.5,
+                target.getZ(),
+                10,
+                0.3,
+                0.3,
+                0.3,
+                0.1
+        );
+    }
+
+    private static boolean hasDuelistLoadout(ServerPlayer player) {
+        return OneHandedWeapons.isSupported(player.getMainHandItem())
+                && player.getOffhandItem().isEmpty();
     }
 
     private static void updateLoadoutEffects(ServerPlayer player) {
@@ -204,6 +401,19 @@ public final class OneHandedEvents {
         if (
                 !(target instanceof Enemy)
                         || !(source.getEntity() instanceof ServerPlayer player)
+                        || source.getDirectEntity() != player
+                        || !OneHandedWeapons.isSupported(
+                        player.getMainHandItem()
+                )
+        ) {
+            return null;
+        }
+        return player;
+    }
+
+    private static ServerPlayer getOneHandedAttacker(DamageSource source) {
+        if (
+                !(source.getEntity() instanceof ServerPlayer player)
                         || source.getDirectEntity() != player
                         || !OneHandedWeapons.isSupported(
                         player.getMainHandItem()
