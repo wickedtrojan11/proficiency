@@ -48,6 +48,17 @@ public final class OneHandedTooltip {
                 addedBonus = true;
             }
 
+            if (supportedItem
+                    && offHand.isEmpty()
+                    && ClientSkillState.hasOneHandedPerk(
+                    minecraft.player.getUUID(),
+                    "perfect_timing"
+            )
+                    && ClientSkillState.isOneHandedToggleEnabled("parry")) {
+                addLine(lines, "Projectile Parry: Reflect during Parry", ChatFormatting.AQUA);
+                addedBonus = true;
+            }
+
             if (
                     supportedItem
                             && offHand.isEmpty()
@@ -84,6 +95,7 @@ public final class OneHandedTooltip {
                             && ClientSkillState.isOneHandedToggleEnabled("dual_wield")
             ) {
                 addLine(lines, "Bloodlust: +5% Attack Speed", ChatFormatting.LIGHT_PURPLE);
+                addLine(lines, "Offhand Strike: Right-click to attack", ChatFormatting.LIGHT_PURPLE);
                 addedBonus = true;
             }
 

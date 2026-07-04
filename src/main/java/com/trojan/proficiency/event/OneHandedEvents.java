@@ -18,6 +18,11 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.ProjectileDeflection;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.particles.ParticleTypes;
@@ -57,6 +62,9 @@ public final class OneHandedEvents {
     private static final int BERSERK_DURATION_TICKS = 100;
     private static final double BERSERK_DAMAGE_BONUS = 1.0;
     private static final double BERSERK_SPEED_BONUS = 0.50;
+    private static final double OFFHAND_STRIKE_RANGE = 3.0;
+    private static final double OFFHAND_DAMAGE_MULTIPLIER = 0.70;
+    private static final int MIN_OFFHAND_COOLDOWN_TICKS = 6;
     private static final ResourceLocation DAMAGE_MODIFIER_ID = id("one_handed_damage");
     private static final ResourceLocation SPEED_MODIFIER_ID = id("one_handed_speed");
     private static final ResourceLocation DEFENSE_MODIFIER_ID = id("one_handed_defense");
@@ -70,6 +78,7 @@ public final class OneHandedEvents {
     private static final Map<UUID, Integer> RESOLVE_WINDOWS = new HashMap<>();
     private static final Map<UUID, Integer> ADRENALINE_WINDOWS = new HashMap<>();
     private static final Map<UUID, Integer> BERSERK_WINDOWS = new HashMap<>();
+    private static final Map<UUID, Integer> OFFHAND_STRIKE_COOLDOWNS = new HashMap<>();
     private static boolean applyingRiposteDamage;
     private static boolean applyingGuardedStrikeDamage;
 
@@ -90,6 +99,9 @@ public final class OneHandedEvents {
             RESOLVE_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
             ADRENALINE_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
             BERSERK_WINDOWS.entrySet().removeIf(entry -> entry.getValue() < tick);
+            OFFHAND_STRIKE_COOLDOWNS.entrySet().removeIf(
+                    entry -> entry.getValue() < tick
+            );
         });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
@@ -250,6 +262,77 @@ public final class OneHandedEvents {
         return true;
     }
 
+    public static boolean tryProjectileParry(
+            Projectile projectile,
+            ServerPlayer player
+    ) {
+        if (projectile.level().isClientSide
+                || !hasDuelistLoadout(player)
+                || !SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "perfect_timing"
+        )
+                || !isToggleEnabled(player, "parry")) {
+            return false;
+        }
+
+        int tick = player.getServer().getTickCount();
+        if (PARRY_WINDOWS.getOrDefault(player.getUUID(), 0) < tick) {
+            return false;
+        }
+
+        PARRY_WINDOWS.remove(player.getUUID());
+        Vec3 incoming = projectile.getDeltaMovement();
+        double speed = Math.max(0.5, incoming.length());
+        Entity attacker = projectile.getOwner();
+        Vec3 reflectedDirection;
+        if (attacker != null
+                && attacker != player
+                && attacker != projectile) {
+            reflectedDirection = attacker.getEyePosition()
+                    .subtract(projectile.position())
+                    .normalize();
+        } else if (incoming.lengthSqr() > 0.0001) {
+            reflectedDirection = incoming.normalize().scale(-1.0);
+        } else {
+            reflectedDirection = player.getLookAngle();
+        }
+
+        projectile.deflect(
+                ProjectileDeflection.REVERSE,
+                player,
+                player,
+                true
+        );
+        projectile.setDeltaMovement(reflectedDirection.scale(speed));
+        projectile.setPos(
+                player.getX() + reflectedDirection.x * 0.8,
+                player.getEyeY() - 0.15 + reflectedDirection.y * 0.8,
+                player.getZ() + reflectedDirection.z * 0.8
+        );
+
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.SHIELD_BLOCK,
+                SoundSource.PLAYERS,
+                0.7f,
+                1.8f
+        );
+        player.serverLevel().sendParticles(
+                ParticleTypes.CRIT,
+                projectile.getX(),
+                projectile.getY(),
+                projectile.getZ(),
+                12,
+                0.25,
+                0.25,
+                0.25,
+                0.08
+        );
+        return true;
+    }
+
     private static void tryApplyRiposte(
             ServerPlayer player,
             LivingEntity target
@@ -310,6 +393,115 @@ public final class OneHandedEvents {
         return OneHandedWeapons.isSupported(player.getMainHandItem())
                 && OneHandedWeapons.isSupported(player.getOffhandItem())
                 && isToggleEnabled(player, "dual_wield");
+    }
+
+    public static boolean tryOffhandStrike(ServerPlayer player) {
+        if (!hasBerserkerLoadout(player)
+                || !SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "offhand_strike"
+        )) {
+            return false;
+        }
+
+        int tick = player.getServer().getTickCount();
+        if (OFFHAND_STRIKE_COOLDOWNS.getOrDefault(
+                player.getUUID(),
+                0
+        ) > tick) {
+            return false;
+        }
+
+        double attackSpeed = Math.max(
+                0.5,
+                player.getAttributeValue(Attributes.ATTACK_SPEED)
+        );
+        int cooldownTicks = Math.max(
+                MIN_OFFHAND_COOLDOWN_TICKS,
+                (int) Math.ceil(20.0 / attackSpeed)
+        );
+        OFFHAND_STRIKE_COOLDOWNS.put(
+                player.getUUID(),
+                tick + cooldownTicks
+        );
+        player.swing(InteractionHand.OFF_HAND, true);
+
+        LivingEntity target = findOffhandStrikeTarget(player);
+        if (target == null) {
+            player.level().playSound(
+                    null,
+                    player.blockPosition(),
+                    SoundEvents.PLAYER_ATTACK_NODAMAGE,
+                    SoundSource.PLAYERS,
+                    0.35f,
+                    1.1f
+            );
+            return true;
+        }
+
+        float damage = (float) Math.max(
+                1.0,
+                player.getAttributeValue(Attributes.ATTACK_DAMAGE)
+                        * OFFHAND_DAMAGE_MULTIPLIER
+        );
+        boolean hit = target.hurt(
+                player.damageSources().playerAttack(player),
+                damage
+        );
+        if (!hit) {
+            return true;
+        }
+
+        player.getOffhandItem().hurtAndBreak(
+                1,
+                player,
+                EquipmentSlot.OFFHAND
+        );
+        player.level().playSound(
+                null,
+                target.blockPosition(),
+                SoundEvents.PLAYER_ATTACK_SWEEP,
+                SoundSource.PLAYERS,
+                0.55f,
+                1.25f
+        );
+        player.serverLevel().sendParticles(
+                ParticleTypes.SWEEP_ATTACK,
+                target.getX(),
+                target.getY() + target.getBbHeight() * 0.5,
+                target.getZ(),
+                1,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+        );
+        return true;
+    }
+
+    private static LivingEntity findOffhandStrikeTarget(ServerPlayer player) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        LivingEntity bestTarget = null;
+        double bestDistance = OFFHAND_STRIKE_RANGE * OFFHAND_STRIKE_RANGE;
+
+        for (LivingEntity target : player.serverLevel().getEntitiesOfClass(
+                LivingEntity.class,
+                player.getBoundingBox().inflate(OFFHAND_STRIKE_RANGE),
+                target -> target != player
+                        && target.isAlive()
+                        && player.canAttack(target)
+        )) {
+            Vec3 toTarget = target.getEyePosition().subtract(eye);
+            double distance = toTarget.lengthSqr();
+            if (distance < bestDistance
+                    && look.dot(toTarget.normalize()) > 0.75
+                    && player.hasLineOfSight(target)) {
+                bestTarget = target;
+                bestDistance = distance;
+            }
+        }
+        return bestTarget;
     }
 
     private static void activateAdrenaline(ServerPlayer player) {

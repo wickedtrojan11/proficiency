@@ -5,7 +5,7 @@ import java.util.Map;
 
 public final class OneHandedPerks {
 
-    public static final SkillPerk OFFHAND_STRIKE = perk("offhand_strike", "Bloodlust", "A weapon in each hand quickens your pulse.", "Gain attack speed while dual wielding supported weapons.", 5, 125, 325, null);
+    public static final SkillPerk OFFHAND_STRIKE = perk("offhand_strike", "Bloodlust", "A weapon in each hand quickens your pulse.", "Gain attack speed and right-click to strike with your offhand weapon while dual wielding.", 5, 125, 325, null);
     public static final SkillPerk TWIN_BLADES = perk("twin_blades", "Reckless Assault", "Pain only makes you hit harder.", "Deal 25% more damage while below half health.", 12, 125, 265, "offhand_strike");
     public static final SkillPerk BERSERKERS_RHYTHM = perk("berserkers_rhythm", "Adrenaline Rush", "Every wound drives you forward.", "Taking damage grants 20% attack speed for 5 seconds.", 25, 125, 205, "twin_blades");
     public static final SkillPerk BLOOD_FRENZY = perk("blood_frenzy", "Blood Frenzy", "Victory feeds the fury.", "Killing a hostile mob restores 1-2 hearts and refreshes Adrenaline Rush.", 35, 125, 145, "berserkers_rhythm");
@@ -14,7 +14,7 @@ public final class OneHandedPerks {
     public static final SkillPerk DUELISTS_FOCUS = perk("duelists_focus", "Duelist's Focus", "A lone weapon leaves no room for wasted motion.", "Gain 0.5 melee damage with a supported weapon and empty offhand.", 5, 220, 325, null);
     public static final SkillPerk PARRY = perk("parry", "Parry", "Timing turns an enemy's strength aside.", "Right-click to briefly parry an incoming melee attack.", 12, 220, 265, "duelists_focus");
     public static final SkillPerk RIPOSTE = perk("riposte", "Riposte", "Every opening invites an answer.", "After a successful parry, your next one-handed hit deals bonus damage.", 25, 220, 205, "parry");
-    public static final SkillPerk PERFECT_TIMING = perk("perfect_timing", "Perfect Timing", "The decisive moment never escapes you.", "Duelist capstone reserved for a future update.", 40, 220, 95, "riposte");
+    public static final SkillPerk PERFECT_TIMING = perk("perfect_timing", "Projectile Parry", "Even a flying arrow leaves an opening.", "Reflect incoming projectiles while your Parry window is active.", 40, 220, 95, "riposte");
 
     public static final SkillPerk SHIELD_TRAINING = perk("shield_training", "Shield Training", "Weapon and shield move in practiced balance.", "Gain 2 armor and sometimes prevent shield durability loss.", 5, 315, 325, null);
     public static final SkillPerk GUARDED_STRIKE = perk("guarded_strike", "Guarded Strike", "Defense and offense share the same motion.", "After blocking, your next supported one-handed hit deals 1 bonus damage.", 12, 315, 265, "shield_training");

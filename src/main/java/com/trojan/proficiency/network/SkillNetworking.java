@@ -4,6 +4,7 @@ import com.trojan.proficiency.ProficiencyMod;
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.perk.PerkUnlockResult;
 import com.trojan.proficiency.skill.SkillType;
+import com.trojan.proficiency.event.OneHandedEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,6 +18,12 @@ public final class SkillNetworking {
 
     public static void registerServerHandlers() {
 
+        ServerPlayNetworking.registerGlobalReceiver(
+                OffhandStrikeRequestPayload.TYPE,
+                (payload, context) -> OneHandedEvents.tryOffhandStrike(
+                        context.player()
+                )
+        );
         ServerPlayNetworking.registerGlobalReceiver(
                 PerkUnlockRequestPayload.TYPE,
                 SkillNetworking::handlePerkUnlock

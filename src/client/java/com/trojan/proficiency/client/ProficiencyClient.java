@@ -23,6 +23,7 @@ public class ProficiencyClient implements ClientModInitializer {
         WellRestedOverlay.register();
         OneHandedTooltip.register();
         ParryVisualState.register();
+        OffhandStrikeInput.register();
         MenuScreens.register(
                 ModMenus.SOLAR_COMPOSTER,
                 SolarComposterScreen::new

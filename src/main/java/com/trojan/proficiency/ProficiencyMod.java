@@ -27,6 +27,7 @@ import com.trojan.proficiency.network.ToggleChangeRequestPayload;
 import com.trojan.proficiency.network.PrestigeRequestPayload;
 import com.trojan.proficiency.network.PrestigeRosterPayload;
 import com.trojan.proficiency.network.ParryVisualPayload;
+import com.trojan.proficiency.network.OffhandStrikeRequestPayload;
 import com.trojan.proficiency.network.SkillNetworking;
 import com.trojan.proficiency.event.SaplingOwnershipTracker;
 import com.trojan.proficiency.event.SkillBookEvents;
@@ -65,6 +66,10 @@ public class ProficiencyMod implements ModInitializer {
 		PayloadTypeRegistry.playS2C().register(
 				ParryVisualPayload.TYPE,
 				ParryVisualPayload.STREAM_CODEC
+		);
+		PayloadTypeRegistry.playC2S().register(
+				OffhandStrikeRequestPayload.TYPE,
+				OffhandStrikeRequestPayload.STREAM_CODEC
 		);
 		PayloadTypeRegistry.playC2S().register(
 				PerkUnlockRequestPayload.TYPE,

@@ -10,6 +10,7 @@
 		"EatBlockGoalMixin",
 		"MushroomGrowthMixin",
 		"NetherWartGrowthMixin",
+		"ProjectileParryMixin",
 		"SheepShearingMixin",
 		"SaplingGrowthMixin",
 		"SaplingPlacementMixin",
