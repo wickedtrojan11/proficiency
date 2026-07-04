@@ -21,6 +21,7 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.particles.ParticleTypes;
+import com.trojan.proficiency.network.ParryVisualPayload;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -123,6 +124,7 @@ public final class OneHandedEvents {
 
         PARRY_WINDOWS.put(player.getUUID(), tick + PARRY_WINDOW_TICKS);
         PARRY_COOLDOWNS.put(player.getUUID(), tick + PARRY_COOLDOWN_TICKS);
+        ParryVisualPayload.send(player, PARRY_WINDOW_TICKS);
         player.level().playSound(
                 null,
                 player.blockPosition(),
