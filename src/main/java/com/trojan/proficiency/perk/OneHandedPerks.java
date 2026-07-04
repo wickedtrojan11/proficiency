@@ -19,13 +19,13 @@ public final class OneHandedPerks {
     public static final SkillPerk SHIELD_TRAINING = perk("shield_training", "Shield Training", "Weapon and shield move in practiced balance.", "Gain 2 armor and sometimes prevent shield durability loss.", 5, 315, 325, null);
     public static final SkillPerk GUARDED_STRIKE = perk("guarded_strike", "Guarded Strike", "Defense and offense share the same motion.", "After blocking, your next supported one-handed hit deals 1 bonus damage.", 12, 315, 265, "shield_training");
     public static final SkillPerk SHIELD_BASH = perk("shield_bash", "Shield Bash", "Your shield can make its own opening.", "Right-click to stagger and knock back a nearby enemy.", 25, 315, 205, "guarded_strike");
-    public static final SkillPerk GUARDIANS_RESOLVE = perk("guardians_resolve", "Guardian's Resolve", "Every impact strengthens your resolve.", "Blocking several quick hits grants brief Resistance I.", 30, 335, 145, "shield_bash");
+    public static final SkillPerk GUARDIANS_RESOLVE = perk("guardians_resolve", "Guardian's Resolve", "Every impact strengthens your resolve.", "Blocking several quick hits restores half a heart and grants brief Resistance I.", 30, 335, 145, "shield_bash");
     public static final SkillPerk BULWARK = perk("bulwark", "Bulwark", "You hold the line when others cannot.", "Gain knockback resistance while actively blocking.", 40, 315, 95, "shield_bash");
 
-    public static final SkillPerk BLADE_TRAINING = perk("blade_training", "Blade Training", "Every one-handed weapon teaches the same fundamentals.", "Gain 0.5 melee damage with supported one-handed weapons.", 5, 410, 325, null);
-    public static final SkillPerk PRECISE_STRIKES = perk("precise_strikes", "Precise Strikes", "Accuracy matters more than force.", "Critical effects reserved for a future update.", 12, 410, 265, "blade_training");
-    public static final SkillPerk MONSTER_HUNTER = perk("monster_hunter", "Monster Hunter", "You know where every creature is vulnerable.", "Monster-hunting effects reserved for a future update.", 25, 410, 205, "precise_strikes");
-    public static final SkillPerk TROPHY_COLLECTOR = perk("trophy_collector", "Trophy Collector", "Every victory leaves a story behind.", "Loot capstone reserved for a future update.", 40, 410, 95, "monster_hunter");
+    public static final SkillPerk BLADE_TRAINING = perk("blade_training", "Blade Training", "Every one-handed weapon teaches the same fundamentals.", "Gain 5% attack speed with supported one-handed weapons.", 5, 410, 325, null);
+    public static final SkillPerk PRECISE_STRIKES = perk("precise_strikes", "Precise Strikes", "A clean strike protects the weapon as much as its wielder.", "Gain a 15% chance to preserve weapon durability on hit.", 12, 410, 265, "blade_training");
+    public static final SkillPerk MONSTER_HUNTER = perk("monster_hunter", "Monster Hunter", "Long hunts teach efficient, measured violence.", "Reach 10% attack speed and 25% durability preservation.", 25, 410, 205, "precise_strikes");
+    public static final SkillPerk TROPHY_COLLECTOR = perk("trophy_collector", "Trophy Collector", "Every victory leaves a story behind.", "Gain one effective level of Looting with supported one-handed weapons.", 40, 410, 95, "monster_hunter");
 
     public static final List<SkillPerk> ALL_PERKS = List.of(
             OFFHAND_STRIKE, TWIN_BLADES, BERSERKERS_RHYTHM, BLOOD_FRENZY, LAST_STAND,

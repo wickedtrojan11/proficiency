@@ -37,14 +37,38 @@ public final class OneHandedTooltip {
 
             boolean addedBonus = false;
 
-            if (
-                    supportedItem
-                            && ClientSkillState.hasOneHandedPerk(
-                            minecraft.player.getUUID(),
-                            "blade_training"
-                    )
-            ) {
-                addLine(lines, "One-Handed: +0.5 Damage", ChatFormatting.RED);
+            if (supportedItem
+                    && ClientSkillState.hasOneHandedPerk(
+                    minecraft.player.getUUID(),
+                    "blade_training"
+            )) {
+                int masterySpeed = ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "monster_hunter"
+                ) ? 10 : 5;
+                addLine(lines, "Weapon Mastery: +" + masterySpeed + "% Attack Speed", ChatFormatting.GREEN);
+                addedBonus = true;
+            }
+
+            if (supportedItem
+                    && ClientSkillState.hasOneHandedPerk(
+                    minecraft.player.getUUID(),
+                    "precise_strikes"
+            )) {
+                int durability = ClientSkillState.hasOneHandedPerk(
+                        minecraft.player.getUUID(),
+                        "monster_hunter"
+                ) ? 25 : 15;
+                addLine(lines, "Weapon Durability: +" + durability + "% preservation", ChatFormatting.GRAY);
+                addedBonus = true;
+            }
+
+            if (supportedItem
+                    && ClientSkillState.hasOneHandedPerk(
+                    minecraft.player.getUUID(),
+                    "trophy_collector"
+            )) {
+                addLine(lines, "Weapon Mastery: +1 Looting", ChatFormatting.GOLD);
                 addedBonus = true;
             }
 
@@ -176,7 +200,7 @@ public final class OneHandedTooltip {
                         minecraft.player.getUUID(),
                         "guardians_resolve"
                 )) {
-                    addLine(lines, "Guardian's Resolve: Resistance after repeated blocks", ChatFormatting.BLUE);
+                    addLine(lines, "Guardian's Resolve: Heal and Resistance after repeated blocks", ChatFormatting.BLUE);
                     addedBonus = true;
                 }
             }

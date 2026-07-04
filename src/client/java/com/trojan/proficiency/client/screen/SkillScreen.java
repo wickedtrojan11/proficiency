@@ -1992,13 +1992,15 @@ public class SkillScreen extends Screen {
 
         if (selectedSkill == 3) {
             UUID oneHandedPlayerId = minecraft.player.getUUID();
-            double oneHandedDamageBonus =
-                    (ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "blade_training") ? 0.5 : 0.0)
-                            + (ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "duelists_focus") ? 0.5 : 0.0);
-            int oneHandedSpeedBonus = ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "offhand_strike")
-                    && ClientSkillState.isOneHandedToggleEnabled("dual_wield") ? 5 : 0;
-            int oneHandedParryBonus = ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "parry")
-                    && ClientSkillState.isOneHandedToggleEnabled("parry") ? 1 : 0;
+            int oneHandedSpeedBonus =
+                    (ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "blade_training") ? 5 : 0)
+                            + (ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "monster_hunter") ? 5 : 0)
+                            + (ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "offhand_strike")
+                            && ClientSkillState.isOneHandedToggleEnabled("dual_wield") ? 5 : 0);
+            int oneHandedDurabilityBonus = ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "monster_hunter")
+                    ? 25 : ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "precise_strikes") ? 15 : 0;
+            int oneHandedLootingBonus = ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "trophy_collector")
+                    ? 1 : 0;
             int oneHandedDefenseBonus = ClientSkillState.hasOneHandedPerk(oneHandedPlayerId, "shield_training")
                     && ClientSkillState.isOneHandedToggleEnabled("shield_effects") ? 2 : 0;
 
@@ -2040,11 +2042,11 @@ public class SkillScreen extends Screen {
                     MINING_XP_BAR_WIDTH, XP_BAR_HEIGHT,
                     oneHandedXp, oneHandedXpRequired, 0xFFFF5555);
 
-            graphics.drawString(font, "Melee Damage: +" + oneHandedDamageBonus, MINING_STAT_X,
-                    MINING_SPEED_STAT_Y, 0x55FF55);
             graphics.drawString(font, "Attack Speed: +" + oneHandedSpeedBonus + "%", MINING_STAT_X,
+                    MINING_SPEED_STAT_Y, 0x55FF55);
+            graphics.drawString(font, "Durability: +" + oneHandedDurabilityBonus + "%", MINING_STAT_X,
                     FORTUNE_STAT_Y, 0x55FFFF);
-            graphics.drawString(font, "Parry: +" + oneHandedParryBonus, MINING_STAT_X,
+            graphics.drawString(font, "Looting: +" + oneHandedLootingBonus, MINING_STAT_X,
                     DURABILITY_STAT_Y, 0xAAAAAA);
             graphics.drawString(font, "Defense: +" + oneHandedDefenseBonus, MINING_STAT_X,
                     ORE_SENSE_STAT_Y, 0xFFAA00);

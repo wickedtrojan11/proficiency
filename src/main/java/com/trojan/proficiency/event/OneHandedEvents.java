@@ -51,6 +51,7 @@ public final class OneHandedEvents {
     private static final int RESOLVE_BLOCK_WINDOW_TICKS = 80;
     private static final int RESOLVE_REQUIRED_BLOCKS = 3;
     private static final int RESOLVE_DURATION_TICKS = 60;
+    private static final float RESOLVE_HEAL_AMOUNT = 1.0f;
     private static final int ADRENALINE_DURATION_TICKS = 100;
     private static final double BLOODLUST_SPEED_BONUS = 0.05;
     private static final double RECKLESS_DAMAGE_BONUS = 0.25;
@@ -65,6 +66,10 @@ public final class OneHandedEvents {
     private static final double OFFHAND_STRIKE_RANGE = 3.0;
     private static final double OFFHAND_DAMAGE_MULTIPLIER = 0.70;
     private static final int MIN_OFFHAND_COOLDOWN_TICKS = 6;
+    private static final double MASTERY_SPEED_BONUS = 0.05;
+    private static final double ADVANCED_MASTERY_SPEED_BONUS = 0.05;
+    private static final float MASTERY_DURABILITY_CHANCE = 0.15f;
+    private static final float ADVANCED_DURABILITY_CHANCE = 0.25f;
     private static final ResourceLocation DAMAGE_MODIFIER_ID = id("one_handed_damage");
     private static final ResourceLocation SPEED_MODIFIER_ID = id("one_handed_speed");
     private static final ResourceLocation DEFENSE_MODIFIER_ID = id("one_handed_defense");
@@ -79,8 +84,11 @@ public final class OneHandedEvents {
     private static final Map<UUID, Integer> ADRENALINE_WINDOWS = new HashMap<>();
     private static final Map<UUID, Integer> BERSERK_WINDOWS = new HashMap<>();
     private static final Map<UUID, Integer> OFFHAND_STRIKE_COOLDOWNS = new HashMap<>();
+    private static final Map<UUID, PendingDurabilityRefund> PENDING_DURABILITY_REFUNDS =
+            new HashMap<>();
     private static boolean applyingRiposteDamage;
     private static boolean applyingGuardedStrikeDamage;
+    private static boolean applyingOffhandStrikeDamage;
 
     private OneHandedEvents() {
     }
@@ -88,6 +96,7 @@ public final class OneHandedEvents {
     public static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                applyPendingDurabilityRefund(player);
                 updateLoadoutEffects(player);
             }
             int tick = server.getTickCount();
@@ -139,6 +148,9 @@ public final class OneHandedEvents {
                     }
                     ServerPlayer attacker = getOneHandedAttacker(source);
                     if (attacker != null && !blocked && damageTaken > 0.0f) {
+                        if (!applyingOffhandStrikeDamage) {
+                            scheduleDurabilityRefund(attacker);
+                        }
                         tryApplyRiposte(attacker, entity);
                         tryApplyGuardedStrike(attacker, entity);
                     }
@@ -444,19 +456,27 @@ public final class OneHandedEvents {
                 player.getAttributeValue(Attributes.ATTACK_DAMAGE)
                         * OFFHAND_DAMAGE_MULTIPLIER
         );
-        boolean hit = target.hurt(
-                player.damageSources().playerAttack(player),
-                damage
-        );
+        applyingOffhandStrikeDamage = true;
+        boolean hit;
+        try {
+            hit = target.hurt(
+                    player.damageSources().playerAttack(player),
+                    damage
+            );
+        } finally {
+            applyingOffhandStrikeDamage = false;
+        }
         if (!hit) {
             return true;
         }
 
-        player.getOffhandItem().hurtAndBreak(
-                1,
-                player,
-                EquipmentSlot.OFFHAND
-        );
+        if (!shouldPreserveWeaponDurability(player)) {
+            player.getOffhandItem().hurtAndBreak(
+                    1,
+                    player,
+                    EquipmentSlot.OFFHAND
+            );
+        }
         player.level().playSound(
                 null,
                 target.blockPosition(),
@@ -502,6 +522,58 @@ public final class OneHandedEvents {
             }
         }
         return bestTarget;
+    }
+
+    private static void scheduleDurabilityRefund(ServerPlayer player) {
+        if (!shouldPreserveWeaponDurability(player)) {
+            return;
+        }
+        ItemStack weapon = player.getMainHandItem();
+        PENDING_DURABILITY_REFUNDS.put(
+                player.getUUID(),
+                new PendingDurabilityRefund(
+                        weapon,
+                        weapon.getDamageValue()
+                )
+        );
+    }
+
+    private static void applyPendingDurabilityRefund(ServerPlayer player) {
+        PendingDurabilityRefund refund = PENDING_DURABILITY_REFUNDS.remove(
+                player.getUUID()
+        );
+        if (refund == null || refund.weapon().isEmpty()) {
+            return;
+        }
+        int currentDamage = refund.weapon().getDamageValue();
+        if (currentDamage > refund.damageBefore()) {
+            refund.weapon().setDamageValue(currentDamage - 1);
+        }
+    }
+
+    private static boolean shouldPreserveWeaponDurability(
+            ServerPlayer player
+    ) {
+        float chance;
+        if (SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "monster_hunter"
+        )) {
+            chance = ADVANCED_DURABILITY_CHANCE;
+        } else if (SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "precise_strikes"
+        )) {
+            chance = MASTERY_DURABILITY_CHANCE;
+        } else {
+            return false;
+        }
+        return player.getRandom().nextFloat()
+                < SkillManager.scalePerkChance(
+                player.getUUID(),
+                SkillType.ONE_HANDED,
+                chance
+        );
     }
 
     private static void activateAdrenaline(ServerPlayer player) {
@@ -655,6 +727,7 @@ public final class OneHandedEvents {
 
         if (blocks >= RESOLVE_REQUIRED_BLOCKS) {
             RESOLVE_BLOCK_COUNTS.put(player.getUUID(), 0);
+            player.heal((float) scale(player, RESOLVE_HEAL_AMOUNT));
             player.addEffect(new MobEffectInstance(
                     MobEffects.DAMAGE_RESISTANCE,
                     RESOLVE_DURATION_TICKS,
@@ -829,14 +902,20 @@ public final class OneHandedEvents {
         double speedBonus = 0.0;
         double defenseBonus = 0.0;
 
-        if (
-                supportedMainHand
-                        && SkillManager.hasOneHandedPerk(
-                        player.getUUID(),
-                        "blade_training"
-                )
-        ) {
-            damageBonus += 0.5;
+        if (supportedMainHand
+                && SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "blade_training"
+        )) {
+            speedBonus += MASTERY_SPEED_BONUS;
+        }
+
+        if (supportedMainHand
+                && SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "monster_hunter"
+        )) {
+            speedBonus += ADVANCED_MASTERY_SPEED_BONUS;
         }
 
         if (
@@ -1043,5 +1122,11 @@ public final class OneHandedEvents {
             return null;
         }
         return player;
+    }
+
+    private record PendingDurabilityRefund(
+            ItemStack weapon,
+            int damageBefore
+    ) {
     }
 }

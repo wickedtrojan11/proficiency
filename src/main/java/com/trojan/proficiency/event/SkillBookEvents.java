@@ -1,13 +1,20 @@
 package com.trojan.proficiency.event;
 
+import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.item.SkillBookRegistry;
+import com.trojan.proficiency.util.OneHandedWeapons;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.LootTable;
@@ -20,6 +27,7 @@ import java.util.Set;
 public final class SkillBookEvents {
 
     private static final float HOSTILE_DROP_CHANCE = 0.03f;
+    private static final float HOSTILE_DIMENSION_MULTIPLIER = 2.0f;
     private static final float VILLAGE_CHEST_CHANCE = 0.07f;
     private static final float MINESHAFT_CHEST_CHANCE = 0.09f;
     private static final float STRONGHOLD_CHEST_CHANCE = 0.10f;
@@ -76,7 +84,12 @@ public final class SkillBookEvents {
             if (
                     !(entity instanceof Enemy)
                             || !(source.getEntity() instanceof ServerPlayer player)
-                            || player.getRandom().nextFloat() >= HOSTILE_DROP_CHANCE
+                            || player.getRandom().nextFloat()
+                            >= getHostileDropChance(
+                            entity.level(),
+                            player,
+                            source
+                    )
             ) {
                 return;
             }
@@ -86,6 +99,36 @@ public final class SkillBookEvents {
             );
             entity.spawnAtLocation(new ItemStack(book));
         });
+    }
+
+    private static float getHostileDropChance(
+            Level level,
+            ServerPlayer player,
+            DamageSource source
+    ) {
+        boolean directOneHandedKill = source.getDirectEntity() == player
+                && OneHandedWeapons.isSupported(player.getMainHandItem());
+        int lootingLevel = directOneHandedKill
+                ? EnchantmentHelper.getItemEnchantmentLevel(
+                level.registryAccess()
+                        .registryOrThrow(Registries.ENCHANTMENT)
+                        .getHolderOrThrow(Enchantments.LOOTING),
+                player.getMainHandItem()
+        ) : 0;
+        if (directOneHandedKill
+                && SkillManager.hasOneHandedPerk(
+                player.getUUID(),
+                "trophy_collector"
+        )) {
+            lootingLevel++;
+        }
+        float chance = HOSTILE_DROP_CHANCE
+                * (1.0f + lootingLevel * 0.25f);
+        if (level.dimension().equals(Level.NETHER)
+                || level.dimension().equals(Level.END)) {
+            return chance * HOSTILE_DIMENSION_MULTIPLIER;
+        }
+        return chance;
     }
 
     private static float getChestBookChance(
