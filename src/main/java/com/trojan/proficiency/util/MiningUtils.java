@@ -29,6 +29,12 @@ public class MiningUtils {
                 instanceof PickaxeItem;
     }
 
+    public static boolean isHeavySwingEligible(BlockState state) {
+        return isStoneType(state)
+                || isOre(state)
+                || state.is(Blocks.NETHERRACK);
+    }
+
     public static boolean isOre(
             BlockState state
     ) {

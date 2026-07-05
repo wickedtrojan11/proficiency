@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -1099,7 +1100,8 @@ public final class OneHandedEvents {
             DamageSource source
     ) {
         if (
-                !(target instanceof Enemy)
+                (!(target instanceof Enemy)
+                        && !(target instanceof NeutralMob))
                         || !(source.getEntity() instanceof ServerPlayer player)
                         || source.getDirectEntity() != player
                         || !OneHandedWeapons.isSupported(

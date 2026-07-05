@@ -19,12 +19,16 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import com.trojan.proficiency.skill.SkillType;
+import net.minecraft.core.Direction;
 public class MiningEvents {
 
     private static final Set<UUID> HEAVY_SWING_BREAKS = new HashSet<>();
+    private static final Map<UUID, Integer> NETHERRACK_HALF_XP = new HashMap<>();
 
     public static void register() {
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
@@ -113,6 +117,10 @@ public class MiningEvents {
                 }
             }
 
+            if (state.is(Blocks.NETHERRACK)) {
+                awardNetherrackXp((ServerPlayer) player);
+            }
+
             if (MiningUtils.isStoneType(state)) {
 
                 ServerPlayer serverPlayer =
@@ -168,71 +176,6 @@ public class MiningEvents {
                     }
                 }
             }
-// =========================
-// HEAVY SWINGS
-// =========================
-
-            if (
-                    !HEAVY_SWING_BREAKS.contains(player.getUUID())
-                            &&
-                    SkillManager.isMiningHeavySwingsEnabled(
-                            player.getUUID()
-                    )
-                            &&
-                    SkillManager.hasMiningPerk(
-                            player.getUUID(),
-                            "heavy_swings"
-                    )
-            ) {
-
-                if (
-                        world.random.nextFloat()
-                                < SkillManager.scalePerkChance(
-                                player.getUUID(),
-                                SkillType.MINING,
-                                0.15f
-                        )
-                ) {
-                    BlockPos behindPos =
-                            pos.relative(
-                                    player.getDirection()
-                            );
-
-                    BlockState behindState =
-                            world.getBlockState(
-                                    behindPos
-                            );
-
-                    if (
-                            MiningUtils.isStoneType(
-                                    behindState
-                            )
-                                    || MiningUtils.isOre(
-                                    behindState
-                            )
-                    ) {
-
-                        HEAVY_SWING_BREAKS.add(player.getUUID());
-
-                        try {
-                            ((ServerPlayer) player).gameMode.destroyBlock(
-                                    behindPos
-                            );
-                        } finally {
-                            HEAVY_SWING_BREAKS.remove(player.getUUID());
-                        }
-                    }
-                    player.level().playSound(
-                            null,
-                            player.blockPosition(),
-                            SoundEvents.ANVIL_LAND,
-                            SoundSource.PLAYERS,
-                            0.15f,
-                            1.8f
-                    );
-                }
-            }
-
                 int xp =
                         SkillManager.getMiningXp(player.getUUID());
 
@@ -281,7 +224,77 @@ public class MiningEvents {
                     }
                 }
             }
+
+            if (MiningUtils.isHeavySwingEligible(state)) {
+                tryHeavySwing(
+                        (ServerLevel) world,
+                        (ServerPlayer) player,
+                        pos
+                );
+            }
         });
+    }
+
+    private static void awardNetherrackXp(ServerPlayer player) {
+        UUID playerId = player.getUUID();
+        int halfXp = NETHERRACK_HALF_XP.getOrDefault(playerId, 0) + 1;
+        if (halfXp < 2) {
+            NETHERRACK_HALF_XP.put(playerId, halfXp);
+            return;
+        }
+        NETHERRACK_HALF_XP.put(playerId, halfXp - 2);
+        if (SkillManager.addMiningXp(player, 1)) {
+            announceMiningLevelUp(player);
+        }
+    }
+
+    private static void tryHeavySwing(
+            ServerLevel world,
+            ServerPlayer player,
+            BlockPos minedPos
+    ) {
+        UUID playerId = player.getUUID();
+        if (HEAVY_SWING_BREAKS.contains(playerId)
+                || !SkillManager.isMiningHeavySwingsEnabled(playerId)
+                || !SkillManager.hasMiningPerk(playerId, "heavy_swings")
+                || world.random.nextFloat()
+                >= SkillManager.scalePerkChance(
+                playerId,
+                SkillType.MINING,
+                0.15f
+        )) {
+            return;
+        }
+
+        Direction miningDirection = Direction.getNearest(
+                player.getLookAngle().x,
+                player.getLookAngle().y,
+                player.getLookAngle().z
+        );
+        BlockPos behindPos = minedPos.relative(miningDirection);
+        if (!MiningUtils.isHeavySwingEligible(
+                world.getBlockState(behindPos)
+        )) {
+            return;
+        }
+
+        HEAVY_SWING_BREAKS.add(playerId);
+        boolean destroyed;
+        try {
+            destroyed = player.gameMode.destroyBlock(behindPos);
+        } finally {
+            HEAVY_SWING_BREAKS.remove(playerId);
+        }
+        if (destroyed) {
+            world.playSound(
+                    null,
+                    player.blockPosition(),
+                    SoundEvents.ANVIL_LAND,
+                    SoundSource.PLAYERS,
+                    0.15f,
+                    1.8f
+            );
+        }
     }
 
     private static void announceMiningLevelUp(
