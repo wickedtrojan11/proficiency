@@ -1,8 +1,16 @@
 {
   "item.proficiency.mining_skill_book": "Mining Skill Book",
+  "item.proficiency.rare_mining_skill_book": "Rare Mining Skill Book",
+  "item.proficiency.ancient_mining_skill_tome": "Ancient Mining Skill Tome",
   "item.proficiency.woodcutting_skill_book": "Woodcutting Skill Book",
+  "item.proficiency.rare_woodcutting_skill_book": "Rare Woodcutting Skill Book",
+  "item.proficiency.ancient_woodcutting_skill_tome": "Ancient Woodcutting Skill Tome",
   "item.proficiency.farming_skill_book": "Farming Skill Book",
+  "item.proficiency.rare_farming_skill_book": "Rare Farming Skill Book",
+  "item.proficiency.ancient_farming_skill_tome": "Ancient Farming Skill Tome",
   "item.proficiency.one_handed_skill_book": "One-Handed Skill Book",
+  "item.proficiency.rare_one_handed_skill_book": "Rare One-Handed Skill Book",
+  "item.proficiency.ancient_one_handed_skill_tome": "Ancient One-Handed Skill Tome",
   "block.proficiency.auto_farmer_plant_pot": "Proficient Pot",
   "block.proficiency.solar_composter": "Auto Composter"
 }

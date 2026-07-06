@@ -898,6 +898,12 @@ public class SkillScreen extends Screen {
                         "textures/gui/farming_bg.png"
                 );
 
+        ResourceLocation oneHandedBackground =
+                ResourceLocation.fromNamespaceAndPath(
+                        "proficiency",
+                        "textures/gui/one_handed_bg.png"
+                );
+
         int miningXp =
                 ClientSkillState.getMiningXp(
                         minecraft.player.getUUID()
@@ -1013,6 +1019,35 @@ public class SkillScreen extends Screen {
 
             graphics.blit(
                     farmingBackground,
+                    TREE_X,
+                    TREE_Y,
+                    0,
+                    0,
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT,
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT
+            );
+
+            graphics.fill(
+                    TREE_X,
+                    TREE_Y,
+                    TREE_X + TREE_BACKGROUND_WIDTH,
+                    TREE_Y + TREE_BACKGROUND_HEIGHT,
+                    0x33000000
+            );
+        }
+
+        if (
+                selectedSkill == 3
+                        && backgroundEnabled
+                        && minecraft.getResourceManager()
+                                .getResource(oneHandedBackground)
+                                .isPresent()
+        ) {
+
+            graphics.blit(
+                    oneHandedBackground,
                     TREE_X,
                     TREE_Y,
                     0,

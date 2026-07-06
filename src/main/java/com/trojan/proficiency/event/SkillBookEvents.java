@@ -2,6 +2,7 @@ package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.item.SkillBookRegistry;
+import com.trojan.proficiency.item.SkillBookRegistry.LootProfile;
 import com.trojan.proficiency.util.OneHandedWeapons;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
@@ -70,11 +71,12 @@ public final class SkillBookEvents {
                             getChestBookChance(key)
                     ));
 
+            LootProfile profile = getChestLootProfile(key);
             for (SkillBookRegistry.Entry skillBook
                     : SkillBookRegistry.entries()) {
                 pool.add(
                         LootItem.lootTableItem(skillBook.item())
-                                .setWeight(1)
+                                .setWeight(profile.weight(skillBook.tier()))
                 );
             }
             tableBuilder.withPool(pool);
@@ -94,9 +96,7 @@ public final class SkillBookEvents {
                 return;
             }
 
-            Item book = SkillBookRegistry.getRandomBook(
-                    player.getRandom()
-            );
+            Item book = SkillBookRegistry.getRandomBook(player.getRandom());
             entity.spawnAtLocation(new ItemStack(book));
         });
     }
@@ -160,5 +160,24 @@ public final class SkillBookEvents {
             return DUNGEON_CHEST_CHANCE;
         }
         return VILLAGE_CHEST_CHANCE;
+    }
+
+    private static LootProfile getChestLootProfile(
+            ResourceKey<LootTable> lootTable
+    ) {
+        if (
+                lootTable.equals(BuiltInLootTables.ANCIENT_CITY)
+                        || lootTable.equals(BuiltInLootTables.NETHER_BRIDGE)
+                        || lootTable.equals(BuiltInLootTables.BASTION_TREASURE)
+                        || lootTable.equals(BuiltInLootTables.BASTION_BRIDGE)
+                        || lootTable.equals(BuiltInLootTables.BASTION_HOGLIN_STABLE)
+                        || lootTable.equals(BuiltInLootTables.BASTION_OTHER)
+                        || lootTable.equals(BuiltInLootTables.STRONGHOLD_CORRIDOR)
+                        || lootTable.equals(BuiltInLootTables.STRONGHOLD_CROSSING)
+                        || lootTable.equals(BuiltInLootTables.STRONGHOLD_LIBRARY)
+        ) {
+            return LootProfile.DANGEROUS_CHEST;
+        }
+        return LootProfile.STANDARD_CHEST;
     }
 }
