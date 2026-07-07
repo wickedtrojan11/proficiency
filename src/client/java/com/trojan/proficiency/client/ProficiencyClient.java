@@ -21,7 +21,9 @@ public class ProficiencyClient implements ClientModInitializer {
         AnimalHusbandryOverlay.register();
         XpGainOverlay.register();
         WellRestedOverlay.register();
+        AlchemyXpBuffOverlay.register();
         OneHandedTooltip.register();
+        AlchemyTooltip.register();
         ParryVisualState.register();
         OffhandStrikeInput.register();
         MenuScreens.register(

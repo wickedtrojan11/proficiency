@@ -27,6 +27,7 @@ import com.trojan.proficiency.skill.OneHandedSkill;
 import com.trojan.proficiency.skill.AlchemySkill;
 import com.trojan.proficiency.network.XpGainPayload;
 import com.trojan.proficiency.network.WellRestedPayload;
+import com.trojan.proficiency.network.AlchemyXpBuffPayload;
 import com.trojan.proficiency.network.SkillStatePayload;
 import com.trojan.proficiency.network.PrestigeRosterPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -787,6 +788,15 @@ public class SkillManager {
             alchemyXpBuffs.put(
                     playerId,
                     new AlchemyXpBuff(multiplier, durationTicks)
+            );
+        }
+
+        AlchemyXpBuff active = alchemyXpBuffs.get(playerId);
+        if (active != null) {
+            AlchemyXpBuffPayload.send(
+                    player,
+                    active.multiplier(),
+                    active.remainingTicks()
             );
         }
     }

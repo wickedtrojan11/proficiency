@@ -105,7 +105,7 @@ public final class XpGainOverlay {
                                 > DISPLAY_TICKS
         );
 
-        int startY = WellRestedOverlay.getNotificationStartY();
+        int startY = AlchemyXpBuffOverlay.getNotificationStartY();
 
         for (int index = 0;
              index < NOTIFICATIONS.size();

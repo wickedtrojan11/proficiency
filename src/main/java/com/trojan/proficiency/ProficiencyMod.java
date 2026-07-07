@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.trojan.proficiency.perk.OreSenseEffects;
 import com.trojan.proficiency.network.XpGainPayload;
 import com.trojan.proficiency.network.WellRestedPayload;
+import com.trojan.proficiency.network.AlchemyXpBuffPayload;
 import com.trojan.proficiency.network.SkillStatePayload;
 import com.trojan.proficiency.network.PerkUnlockRequestPayload;
 import com.trojan.proficiency.network.ToggleChangeRequestPayload;
@@ -55,6 +56,10 @@ public class ProficiencyMod implements ModInitializer {
 		PayloadTypeRegistry.playS2C().register(
 				WellRestedPayload.TYPE,
 				WellRestedPayload.STREAM_CODEC
+		);
+		PayloadTypeRegistry.playS2C().register(
+				AlchemyXpBuffPayload.TYPE,
+				AlchemyXpBuffPayload.STREAM_CODEC
 		);
 		PayloadTypeRegistry.playS2C().register(
 				SkillStatePayload.TYPE,

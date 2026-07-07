@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.ItemStack;
@@ -39,6 +40,7 @@ public final class AlchemyEvents {
             "proficiency_extra_duration";
     private static final String STAGE_HONEYED_BASE = "honeyed_base";
     private static final int BREW_XP = 5;
+    private static final int EXTENSION_XP = 1;
     private static final int BASE_XP_POTION_DURATION_TICKS = 5 * 60 * 20;
     private static final int HONEY_EXTENSION_TICKS = 60 * 20;
 
@@ -89,6 +91,7 @@ public final class AlchemyEvents {
     ) {
         ItemStack ingredient = items.get(3);
         boolean changed = false;
+        int xpAward = BREW_XP;
 
         if (ingredient.is(Items.HONEYCOMB)) {
             changed = replaceMatching(
@@ -113,19 +116,22 @@ public final class AlchemyEvents {
             );
         } else if (ingredient.is(Items.HONEY_BOTTLE)) {
             int maxExtraTicks = getNearbyHoneyExtensionCap(level, pos);
-            changed = replaceMatching(
-                    items,
-                    AlchemyEvents::canExtendXpPotion,
-                    stack -> extendXpPotion(stack, maxExtraTicks)
-            );
+            changed = extendMatchingXpPotions(items, maxExtraTicks);
+            xpAward = EXTENSION_XP;
         }
 
         if (!changed) {
+            if (ingredient.is(Items.HONEY_BOTTLE)) {
+                return true;
+            }
             return false;
         }
 
         consumeIngredient(level, pos, items);
-        awardNearbyAlchemyXp(level, pos);
+        awardNearbyAlchemyXp(level, pos, xpAward);
+        if (ingredient.is(Items.HONEY_BOTTLE)) {
+            playHoneyExtensionFeedback(level, pos);
+        }
         level.playSound(
                 null,
                 pos,
@@ -138,6 +144,14 @@ public final class AlchemyEvents {
     }
 
     public static void awardNearbyAlchemyXp(Level level, BlockPos pos) {
+        awardNearbyAlchemyXp(level, pos, BREW_XP);
+    }
+
+    private static void awardNearbyAlchemyXp(
+            Level level,
+            BlockPos pos,
+            int amount
+    ) {
         if (!(level instanceof ServerLevel serverLevel)) {
             return;
         }
@@ -157,7 +171,7 @@ public final class AlchemyEvents {
                                 pos.getZ() + 0.5
                         )
                 ))
-                .ifPresent(player -> SkillManager.addAlchemyXp(player, BREW_XP));
+                .ifPresent(player -> SkillManager.addAlchemyXp(player, amount));
     }
 
     public static void maybeRefundVanillaIngredient(
@@ -284,6 +298,10 @@ public final class AlchemyEvents {
 
     public static int getXpPotionDuration(ItemStack stack) {
         return BASE_XP_POTION_DURATION_TICKS + getExtraDuration(stack);
+    }
+
+    public static int getHoneyExtensionTicks(ItemStack stack) {
+        return getExtraDuration(stack);
     }
 
     private static boolean hasPotion(
@@ -459,6 +477,58 @@ public final class AlchemyEvents {
         return result;
     }
 
+    private static boolean extendMatchingXpPotions(
+            NonNullList<ItemStack> items,
+            int maxExtraTicks
+    ) {
+        boolean changed = false;
+
+        for (int slot = 0; slot < 3; slot++) {
+            ItemStack stack = items.get(slot);
+            if (
+                    !stack.is(ModItems.DOUBLE_XP_POTION)
+                            && !stack.is(ModItems.TRIPLE_XP_POTION)
+            ) {
+                continue;
+            }
+
+            int currentExtra = getExtraDuration(stack);
+            if (currentExtra >= maxExtraTicks) {
+                continue;
+            }
+
+            items.set(slot, extendXpPotion(stack, maxExtraTicks));
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private static void playHoneyExtensionFeedback(Level level, BlockPos pos) {
+        level.playSound(
+                null,
+                pos,
+                SoundEvents.HONEY_BLOCK_PLACE,
+                SoundSource.BLOCKS,
+                0.3f,
+                1.4f
+        );
+
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(
+                    ParticleTypes.HAPPY_VILLAGER,
+                    pos.getX() + 0.5,
+                    pos.getY() + 0.8,
+                    pos.getZ() + 0.5,
+                    3,
+                    0.2,
+                    0.15,
+                    0.2,
+                    0.0
+            );
+        }
+    }
+
     private static int getExtraDuration(ItemStack stack) {
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
         if (data == null) {
@@ -475,7 +545,7 @@ public final class AlchemyEvents {
 
     private static int getNearbyHoneyExtensionCap(Level level, BlockPos pos) {
         if (!(level instanceof ServerLevel serverLevel)) {
-            return 2 * 60 * 20;
+            return 0;
         }
 
         return serverLevel.getPlayers(
@@ -489,7 +559,7 @@ public final class AlchemyEvents {
                 .map(ServerPlayer::getUUID)
                 .mapToInt(AlchemyEvents::getHoneyExtensionCap)
                 .max()
-                .orElse(2 * 60 * 20);
+                .orElse(0);
     }
 
     private static float getNearbyPotencyChance(Level level, BlockPos pos) {
@@ -524,7 +594,10 @@ public final class AlchemyEvents {
         if (SkillManager.hasAlchemyPerk(playerId, "long_steep")) {
             return 4 * 60 * 20;
         }
-        return 2 * 60 * 20;
+        if (SkillManager.hasAlchemyPerk(playerId, "sweetened_stability")) {
+            return 2 * 60 * 20;
+        }
+        return 0;
     }
 
     private static void consumeIngredient(

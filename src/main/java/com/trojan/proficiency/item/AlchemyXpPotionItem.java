@@ -47,6 +47,7 @@ public class AlchemyXpPotionItem extends Item {
                 multiplier,
                 AlchemyEvents.getXpPotionDuration(stack)
         );
+        int appliedDurationTicks = AlchemyEvents.getXpPotionDuration(stack);
 
         if (!serverPlayer.getAbilities().instabuild) {
             stack.shrink(1);
@@ -59,8 +60,10 @@ public class AlchemyXpPotionItem extends Item {
         }
 
         serverPlayer.sendSystemMessage(Component.literal(
-                "\u00A7dSkill XP x" + multiplier + " for "
-                        + durationTicks / 20 / 60 + " minutes."
+                "\u00A7d" + getDescription().getString()
+                        + " active: skill XP x" + multiplier + " for "
+                        + formatDuration(appliedDurationTicks)
+                        + "."
         ));
 
         return InteractionResultHolder.consume(stack);
@@ -75,10 +78,28 @@ public class AlchemyXpPotionItem extends Item {
     ) {
         int durationSeconds = AlchemyEvents.getXpPotionDuration(stack) / 20;
         tooltip.add(Component.literal(
-                "Skill XP x" + multiplier + " for "
-                        + durationSeconds / 60 + ":"
-                        + String.format("%02d", durationSeconds % 60)
+                multiplier == 3
+                        ? "Triples skill XP temporarily."
+                        : "Doubles skill XP temporarily."
         ));
-        tooltip.add(Component.literal("Strongest active XP multiplier wins."));
+        tooltip.add(Component.literal(
+                "Duration: " + formatDuration(durationSeconds * 20)
+        ));
+        tooltip.add(Component.literal(
+                "Honey extension: +"
+                        + formatDuration(
+                        AlchemyEvents.getHoneyExtensionTicks(stack)
+                )
+        ));
+        tooltip.add(Component.literal(
+                "Does not stack with weaker XP multipliers; strongest applies."
+        ));
+    }
+
+    private static String formatDuration(int ticks) {
+        int totalSeconds = (ticks + 19) / 20;
+        return totalSeconds / 60
+                + ":"
+                + String.format("%02d", totalSeconds % 60);
     }
 }
