@@ -1,6 +1,7 @@
 package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.block.ModBlocks;
 import com.trojan.proficiency.item.ModItems;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
@@ -96,7 +97,8 @@ public final class AlchemyEvents {
         return stack.is(Items.HONEYCOMB)
                 || stack.is(Items.BONE_MEAL)
                 || stack.is(Items.ENDER_PEARL)
-                || stack.is(Items.HONEY_BOTTLE);
+                || stack.is(Items.HONEY_BOTTLE)
+                || stack.is(ModBlocks.CAMELLIA_FLOWER.asItem());
     }
 
     public static boolean isXpElixir(ItemStack stack) {

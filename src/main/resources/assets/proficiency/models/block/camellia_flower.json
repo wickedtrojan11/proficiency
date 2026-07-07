@@ -1,6 +1,6 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cross",
   "textures": {
-    "all": "minecraft:block/pink_wool"
+    "cross": "proficiency:block/camellia_flower"
   }
 }

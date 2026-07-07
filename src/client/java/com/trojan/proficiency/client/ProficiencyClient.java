@@ -34,5 +34,13 @@ public class ProficiencyClient implements ClientModInitializer {
                 ModBlocks.AUTO_FARMER_PLANT_POT,
                 RenderType.cutout()
         );
+        BlockRenderLayerMap.INSTANCE.putBlock(
+                ModBlocks.CAMELLIA_FLOWER,
+                RenderType.cutout()
+        );
+        BlockRenderLayerMap.INSTANCE.putBlock(
+                ModBlocks.POTTED_CAMELLIA_FLOWER,
+                RenderType.cutout()
+        );
     }
 }
