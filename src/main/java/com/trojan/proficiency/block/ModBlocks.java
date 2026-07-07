@@ -1,6 +1,7 @@
 package com.trojan.proficiency.block;
 
 import com.trojan.proficiency.ProficiencyMod;
+import com.trojan.proficiency.item.AlchemyGatedBlockItem;
 import com.trojan.proficiency.item.GreenhouseGatedBlockItem;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.Registry;
@@ -26,6 +27,20 @@ public final class ModBlocks {
             new SolarComposterBlock(
                     BlockBehaviour.Properties.ofFullCopy(
                             Blocks.COMPOSTER
+                    )
+            );
+
+    public static final Block CAMELLIA_FLOWER =
+            new Block(
+                    BlockBehaviour.Properties.ofFullCopy(
+                            Blocks.DANDELION
+                    ).noOcclusion()
+            );
+
+    public static final Block PROFICIENT_BREW_STAND =
+            new Block(
+                    BlockBehaviour.Properties.ofFullCopy(
+                            Blocks.BREWING_STAND
                     )
             );
 
@@ -55,6 +70,26 @@ public final class ModBlocks {
                 new GreenhouseGatedBlockItem(
                         SOLAR_COMPOSTER,
                         new Item.Properties()
+                )
+        );
+
+        registerBlock(
+                "camellia_flower",
+                CAMELLIA_FLOWER,
+                new BlockItem(
+                        CAMELLIA_FLOWER,
+                        new Item.Properties()
+                )
+        );
+
+        registerBlock(
+                "proficient_brew_stand",
+                PROFICIENT_BREW_STAND,
+                new AlchemyGatedBlockItem(
+                        PROFICIENT_BREW_STAND,
+                        new Item.Properties(),
+                        "proficient_brew_stand",
+                        "Proficient Brew Stand"
                 )
         );
 

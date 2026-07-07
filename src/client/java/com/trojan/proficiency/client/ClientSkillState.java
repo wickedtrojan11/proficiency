@@ -8,6 +8,7 @@ import com.trojan.proficiency.perk.MiningPerks;
 import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
 import com.trojan.proficiency.perk.OneHandedPerks;
+import com.trojan.proficiency.perk.AlchemyPerks;
 import com.trojan.proficiency.skill.SkillType;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -41,6 +42,7 @@ public final class ClientSkillState {
     private static SkillStatePayload.SkillState woodcutting = DEFAULT_STATE;
     private static SkillStatePayload.SkillState farming = DEFAULT_STATE;
     private static SkillStatePayload.SkillState oneHanded = DEFAULT_STATE;
+    private static SkillStatePayload.SkillState alchemy = DEFAULT_STATE;
     private static int miningStreak;
     private static boolean initialized;
     private static UUID syncedPlayerId;
@@ -146,12 +148,14 @@ public final class ClientSkillState {
                     payload.oneHanded(),
                     SkillType.ONE_HANDED
             );
+            showNewPerkToasts(alchemy, payload.alchemy(), SkillType.ALCHEMY);
         }
 
         mining = payload.mining();
         woodcutting = payload.woodcutting();
         farming = payload.farming();
         oneHanded = payload.oneHanded();
+        alchemy = payload.alchemy();
         miningStreak = payload.miningStreak();
         syncedPlayerId = payload.playerId();
         initialized = true;
@@ -174,6 +178,7 @@ public final class ClientSkillState {
                 case WOODCUTTING -> WoodcuttingPerks.getById(perkId);
                 case FARMING -> FarmingPerks.getById(perkId);
                 case ONE_HANDED -> OneHandedPerks.getById(perkId);
+                case ALCHEMY -> AlchemyPerks.getById(perkId);
             };
 
             if (perk != null) {
@@ -248,6 +253,7 @@ public final class ClientSkillState {
         woodcutting = DEFAULT_STATE;
         farming = DEFAULT_STATE;
         oneHanded = DEFAULT_STATE;
+        alchemy = DEFAULT_STATE;
         miningStreak = 0;
         syncedPlayerId = null;
         initialized = false;
@@ -367,6 +373,42 @@ public final class ClientSkillState {
 
     public static boolean hasOneHandedPerk(UUID ignored, String perkId) {
         return oneHanded.unlockedPerks().contains(perkId);
+    }
+
+    public static int getAlchemyLevel(UUID ignored) {
+        return alchemy.level();
+    }
+
+    public static int getAlchemyXp(UUID ignored) {
+        return alchemy.xp();
+    }
+
+    public static int getAlchemyXpRequired(UUID ignored) {
+        return alchemy.requiredXp();
+    }
+
+    public static int getAlchemyPerkPoints(UUID ignored) {
+        return alchemy.perkPoints();
+    }
+
+    public static int getAlchemyPrestige(UUID ignored) {
+        return alchemy.prestige();
+    }
+
+    public static boolean hasAlchemyPerk(UUID ignored, String perkId) {
+        return alchemy.unlockedPerks().contains(perkId);
+    }
+
+    public static boolean isAlchemyToggleEnabled(String toggleId) {
+        return alchemy.toggles().getOrDefault(toggleId, true);
+    }
+
+    public static void toggleAlchemy(String toggleId) {
+        requestToggle(
+                SkillType.ALCHEMY,
+                toggleId,
+                !isAlchemyToggleEnabled(toggleId)
+        );
     }
 
     public static boolean isOneHandedToggleEnabled(String toggleId) {

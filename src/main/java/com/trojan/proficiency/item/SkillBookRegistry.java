@@ -149,6 +149,7 @@ public final class SkillBookRegistry {
             case FARMING -> SkillManager.addFarmingXp(player, entry.xpAmount());
             case ONE_HANDED ->
                     SkillManager.addOneHandedXp(player, entry.xpAmount());
+            case ALCHEMY -> SkillManager.addAlchemyXp(player, entry.xpAmount());
         }
     }
 

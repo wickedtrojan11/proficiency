@@ -11,6 +11,14 @@
   "item.proficiency.one_handed_skill_book": "One-Handed Skill Book",
   "item.proficiency.rare_one_handed_skill_book": "Rare One-Handed Skill Book",
   "item.proficiency.ancient_one_handed_skill_tome": "Ancient One-Handed Skill Tome",
+  "item.proficiency.alchemy_skill_book": "Alchemy Skill Book",
+  "item.proficiency.rare_alchemy_skill_book": "Rare Alchemy Skill Book",
+  "item.proficiency.ancient_alchemy_skill_tome": "Ancient Alchemy Skill Tome",
+  "item.proficiency.double_xp_potion": "Double XP Potion",
+  "item.proficiency.triple_xp_potion": "Triple XP Potion",
+  "item.proficiency.camellia_oil": "Camellia Oil",
+  "block.proficiency.camellia_flower": "Camellia Flower",
+  "block.proficiency.proficient_brew_stand": "Proficient Brew Stand",
   "block.proficiency.auto_farmer_plant_pot": "Proficient Pot",
   "block.proficiency.solar_composter": "Auto Composter"
 }

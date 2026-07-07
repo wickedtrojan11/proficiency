@@ -1,6 +1,7 @@
 package com.trojan.proficiency.item;
 
 import com.trojan.proficiency.ProficiencyMod;
+import com.trojan.proficiency.block.ModBlocks;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -46,6 +47,28 @@ public final class ModItems {
     public static final Item ANCIENT_ONE_HANDED_SKILL_TOME = new SkillBookItem(
             new Item.Properties().stacksTo(16)
     );
+    public static final Item ALCHEMY_SKILL_BOOK = new SkillBookItem(
+            new Item.Properties().stacksTo(16)
+    );
+    public static final Item RARE_ALCHEMY_SKILL_BOOK = new SkillBookItem(
+            new Item.Properties().stacksTo(16)
+    );
+    public static final Item ANCIENT_ALCHEMY_SKILL_TOME = new SkillBookItem(
+            new Item.Properties().stacksTo(16)
+    );
+    public static final Item DOUBLE_XP_POTION = new AlchemyXpPotionItem(
+            new Item.Properties().stacksTo(1),
+            2,
+            5 * 60 * 20
+    );
+    public static final Item TRIPLE_XP_POTION = new AlchemyXpPotionItem(
+            new Item.Properties().stacksTo(1),
+            3,
+            5 * 60 * 20
+    );
+    public static final Item CAMELLIA_OIL = new CamelliaOilItem(
+            new Item.Properties().stacksTo(16)
+    );
 
     private ModItems() {
     }
@@ -69,6 +92,12 @@ public final class ModItems {
                 "ancient_one_handed_skill_tome",
                 ANCIENT_ONE_HANDED_SKILL_TOME
         );
+        register("alchemy_skill_book", ALCHEMY_SKILL_BOOK);
+        register("rare_alchemy_skill_book", RARE_ALCHEMY_SKILL_BOOK);
+        register("ancient_alchemy_skill_tome", ANCIENT_ALCHEMY_SKILL_TOME);
+        register("double_xp_potion", DOUBLE_XP_POTION);
+        register("triple_xp_potion", TRIPLE_XP_POTION);
+        register("camellia_oil", CAMELLIA_OIL);
 
         SkillBookRegistry.registerSkillBooks(
                 "mining",
@@ -98,6 +127,13 @@ public final class ModItems {
                 ANCIENT_ONE_HANDED_SKILL_TOME,
                 "One-Handed"
         );
+        SkillBookRegistry.registerSkillBooks(
+                "alchemy",
+                ALCHEMY_SKILL_BOOK,
+                RARE_ALCHEMY_SKILL_BOOK,
+                ANCIENT_ALCHEMY_SKILL_TOME,
+                "Alchemy"
+        );
         SkillBookRegistry.validate();
 
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.INGREDIENTS)
@@ -114,6 +150,14 @@ public final class ModItems {
                     entries.accept(ONE_HANDED_SKILL_BOOK);
                     entries.accept(RARE_ONE_HANDED_SKILL_BOOK);
                     entries.accept(ANCIENT_ONE_HANDED_SKILL_TOME);
+                    entries.accept(ALCHEMY_SKILL_BOOK);
+                    entries.accept(RARE_ALCHEMY_SKILL_BOOK);
+                    entries.accept(ANCIENT_ALCHEMY_SKILL_TOME);
+                    entries.accept(DOUBLE_XP_POTION);
+                    entries.accept(TRIPLE_XP_POTION);
+                    entries.accept(ModBlocks.CAMELLIA_FLOWER.asItem());
+                    entries.accept(CAMELLIA_OIL);
+                    entries.accept(ModBlocks.PROFICIENT_BREW_STAND.asItem());
                 });
     }
 

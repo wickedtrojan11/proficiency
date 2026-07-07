@@ -89,6 +89,16 @@ public class PlayerData {
     private Boolean oneHandedShieldEffectsEnabled = true;
     private Boolean oneHandedBonusLootEnabled = true;
 
+    private int alchemyXp = 0;
+    private int alchemyLevel = 1;
+    private int alchemyPerkPoints = 0;
+    private int alchemyPrestige = 0;
+    private Set<String> unlockedAlchemyPerks = new HashSet<>();
+    private Boolean alchemyBrewingSpeedEnabled = true;
+    private Boolean alchemyIngredientEfficiencyEnabled = true;
+    private Boolean alchemyPotionDurationEnabled = true;
+    private Boolean alchemyOilsEnabled = true;
+
     private Set<String> selectedOreSense =
             new HashSet<>();
     public Set<String> getSelectedOreSense() {
@@ -570,5 +580,91 @@ public class PlayerData {
 
     public void setOneHandedBonusLootEnabled(boolean enabled) {
         oneHandedBonusLootEnabled = enabled;
+    }
+
+    public int getAlchemyXp() {
+        return alchemyXp;
+    }
+
+    public void setAlchemyXp(int xp) {
+        alchemyXp = xp;
+    }
+
+    public int getAlchemyLevel() {
+        return alchemyLevel;
+    }
+
+    public void setAlchemyLevel(int level) {
+        alchemyLevel = level;
+    }
+
+    public int getAlchemyPerkPoints() {
+        return alchemyPerkPoints;
+    }
+
+    public void setAlchemyPerkPoints(int perkPoints) {
+        alchemyPerkPoints = perkPoints;
+    }
+
+    public int getAlchemyPrestige() {
+        return alchemyPrestige;
+    }
+
+    public void setAlchemyPrestige(int prestige) {
+        alchemyPrestige = Math.max(0, prestige);
+    }
+
+    public Set<String> getUnlockedAlchemyPerks() {
+        if (unlockedAlchemyPerks == null) {
+            unlockedAlchemyPerks = new HashSet<>();
+        }
+        return unlockedAlchemyPerks;
+    }
+
+    public boolean hasAlchemyPerk(String perkId) {
+        return getUnlockedAlchemyPerks().contains(perkId);
+    }
+
+    public void unlockAlchemyPerk(String perkId) {
+        getUnlockedAlchemyPerks().add(perkId);
+    }
+
+    public void clearAlchemyPerks() {
+        getUnlockedAlchemyPerks().clear();
+    }
+
+    public boolean isAlchemyBrewingSpeedEnabled() {
+        return alchemyBrewingSpeedEnabled == null
+                || alchemyBrewingSpeedEnabled;
+    }
+
+    public void setAlchemyBrewingSpeedEnabled(boolean enabled) {
+        alchemyBrewingSpeedEnabled = enabled;
+    }
+
+    public boolean isAlchemyIngredientEfficiencyEnabled() {
+        return alchemyIngredientEfficiencyEnabled == null
+                || alchemyIngredientEfficiencyEnabled;
+    }
+
+    public void setAlchemyIngredientEfficiencyEnabled(boolean enabled) {
+        alchemyIngredientEfficiencyEnabled = enabled;
+    }
+
+    public boolean isAlchemyPotionDurationEnabled() {
+        return alchemyPotionDurationEnabled == null
+                || alchemyPotionDurationEnabled;
+    }
+
+    public void setAlchemyPotionDurationEnabled(boolean enabled) {
+        alchemyPotionDurationEnabled = enabled;
+    }
+
+    public boolean isAlchemyOilsEnabled() {
+        return alchemyOilsEnabled == null || alchemyOilsEnabled;
+    }
+
+    public void setAlchemyOilsEnabled(boolean enabled) {
+        alchemyOilsEnabled = enabled;
     }
 }

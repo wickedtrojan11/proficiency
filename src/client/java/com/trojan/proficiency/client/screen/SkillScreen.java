@@ -11,6 +11,7 @@ import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
 import com.trojan.proficiency.perk.FarmingPerks;
 import com.trojan.proficiency.perk.OneHandedPerks;
+import com.trojan.proficiency.perk.AlchemyPerks;
 import com.trojan.proficiency.skill.SkillType;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -48,6 +49,12 @@ public class SkillScreen extends Screen {
     private static final int ONE_HANDED_TAB_WIDTH = 180;
     private static final int ONE_HANDED_TAB_HEIGHT = 25;
     private static final int ONE_HANDED_TAB_LABEL_X = 620;
+
+    private static final int ALCHEMY_TAB_X = 720;
+    private static final int ALCHEMY_TAB_Y = 22;
+    private static final int ALCHEMY_TAB_WIDTH = 180;
+    private static final int ALCHEMY_TAB_HEIGHT = 25;
+    private static final int ALCHEMY_TAB_LABEL_X = 810;
 
     private static final int STATS_PANEL_X = 35;
     private static final int STATS_PANEL_Y = 90;
@@ -211,7 +218,7 @@ public class SkillScreen extends Screen {
             selectedSkill--;
 
             if (selectedSkill < 0) {
-                selectedSkill = 3;
+                selectedSkill = 4;
             }
 
             return true;
@@ -222,7 +229,7 @@ public class SkillScreen extends Screen {
 
             selectedSkill++;
 
-            if (selectedSkill > 3) {
+            if (selectedSkill > 4) {
                 selectedSkill = 0;
             }
 
@@ -370,6 +377,16 @@ public class SkillScreen extends Screen {
             return true;
         }
 
+        if (
+                mouseX >= ALCHEMY_TAB_X
+                        && mouseX <= ALCHEMY_TAB_X + ALCHEMY_TAB_WIDTH
+                        && mouseY >= ALCHEMY_TAB_Y
+                        && mouseY <= ALCHEMY_TAB_Y + ALCHEMY_TAB_HEIGHT
+        ) {
+            selectedSkill = 4;
+            return true;
+        }
+
         if (selectedSkill == 1) {
 
             UUID playerId = minecraft.player.getUUID();
@@ -442,6 +459,24 @@ public class SkillScreen extends Screen {
                 ClientSkillState.toggleOneHanded(
                         toggles.get(toggleRow).id()
                 );
+                minecraft.player.playSound(
+                        net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                        1.0f,
+                        1.0f
+                );
+                return true;
+            }
+        }
+
+        if (selectedSkill == 4) {
+            List<FeatureToggle> toggles = getVisibleAlchemyToggles();
+            int toggleRow = getWoodcuttingToggleRow(
+                    mouseX,
+                    mouseY,
+                    toggles.size()
+            );
+            if (toggleRow >= 0) {
+                ClientSkillState.toggleAlchemy(toggles.get(toggleRow).id());
                 minecraft.player.playSound(
                         net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
                         1.0f,
@@ -553,6 +588,24 @@ public class SkillScreen extends Screen {
                 ) {
                     ClientSkillState.requestPerkUnlock(
                             SkillType.ONE_HANDED,
+                            perk.getId()
+                    );
+                    return true;
+                }
+            }
+        }
+        if (selectedSkill == 4) {
+            for (SkillPerk perk : AlchemyPerks.ALL_PERKS) {
+                int perkX = perk.getX() + TREE_OFFSET_X;
+                int perkY = perk.getY() + TREE_OFFSET_Y;
+                if (
+                        mouseX >= perkX
+                                && mouseX <= perkX + PERK_NODE_SIZE
+                                && mouseY >= perkY
+                                && mouseY <= perkY + PERK_NODE_SIZE
+                ) {
+                    ClientSkillState.requestPerkUnlock(
+                            SkillType.ALCHEMY,
                             perk.getId()
                     );
                     return true;
@@ -758,6 +811,8 @@ public class SkillScreen extends Screen {
                         ? "FARM OPTIONS"
                         : selectedSkill == 3
                         ? "COMBAT OPTIONS"
+                        : selectedSkill == 4
+                        ? "ALCHEMY OPTIONS"
                         : "ORE SENSING",
                 ORE_TITLE_X,
                 ORE_TITLE_Y,
@@ -790,6 +845,13 @@ public class SkillScreen extends Screen {
                     getVisibleOneHandedToggles(
                             minecraft.player.getUUID()
                     )
+            );
+        }
+
+        if (selectedSkill == 4) {
+            drawFeatureToggles(
+                    graphics,
+                    getVisibleAlchemyToggles()
             );
         }
 
@@ -968,6 +1030,18 @@ public class SkillScreen extends Screen {
                 minecraft.player.getUUID()
         );
         int oneHandedPerkPoints = ClientSkillState.getOneHandedPerkPoints(
+                minecraft.player.getUUID()
+        );
+        int alchemyLevel = ClientSkillState.getAlchemyLevel(
+                minecraft.player.getUUID()
+        );
+        int alchemyXp = ClientSkillState.getAlchemyXp(
+                minecraft.player.getUUID()
+        );
+        int alchemyXpRequired = ClientSkillState.getAlchemyXpRequired(
+                minecraft.player.getUUID()
+        );
+        int alchemyPerkPoints = ClientSkillState.getAlchemyPerkPoints(
                 minecraft.player.getUUID()
         );
         if (
@@ -1573,6 +1647,21 @@ public class SkillScreen extends Screen {
                 TAB_OUTLINE_COLOR
         );
 
+        graphics.fill(
+                ALCHEMY_TAB_X,
+                ALCHEMY_TAB_Y,
+                ALCHEMY_TAB_X + ALCHEMY_TAB_WIDTH,
+                ALCHEMY_TAB_Y + ALCHEMY_TAB_HEIGHT,
+                selectedSkill == 4 ? ACTIVE_TAB_FILL_COLOR : PANEL_FILL_COLOR
+        );
+        graphics.renderOutline(
+                ALCHEMY_TAB_X,
+                ALCHEMY_TAB_Y,
+                ALCHEMY_TAB_WIDTH,
+                ALCHEMY_TAB_HEIGHT,
+                TAB_OUTLINE_COLOR
+        );
+
 // Tab text
         graphics.drawCenteredString(
                 font,
@@ -1610,6 +1699,14 @@ public class SkillScreen extends Screen {
                 ONE_HANDED_TAB_LABEL_X,
                 TAB_LABEL_Y,
                 selectedSkill == 3 ? 0xFFFF5555 : 0xAAAAAA
+        );
+
+        graphics.drawCenteredString(
+                font,
+                "ALCHEMY",
+                ALCHEMY_TAB_LABEL_X,
+                TAB_LABEL_Y,
+                selectedSkill == 4 ? 0xFFFF55FF : 0xAAAAAA
         );
 
 
@@ -2153,6 +2250,148 @@ public class SkillScreen extends Screen {
             }
         }
 
+        if (selectedSkill == 4) {
+            UUID alchemyPlayerId = minecraft.player.getUUID();
+
+            graphics.drawCenteredString(
+                    font,
+                    "BREWING SPEED",
+                    TREE_OFFSET_X + 130,
+                    65,
+                    0xFFFFAA55
+            );
+            graphics.drawCenteredString(
+                    font,
+                    "INGREDIENTS",
+                    TREE_OFFSET_X + 225,
+                    65,
+                    0xFF77FFAA
+            );
+            graphics.drawCenteredString(
+                    font,
+                    "DURATION",
+                    TREE_OFFSET_X + 320,
+                    65,
+                    0xFF77AAFF
+            );
+            graphics.drawCenteredString(
+                    font,
+                    "OILS",
+                    TREE_OFFSET_X + 415,
+                    65,
+                    0xFFFF77DD
+            );
+            graphics.drawCenteredString(
+                    font,
+                    "POTENCY",
+                    TREE_OFFSET_X + 510,
+                    65,
+                    0xFFDD99FF
+            );
+
+            graphics.drawString(font, "Alchemy Level: " + alchemyLevel,
+                    BOTTOM_INFO_X, height - MINING_LEVEL_Y_OFFSET, 0xFFFF55FF);
+            graphics.drawString(font, "Perk Points: " + alchemyPerkPoints,
+                    BOTTOM_INFO_X, height - PERK_POINTS_Y_OFFSET, 0x55FFFF);
+            drawXpBar(graphics, MINING_XP_BAR_X,
+                    height - MINING_XP_BAR_Y_OFFSET,
+                    MINING_XP_BAR_WIDTH, XP_BAR_HEIGHT,
+                    alchemyXp, alchemyXpRequired, 0xFFFF55FF);
+
+            graphics.drawString(font, "Brew Speed: +"
+                            + getAlchemyBrewingSpeedPercent(alchemyPlayerId)
+                            + "%",
+                    MINING_STAT_X, MINING_SPEED_STAT_Y, 0x55FF55);
+            graphics.drawString(font, "Efficiency: +"
+                            + getAlchemyIngredientEfficiencyPercent(alchemyPlayerId)
+                            + "%",
+                    MINING_STAT_X, FORTUNE_STAT_Y, 0x55FFFF);
+            graphics.drawString(font, "Duration: +"
+                            + getAlchemyDurationMaxMinutes(alchemyPlayerId)
+                            + "m",
+                    MINING_STAT_X, DURABILITY_STAT_Y, 0xAAAAAA);
+            graphics.drawString(font, "Potency: "
+                            + getAlchemyPotencyChancePercent(alchemyPlayerId)
+                            + "%",
+                    MINING_STAT_X, ORE_SENSE_STAT_Y, 0xFFAA00);
+
+            for (SkillPerk perk : AlchemyPerks.ALL_PERKS) {
+                if (perk.getParentId() == null) {
+                    continue;
+                }
+                SkillPerk parent = AlchemyPerks.getById(perk.getParentId());
+                if (parent == null) {
+                    continue;
+                }
+                int color = getAlchemyConnectionColor(
+                        parent,
+                        perk,
+                        alchemyLevel,
+                        alchemyPerkPoints
+                );
+                drawWoodcuttingConnection(
+                        graphics,
+                        SkillType.ALCHEMY,
+                        parent,
+                        perk,
+                        parent.getX() + TREE_OFFSET_X + PERK_LINE_CENTER_OFFSET,
+                        parent.getY() + TREE_OFFSET_Y + PERK_LINE_CENTER_OFFSET,
+                        perk.getX() + TREE_OFFSET_X + PERK_LINE_CENTER_OFFSET,
+                        perk.getY() + TREE_OFFSET_Y + PERK_LINE_CENTER_OFFSET,
+                        color
+                );
+            }
+
+            for (SkillPerk perk : AlchemyPerks.ALL_PERKS) {
+                int perkX = perk.getX() + TREE_OFFSET_X;
+                int perkY = perk.getY() + TREE_OFFSET_Y;
+                graphics.fill(perkX, perkY,
+                        perkX + PERK_NODE_SIZE, perkY + PERK_NODE_SIZE,
+                        getAlchemyPerkFillColor(
+                                perk,
+                                alchemyLevel,
+                                alchemyPerkPoints
+                        ));
+                graphics.renderOutline(perkX, perkY,
+                        PERK_NODE_SIZE, PERK_NODE_SIZE,
+                        getAlchemyPerkBorderColor(
+                                perk,
+                                alchemyLevel,
+                                alchemyPerkPoints
+                        ));
+
+                if (
+                        mouseX >= perkX
+                                && mouseX <= perkX + PERK_NODE_SIZE
+                                && mouseY >= perkY
+                                && mouseY <= perkY + PERK_NODE_SIZE
+                ) {
+                    graphics.renderTooltip(
+                            font,
+                            List.of(
+                                    Component.literal(perk.getName())
+                                            .getVisualOrderText(),
+                                    Component.literal(
+                                            "Requires Alchemy Level: "
+                                                    + perk.getRequiredLevel()
+                                    ).getVisualOrderText(),
+                                    Component.literal(
+                                            "Cost: "
+                                                    + perk.getPointCost()
+                                                    + " Perk Points"
+                                    ).getVisualOrderText(),
+                                    Component.literal(perk.getDescription())
+                                            .getVisualOrderText(),
+                                    Component.literal(perk.getEffectText())
+                                            .getVisualOrderText()
+                            ),
+                            mouseX,
+                            mouseY
+                    );
+                }
+            }
+        }
+
         drawPrestigeControls(graphics);
 
         if (confirmingPrestige) {
@@ -2284,6 +2523,7 @@ public class SkillScreen extends Screen {
             case WOODCUTTING -> ClientSkillState.getWoodcuttingLevel(playerId);
             case FARMING -> ClientSkillState.getFarmingLevel(playerId);
             case ONE_HANDED -> ClientSkillState.getOneHandedLevel(playerId);
+            case ALCHEMY -> ClientSkillState.getAlchemyLevel(playerId);
         };
     }
 
@@ -2294,6 +2534,7 @@ public class SkillScreen extends Screen {
             case WOODCUTTING -> ClientSkillState.getWoodcuttingPrestige(playerId);
             case FARMING -> ClientSkillState.getFarmingPrestige(playerId);
             case ONE_HANDED -> ClientSkillState.getOneHandedPrestige(playerId);
+            case ALCHEMY -> ClientSkillState.getAlchemyPrestige(playerId);
         };
     }
 
@@ -2319,6 +2560,98 @@ public class SkillScreen extends Screen {
             return 0xFFC0C0C0;
         }
         return 0xFFFFD700;
+    }
+
+    private int getAlchemyBrewingSpeedPercent(UUID playerId) {
+        if (ClientSkillState.hasAlchemyPerk(playerId, "rapid_infusion")) {
+            return 35;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "heated_reaction")) {
+            return 20;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "quick_stir")) {
+            return 10;
+        }
+        return 0;
+    }
+
+    private int getAlchemyIngredientEfficiencyPercent(UUID playerId) {
+        if (ClientSkillState.hasAlchemyPerk(playerId, "nothing_wasted")) {
+            return 25;
+        }
+        if (ClientSkillState.hasAlchemyPerk(
+                playerId,
+                "alchemical_reclaiming"
+        )) {
+            return 18;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "glass_scraper")) {
+            return 10;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "careful_measure")) {
+            return 5;
+        }
+        return 0;
+    }
+
+    private int getAlchemyDurationMaxMinutes(UUID playerId) {
+        if (ClientSkillState.hasAlchemyPerk(playerId, "eternal_draught")) {
+            return 10;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "perfect_suspension")) {
+            return 8;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "deep_binding")) {
+            return 6;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "long_steep")) {
+            return 4;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "sweetened_stability")) {
+            return 2;
+        }
+        return 0;
+    }
+
+    private int getAlchemyOilTier(UUID playerId) {
+        if (ClientSkillState.hasAlchemyPerk(playerId, "everlasting_sheen")) {
+            return 4;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "polished_edge")) {
+            return 3;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "oilers_touch")) {
+            return 2;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "camellia_press")) {
+            return 1;
+        }
+        return 0;
+    }
+
+    private int getAlchemyPotencyChancePercent(UUID playerId) {
+        if (ClientSkillState.hasAlchemyPerk(playerId, "philosophers_brew")) {
+            return 100;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "masters_formula")) {
+            return 50;
+        }
+        if (ClientSkillState.hasAlchemyPerk(
+                playerId,
+                "distilled_perfection"
+        )) {
+            return 35;
+        }
+        if (ClientSkillState.hasAlchemyPerk(
+                playerId,
+                "concentrated_essence"
+        )) {
+            return 20;
+        }
+        if (ClientSkillState.hasAlchemyPerk(playerId, "refined_mixture")) {
+            return 10;
+        }
+        return 0;
     }
 
     private boolean isInside(
@@ -3195,6 +3528,10 @@ public class SkillScreen extends Screen {
                     playerId,
                     parent.getId()
             ) && ClientSkillState.hasOneHandedPerk(playerId, child.getId());
+            case ALCHEMY -> ClientSkillState.hasAlchemyPerk(
+                    playerId,
+                    parent.getId()
+            ) && ClientSkillState.hasAlchemyPerk(playerId, child.getId());
         };
     }
 
@@ -3347,6 +3684,73 @@ public class SkillScreen extends Screen {
     private boolean isOneHandedParentUnlocked(SkillPerk perk) {
         return perk.getParentId() == null
                 || ClientSkillState.hasOneHandedPerk(
+                minecraft.player.getUUID(),
+                perk.getParentId()
+        );
+    }
+
+    private int getAlchemyConnectionColor(
+            SkillPerk parent,
+            SkillPerk perk,
+            int level,
+            int perkPoints
+    ) {
+        if (isConnectionUnlocked(SkillType.ALCHEMY, parent, perk)) {
+            return PERK_UNLOCKED_COLOR;
+        }
+        if (isAlchemyPerkAvailable(perk, level, perkPoints)) {
+            return PERK_AVAILABLE_BORDER_COLOR;
+        }
+        return PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private int getAlchemyPerkFillColor(
+            SkillPerk perk,
+            int level,
+            int perkPoints
+    ) {
+        if (isAlchemyPerkUnlocked(perk)) {
+            return PERK_UNLOCKED_COLOR;
+        }
+        return isAlchemyPerkAvailable(perk, level, perkPoints)
+                ? PERK_AVAILABLE_FILL_COLOR
+                : PERK_LOCKED_FILL_COLOR;
+    }
+
+    private int getAlchemyPerkBorderColor(
+            SkillPerk perk,
+            int level,
+            int perkPoints
+    ) {
+        if (isAlchemyPerkUnlocked(perk)) {
+            return PERK_UNLOCKED_COLOR;
+        }
+        return isAlchemyPerkAvailable(perk, level, perkPoints)
+                ? PERK_AVAILABLE_BORDER_COLOR
+                : PERK_LOCKED_BORDER_COLOR;
+    }
+
+    private boolean isAlchemyPerkAvailable(
+            SkillPerk perk,
+            int level,
+            int perkPoints
+    ) {
+        return !isAlchemyPerkUnlocked(perk)
+                && level >= perk.getRequiredLevel()
+                && perkPoints >= perk.getPointCost()
+                && isAlchemyParentUnlocked(perk);
+    }
+
+    private boolean isAlchemyPerkUnlocked(SkillPerk perk) {
+        return ClientSkillState.hasAlchemyPerk(
+                minecraft.player.getUUID(),
+                perk.getId()
+        );
+    }
+
+    private boolean isAlchemyParentUnlocked(SkillPerk perk) {
+        return perk.getParentId() == null
+                || ClientSkillState.hasAlchemyPerk(
                 minecraft.player.getUUID(),
                 perk.getParentId()
         );
@@ -3623,6 +4027,33 @@ public class SkillScreen extends Screen {
                     ClientSkillState.isOneHandedToggleEnabled("bonus_loot")
             ));
         }
+
+        return toggles;
+    }
+
+    private List<FeatureToggle> getVisibleAlchemyToggles() {
+        List<FeatureToggle> toggles = new ArrayList<>();
+
+        toggles.add(new FeatureToggle(
+                "brewing_speed",
+                "Brewing Speed",
+                ClientSkillState.isAlchemyToggleEnabled("brewing_speed")
+        ));
+        toggles.add(new FeatureToggle(
+                "ingredient_efficiency",
+                "Ingredient Save",
+                ClientSkillState.isAlchemyToggleEnabled("ingredient_efficiency")
+        ));
+        toggles.add(new FeatureToggle(
+                "potion_duration",
+                "Potion Duration",
+                ClientSkillState.isAlchemyToggleEnabled("potion_duration")
+        ));
+        toggles.add(new FeatureToggle(
+                "oils",
+                "Oils",
+                ClientSkillState.isAlchemyToggleEnabled("oils")
+        ));
 
         return toggles;
     }

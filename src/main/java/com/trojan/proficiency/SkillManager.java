@@ -5,6 +5,7 @@ import com.trojan.proficiency.perk.PerkUnlockResult;
 import com.trojan.proficiency.perk.SkillPerk;
 import com.trojan.proficiency.perk.WoodcuttingPerks;
 import com.trojan.proficiency.perk.OneHandedPerks;
+import com.trojan.proficiency.perk.AlchemyPerks;
 import java.util.Set;
 import net.minecraft.network.chat.Component;
 
@@ -23,6 +24,7 @@ import com.trojan.proficiency.skill.FarmingSkill;
 import com.trojan.proficiency.skill.WoodcuttingSkill;
 import com.trojan.proficiency.skill.SkillType;
 import com.trojan.proficiency.skill.OneHandedSkill;
+import com.trojan.proficiency.skill.AlchemySkill;
 import com.trojan.proficiency.network.XpGainPayload;
 import com.trojan.proficiency.network.WellRestedPayload;
 import com.trojan.proficiency.network.SkillStatePayload;
@@ -44,6 +46,8 @@ public class SkillManager {
             miningStreaks = new HashMap<>();
     private static final HashMap<UUID, Integer>
             wellRestedRemainingTicks = new HashMap<>();
+    private static final HashMap<UUID, AlchemyXpBuff>
+            alchemyXpBuffs = new HashMap<>();
 
     private static final int WELL_RESTED_DURATION_TICKS =
             5 * 60 * 20;
@@ -66,6 +70,7 @@ public class SkillManager {
         playerDataMap.clear();
         miningStreaks.clear();
         wellRestedRemainingTicks.clear();
+        alchemyXpBuffs.clear();
     }
 
     public static void loadPlayerData(
@@ -129,6 +134,7 @@ public class SkillManager {
         playerDataMap.remove(playerId);
         miningStreaks.remove(playerId);
         wellRestedRemainingTicks.remove(playerId);
+        alchemyXpBuffs.remove(playerId);
     }
 
     private static PlayerData getPlayerData(
@@ -257,6 +263,26 @@ public class SkillManager {
                                         data.isOneHandedBonusLootEnabled()
                                 )
                         ),
+                        new SkillStatePayload.SkillState(
+                                data.getAlchemyLevel(),
+                                data.getAlchemyXp(),
+                                AlchemySkill.getXpRequired(
+                                        data.getAlchemyLevel()
+                                ),
+                                data.getAlchemyPerkPoints(),
+                                data.getAlchemyPrestige(),
+                                data.getUnlockedAlchemyPerks(),
+                                Map.of(
+                                        "brewing_speed",
+                                        data.isAlchemyBrewingSpeedEnabled(),
+                                        "ingredient_efficiency",
+                                        data.isAlchemyIngredientEfficiencyEnabled(),
+                                        "potion_duration",
+                                        data.isAlchemyPotionDurationEnabled(),
+                                        "oils",
+                                        data.isAlchemyOilsEnabled()
+                                )
+                        ),
                         getMiningStreak(player.getUUID())
                 )
         );
@@ -287,6 +313,11 @@ public class SkillManager {
                     desiredState
             );
             case ONE_HANDED -> setOneHandedToggle(
+                    data,
+                    toggleId,
+                    desiredState
+            );
+            case ALCHEMY -> setAlchemyToggle(
                     data,
                     toggleId,
                     desiredState
@@ -722,19 +753,55 @@ public class SkillManager {
             int amount
     ) {
 
-        Integer remainingTicks =
-                wellRestedRemainingTicks.get(playerId);
+        int multiplier = 1;
+        Integer remainingTicks = wellRestedRemainingTicks.get(playerId);
 
-        if (
-                remainingTicks == null
-                        || remainingTicks <= 0
-        ) {
-
-            return amount;
+        if (remainingTicks != null && remainingTicks > 0) {
+            multiplier = Math.max(multiplier, WELL_RESTED_XP_MULTIPLIER);
         }
 
-        return amount
-                * WELL_RESTED_XP_MULTIPLIER;
+        AlchemyXpBuff alchemyBuff = alchemyXpBuffs.get(playerId);
+        if (alchemyBuff != null && alchemyBuff.remainingTicks() > 0) {
+            multiplier = Math.max(multiplier, alchemyBuff.multiplier());
+        }
+
+        return amount * multiplier;
+    }
+
+    public static void grantAlchemyXpBuff(
+            ServerPlayer player,
+            int multiplier,
+            int durationTicks
+    ) {
+        UUID playerId = player.getUUID();
+        AlchemyXpBuff existing = alchemyXpBuffs.get(playerId);
+
+        if (
+                existing == null
+                        || multiplier > existing.multiplier()
+                        || (
+                        multiplier == existing.multiplier()
+                                && durationTicks > existing.remainingTicks()
+                )
+        ) {
+            alchemyXpBuffs.put(
+                    playerId,
+                    new AlchemyXpBuff(multiplier, durationTicks)
+            );
+        }
+    }
+
+    public static void tickAlchemyXpBuffs() {
+        alchemyXpBuffs.replaceAll(
+                (playerId, buff) ->
+                        new AlchemyXpBuff(
+                                buff.multiplier(),
+                                buff.remainingTicks() - 1
+                        )
+        );
+        alchemyXpBuffs.entrySet().removeIf(
+                entry -> entry.getValue().remainingTicks() <= 0
+        );
     }
 
     public static void tickWellRestedTimers() {
@@ -749,6 +816,9 @@ public class SkillManager {
                         entry ->
                                 entry.getValue() <= 0
                 );
+    }
+
+    private record AlchemyXpBuff(int multiplier, int remainingTicks) {
     }
 
     public static int getWoodcuttingXp(
@@ -1170,6 +1240,111 @@ public class SkillManager {
         return getPlayerData(playerId).hasOneHandedPerk(perkId);
     }
 
+    public static boolean addAlchemyXp(
+            ServerPlayer player,
+            int amount
+    ) {
+        UUID playerId = player.getUUID();
+        amount = applySkillXpMultiplier(playerId, amount);
+        XpGainPayload.send(player, SkillType.ALCHEMY, amount);
+
+        PlayerData data = getPlayerData(playerId);
+        int currentXp = data.getAlchemyXp() + amount;
+        int currentLevel = data.getAlchemyLevel();
+        boolean leveledUp = false;
+
+        if (currentXp >= AlchemySkill.getXpRequired(currentLevel)) {
+            currentXp = 0;
+            currentLevel++;
+            data.setAlchemyLevel(currentLevel);
+            data.setAlchemyPerkPoints(
+                    data.getAlchemyPerkPoints()
+                            + getPerkPointsAwardForLevel(currentLevel)
+            );
+            announceAlchemyLevelUp(player, currentLevel, data);
+            leveledUp = true;
+        }
+
+        data.setAlchemyXp(currentXp);
+        savePlayerData(playerId);
+        sendSkillState(player);
+        return leveledUp;
+    }
+
+    private static void announceAlchemyLevelUp(
+            ServerPlayer player,
+            int level,
+            PlayerData data
+    ) {
+        player.sendSystemMessage(Component.literal(
+                "\u00A7dAlchemy Level Up! \u2192 Level " + level
+        ));
+        player.sendSystemMessage(Component.literal(
+                "\u00A7bPerk points earned: "
+                        + getPerkPointsAwardForLevel(level)
+                        + ". Total: " + data.getAlchemyPerkPoints()
+        ));
+        player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundEvents.PLAYER_LEVELUP,
+                SoundSource.PLAYERS,
+                0.7f,
+                1.0f
+        );
+
+        for (SkillPerk perk : AlchemyPerks.ALL_PERKS) {
+            if (level == perk.getRequiredLevel()) {
+                player.sendSystemMessage(Component.literal(
+                        "\u00A7aNEW PERK AVAILABLE: " + perk.getName()
+                ));
+                player.level().playSound(
+                        null,
+                        player.blockPosition(),
+                        SoundEvents.ENCHANTMENT_TABLE_USE,
+                        SoundSource.PLAYERS,
+                        0.5f,
+                        1.2f
+                );
+            }
+        }
+    }
+
+    public static int getAlchemyXp(UUID playerId) {
+        return getPlayerData(playerId).getAlchemyXp();
+    }
+
+    public static int getAlchemyLevel(UUID playerId) {
+        return getPlayerData(playerId).getAlchemyLevel();
+    }
+
+    public static int getAlchemyXpRequired(UUID playerId) {
+        return AlchemySkill.getXpRequired(getAlchemyLevel(playerId));
+    }
+
+    public static int getAlchemyPerkPoints(UUID playerId) {
+        return getPlayerData(playerId).getAlchemyPerkPoints();
+    }
+
+    public static boolean hasAlchemyPerk(UUID playerId, String perkId) {
+        return getPlayerData(playerId).hasAlchemyPerk(perkId);
+    }
+
+    public static boolean isAlchemyToggleEnabled(
+            UUID playerId,
+            String toggleId
+    ) {
+        PlayerData data = getPlayerData(playerId);
+        return switch (toggleId) {
+            case "brewing_speed" -> data.isAlchemyBrewingSpeedEnabled();
+            case "ingredient_efficiency" ->
+                    data.isAlchemyIngredientEfficiencyEnabled();
+            case "potion_duration" -> data.isAlchemyPotionDurationEnabled();
+            case "oils" -> data.isAlchemyOilsEnabled();
+            default -> false;
+        };
+    }
+
     public static boolean isOneHandedToggleEnabled(
             UUID playerId,
             String toggleId
@@ -1182,6 +1357,26 @@ public class SkillManager {
             case "bonus_loot" -> data.isOneHandedBonusLootEnabled();
             default -> false;
         };
+    }
+
+    private static boolean setAlchemyToggle(
+            PlayerData data,
+            String toggleId,
+            boolean desiredState
+    ) {
+        switch (toggleId) {
+            case "brewing_speed" ->
+                    data.setAlchemyBrewingSpeedEnabled(desiredState);
+            case "ingredient_efficiency" ->
+                    data.setAlchemyIngredientEfficiencyEnabled(desiredState);
+            case "potion_duration" ->
+                    data.setAlchemyPotionDurationEnabled(desiredState);
+            case "oils" -> data.setAlchemyOilsEnabled(desiredState);
+            default -> {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static PerkUnlockResult unlockPerk(
@@ -1296,6 +1491,7 @@ public class SkillManager {
             case WOODCUTTING -> WoodcuttingPerks.getById(perkId);
             case FARMING -> FarmingPerks.getById(perkId);
             case ONE_HANDED -> OneHandedPerks.getById(perkId);
+            case ALCHEMY -> AlchemyPerks.getById(perkId);
         };
     }
 
@@ -1309,6 +1505,7 @@ public class SkillManager {
             case WOODCUTTING -> data.getWoodcuttingLevel();
             case FARMING -> data.getFarmingLevel();
             case ONE_HANDED -> data.getOneHandedLevel();
+            case ALCHEMY -> data.getAlchemyLevel();
         };
     }
 
@@ -1321,6 +1518,7 @@ public class SkillManager {
             case WOODCUTTING -> data.getWoodcuttingPrestige();
             case FARMING -> data.getFarmingPrestige();
             case ONE_HANDED -> data.getOneHandedPrestige();
+            case ALCHEMY -> data.getAlchemyPrestige();
         };
     }
 
@@ -1337,7 +1535,8 @@ public class SkillManager {
         return data.getMiningPrestige()
                 + data.getWoodcuttingPrestige()
                 + data.getFarmingPrestige()
-                + data.getOneHandedPrestige();
+                + data.getOneHandedPrestige()
+                + data.getAlchemyPrestige();
     }
 
     public static boolean meetsProgressionRequirements(
@@ -1452,6 +1651,12 @@ public class SkillManager {
                         data.getOneHandedPrestige() + 1
                 );
             }
+            case ALCHEMY -> {
+                data.setAlchemyLevel(1);
+                data.setAlchemyXp(0);
+                data.clearAlchemyPerks();
+                data.setAlchemyPrestige(data.getAlchemyPrestige() + 1);
+            }
         }
 
         savePlayerData(player.getUUID());
@@ -1485,6 +1690,7 @@ public class SkillManager {
             case WOODCUTTING -> data.getWoodcuttingPerkPoints();
             case FARMING -> data.getFarmingPerkPoints();
             case ONE_HANDED -> data.getOneHandedPerkPoints();
+            case ALCHEMY -> data.getAlchemyPerkPoints();
         };
     }
 
@@ -1499,6 +1705,7 @@ public class SkillManager {
             case WOODCUTTING -> data.hasWoodcuttingPerk(perkId);
             case FARMING -> data.hasFarmingPerk(perkId);
             case ONE_HANDED -> data.hasOneHandedPerk(perkId);
+            case ALCHEMY -> data.hasAlchemyPerk(perkId);
         };
     }
 
@@ -1511,6 +1718,7 @@ public class SkillManager {
             case WOODCUTTING -> data.getUnlockedWoodcuttingPerks();
             case FARMING -> data.getUnlockedFarmingPerks();
             case ONE_HANDED -> data.getUnlockedOneHandedPerks();
+            case ALCHEMY -> data.getUnlockedAlchemyPerks();
         };
     }
 
@@ -1525,6 +1733,7 @@ public class SkillManager {
             case WOODCUTTING -> data.unlockWoodcuttingPerk(perkId);
             case FARMING -> data.unlockFarmingPerk(perkId);
             case ONE_HANDED -> data.unlockOneHandedPerk(perkId);
+            case ALCHEMY -> data.unlockAlchemyPerk(perkId);
         }
     }
 
@@ -1540,6 +1749,7 @@ public class SkillManager {
                     data.setWoodcuttingPerkPoints(perkPoints);
             case FARMING -> data.setFarmingPerkPoints(perkPoints);
             case ONE_HANDED -> data.setOneHandedPerkPoints(perkPoints);
+            case ALCHEMY -> data.setAlchemyPerkPoints(perkPoints);
         }
     }
 

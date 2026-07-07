@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "proficiency:block/proficient_brew_stand"
+    }
+  }
+}

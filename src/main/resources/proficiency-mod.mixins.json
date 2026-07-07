@@ -6,6 +6,7 @@
 		"ExampleMixin",
 		"AgeableMobAgeMixin",
 		"AnimalBreedingMixin",
+		"BrewingStandBlockEntityMixin",
 		"CropGrowthMixin",
 		"EatBlockGoalMixin",
 		"MushroomGrowthMixin",

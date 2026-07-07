@@ -4,7 +4,8 @@ public enum SkillType {
     MINING("mining", "Mining"),
     WOODCUTTING("woodcutting", "Woodcutting"),
     FARMING("farming", "Farming"),
-    ONE_HANDED("one_handed", "One-Handed");
+    ONE_HANDED("one_handed", "One-Handed"),
+    ALCHEMY("alchemy", "Alchemy");
 
     private final String id;
     private final String displayName;
