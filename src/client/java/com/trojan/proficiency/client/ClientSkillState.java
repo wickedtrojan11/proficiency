@@ -35,6 +35,7 @@ public final class ClientSkillState {
                     0,
                     0,
                     Set.of(),
+                    Set.of(),
                     Map.of()
             );
 
@@ -401,6 +402,10 @@ public final class ClientSkillState {
 
     public static boolean isAlchemyToggleEnabled(String toggleId) {
         return alchemy.toggles().getOrDefault(toggleId, true);
+    }
+
+    public static boolean hasDiscoveredAlchemyIngredient(String ingredientKey) {
+        return alchemy.discoveries().contains(ingredientKey);
     }
 
     public static void toggleAlchemy(String toggleId) {

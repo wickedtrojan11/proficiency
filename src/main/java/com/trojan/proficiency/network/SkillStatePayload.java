@@ -95,6 +95,12 @@ public record SkillStatePayload(
             buffer.writeUtf(perkId);
         }
 
+        buffer.writeVarInt(state.discoveries.size());
+
+        for (String discovery : state.discoveries) {
+            buffer.writeUtf(discovery);
+        }
+
         buffer.writeVarInt(state.toggles.size());
 
         for (Map.Entry<String, Boolean> toggle
@@ -122,6 +128,13 @@ public record SkillStatePayload(
             unlockedPerks.add(buffer.readUtf());
         }
 
+        int discoveryCount = buffer.readVarInt();
+        Set<String> discoveries = new HashSet<>();
+
+        for (int index = 0; index < discoveryCount; index++) {
+            discoveries.add(buffer.readUtf());
+        }
+
         int toggleCount = buffer.readVarInt();
         Map<String, Boolean> toggles = new HashMap<>();
 
@@ -140,6 +153,7 @@ public record SkillStatePayload(
                 perkPoints,
                 prestige,
                 unlockedPerks,
+                discoveries,
                 toggles
         );
     }
@@ -156,11 +170,13 @@ public record SkillStatePayload(
             int perkPoints,
             int prestige,
             Set<String> unlockedPerks,
+            Set<String> discoveries,
             Map<String, Boolean> toggles
     ) {
 
         public SkillState {
             unlockedPerks = Set.copyOf(unlockedPerks);
+            discoveries = Set.copyOf(discoveries);
             toggles = Map.copyOf(toggles);
         }
     }

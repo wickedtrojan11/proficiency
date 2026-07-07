@@ -94,6 +94,7 @@ public class PlayerData {
     private int alchemyPerkPoints = 0;
     private int alchemyPrestige = 0;
     private Set<String> unlockedAlchemyPerks = new HashSet<>();
+    private Set<String> discoveredAlchemyIngredients = new HashSet<>();
     private Boolean alchemyBrewingSpeedEnabled = true;
     private Boolean alchemyIngredientEfficiencyEnabled = true;
     private Boolean alchemyPotionDurationEnabled = true;
@@ -631,6 +632,21 @@ public class PlayerData {
 
     public void clearAlchemyPerks() {
         getUnlockedAlchemyPerks().clear();
+    }
+
+    public Set<String> getDiscoveredAlchemyIngredients() {
+        if (discoveredAlchemyIngredients == null) {
+            discoveredAlchemyIngredients = new HashSet<>();
+        }
+        return discoveredAlchemyIngredients;
+    }
+
+    public boolean hasDiscoveredAlchemyIngredient(String ingredientKey) {
+        return getDiscoveredAlchemyIngredients().contains(ingredientKey);
+    }
+
+    public boolean discoverAlchemyIngredient(String ingredientKey) {
+        return getDiscoveredAlchemyIngredients().add(ingredientKey);
     }
 
     public boolean isAlchemyBrewingSpeedEnabled() {

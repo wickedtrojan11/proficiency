@@ -192,6 +192,7 @@ public class SkillManager {
                                 data.getMiningPerkPoints(),
                                 data.getMiningPrestige(),
                                 data.getUnlockedMiningPerks(),
+                                Set.of(),
                                 miningToggles
                         ),
                         new SkillStatePayload.SkillState(
@@ -203,6 +204,7 @@ public class SkillManager {
                                 data.getWoodcuttingPerkPoints(),
                                 data.getWoodcuttingPrestige(),
                                 data.getUnlockedWoodcuttingPerks(),
+                                Set.of(),
                                 Map.of(
                                         "leaf_decay",
                                         data.isWoodcuttingLeafDecayEnabled(),
@@ -225,6 +227,7 @@ public class SkillManager {
                                 data.getFarmingPerkPoints(),
                                 data.getFarmingPrestige(),
                                 data.getUnlockedFarmingPerks(),
+                                Set.of(),
                                 Map.of(
                                         "bonus_harvests",
                                         data.isFarmingBonusHarvestsEnabled(),
@@ -253,6 +256,7 @@ public class SkillManager {
                                 data.getOneHandedPerkPoints(),
                                 data.getOneHandedPrestige(),
                                 data.getUnlockedOneHandedPerks(),
+                                Set.of(),
                                 Map.of(
                                         "dual_wield",
                                         data.isOneHandedDualWieldEnabled(),
@@ -273,6 +277,7 @@ public class SkillManager {
                                 data.getAlchemyPerkPoints(),
                                 data.getAlchemyPrestige(),
                                 data.getUnlockedAlchemyPerks(),
+                                data.getDiscoveredAlchemyIngredients(),
                                 Map.of(
                                         "brewing_speed",
                                         data.isAlchemyBrewingSpeedEnabled(),
@@ -1338,6 +1343,27 @@ public class SkillManager {
 
     public static boolean hasAlchemyPerk(UUID playerId, String perkId) {
         return getPlayerData(playerId).hasAlchemyPerk(perkId);
+    }
+
+    public static boolean hasDiscoveredAlchemyIngredient(
+            UUID playerId,
+            String ingredientKey
+    ) {
+        return getPlayerData(playerId)
+                .hasDiscoveredAlchemyIngredient(ingredientKey);
+    }
+
+    public static boolean discoverAlchemyIngredient(
+            ServerPlayer player,
+            String ingredientKey
+    ) {
+        PlayerData data = getPlayerData(player.getUUID());
+        boolean discovered = data.discoverAlchemyIngredient(ingredientKey);
+        if (discovered) {
+            savePlayerData(player.getUUID());
+            sendSkillState(player);
+        }
+        return discovered;
     }
 
     public static boolean isAlchemyToggleEnabled(

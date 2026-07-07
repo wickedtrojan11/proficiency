@@ -1,6 +1,7 @@
 package com.trojan.proficiency.client;
 
 import com.trojan.proficiency.item.ModItems;
+import com.trojan.proficiency.item.AlchemyIngredientRegistry;
 import com.trojan.proficiency.item.OilRegistry;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.minecraft.ChatFormatting;
@@ -16,6 +17,7 @@ public final class AlchemyTooltip {
     public static void register() {
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
             OilRegistry.appendAppliedOilTooltip(stack, lines);
+            appendIngredientKnowledge(stack, lines);
 
             Minecraft minecraft = Minecraft.getInstance();
             if (
@@ -74,5 +76,30 @@ public final class AlchemyTooltip {
         }
 
         return 0;
+    }
+
+    private static void appendIngredientKnowledge(
+            ItemStack stack,
+            java.util.List<Component> lines
+    ) {
+        AlchemyIngredientRegistry.Entry ingredient =
+                AlchemyIngredientRegistry.get(stack);
+        if (ingredient == null) {
+            return;
+        }
+
+        if (ClientSkillState.hasDiscoveredAlchemyIngredient(
+                ingredient.key()
+        )) {
+            lines.add(Component.literal("Known effect: ")
+                    .withStyle(ChatFormatting.LIGHT_PURPLE)
+                    .append(ingredient.knownEffect().copy()
+                            .withStyle(ChatFormatting.GRAY)));
+            return;
+        }
+
+        lines.add(Component.literal(
+                "Unknown alchemical properties"
+        ).withStyle(ChatFormatting.DARK_PURPLE));
     }
 }
