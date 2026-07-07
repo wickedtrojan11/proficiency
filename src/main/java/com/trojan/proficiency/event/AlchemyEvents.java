@@ -99,6 +99,11 @@ public final class AlchemyEvents {
                 || stack.is(Items.HONEY_BOTTLE);
     }
 
+    public static boolean isXpElixir(ItemStack stack) {
+        return stack.is(ModItems.DOUBLE_XP_POTION)
+                || stack.is(ModItems.TRIPLE_XP_POTION);
+    }
+
     public static boolean handleCustomBrew(
             Level level,
             BlockPos pos,

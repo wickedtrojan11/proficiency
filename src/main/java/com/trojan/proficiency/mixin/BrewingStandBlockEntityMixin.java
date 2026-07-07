@@ -21,6 +21,9 @@ public abstract class BrewingStandBlockEntityMixin {
     @Shadow
     int brewTime;
 
+    @Shadow
+    private NonNullList<ItemStack> items;
+
     @Unique
     private static final ThreadLocal<BrewingContext> proficiency$brewingContext =
             new ThreadLocal<>();
@@ -102,6 +105,15 @@ public abstract class BrewingStandBlockEntityMixin {
             ItemStack stack,
             CallbackInfoReturnable<Boolean> callbackInfo
     ) {
+        if (
+                slot >= 0
+                        && slot < 3
+                        && AlchemyEvents.isXpElixir(stack)
+                        && items.get(slot).isEmpty()
+        ) {
+            callbackInfo.setReturnValue(true);
+            return;
+        }
         if (slot == 3 && AlchemyEvents.isCustomBrewingIngredient(stack)) {
             callbackInfo.setReturnValue(true);
         }
