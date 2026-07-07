@@ -67,6 +67,9 @@ public final class ModItems {
             3,
             5 * 60 * 20
     );
+    public static final Item OIL_BASE = new Item(
+            new Item.Properties().stacksTo(16)
+    );
     public static final Item CAMELLIA_OIL = oil("camellia");
     public static final Item FIRE_OIL = oil("fire");
     public static final Item FROST_OIL = oil("frost");
@@ -100,6 +103,7 @@ public final class ModItems {
         register("ancient_alchemy_skill_tome", ANCIENT_ALCHEMY_SKILL_TOME);
         register("double_xp_potion", DOUBLE_XP_POTION);
         register("triple_xp_potion", TRIPLE_XP_POTION);
+        register("oil_base", OIL_BASE);
         register("camellia_oil", CAMELLIA_OIL);
         register("fire_oil", FIRE_OIL);
         register("frost_oil", FROST_OIL);
@@ -218,6 +222,7 @@ public final class ModItems {
                     entries.accept(ANCIENT_ALCHEMY_SKILL_TOME);
                     entries.accept(DOUBLE_XP_POTION);
                     entries.accept(TRIPLE_XP_POTION);
+                    entries.accept(OIL_BASE);
                     entries.accept(ModBlocks.CAMELLIA_FLOWER.asItem());
                     entries.accept(CAMELLIA_OIL);
                     entries.accept(FIRE_OIL);

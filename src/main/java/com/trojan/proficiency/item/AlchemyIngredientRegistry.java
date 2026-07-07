@@ -42,7 +42,7 @@ public final class AlchemyIngredientRegistry {
                 MobEffects.MOVEMENT_SLOWDOWN, 0, 8 * 20);
         register(Items.REDSTONE, "Miner's Oil ingredient",
                 MobEffects.DIG_SPEED, 0, 12 * 20);
-        register(Items.STICK, "Lumber Oil ingredient",
+        register(Items.OAK_SAPLING, "Lumber Oil ingredient",
                 MobEffects.DIG_SPEED, 0, 10 * 20);
     }
 

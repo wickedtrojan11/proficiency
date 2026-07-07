@@ -20,7 +20,8 @@ public abstract class BrewingStandPotionSlotMixin {
             ItemStack stack,
             CallbackInfoReturnable<Boolean> callbackInfo
     ) {
-        if (AlchemyEvents.isXpElixir(stack)) {
+        if (AlchemyEvents.isXpElixir(stack)
+                || AlchemyEvents.isOilBase(stack)) {
             callbackInfo.setReturnValue(true);
         }
     }

@@ -108,7 +108,10 @@ public abstract class BrewingStandBlockEntityMixin {
         if (
                 slot >= 0
                         && slot < 3
-                        && AlchemyEvents.isXpElixir(stack)
+                        && (
+                        AlchemyEvents.isXpElixir(stack)
+                                || AlchemyEvents.isOilBase(stack)
+                )
                         && items.get(slot).isEmpty()
         ) {
             callbackInfo.setReturnValue(true);

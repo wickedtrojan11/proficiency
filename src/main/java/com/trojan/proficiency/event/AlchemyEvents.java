@@ -3,6 +3,7 @@ package com.trojan.proficiency.event;
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.block.ModBlocks;
 import com.trojan.proficiency.item.ModItems;
+import com.trojan.proficiency.item.OilRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -70,6 +71,15 @@ public final class AlchemyEvents {
         if (ingredient.is(Items.HONEYCOMB)) {
             return hasPotion(items, AlchemyEvents::isAwkwardPotion);
         }
+        if (ingredient.is(ModBlocks.CAMELLIA_FLOWER.asItem())) {
+            return hasPotion(items, AlchemyEvents::isWaterBottle)
+                    || canBrewOil(
+                    items,
+                    level,
+                    pos,
+                    "camellia"
+            );
+        }
         if (ingredient.is(Items.BONE_MEAL)) {
             return hasPotion(items, AlchemyEvents::isHoneyedBase);
         }
@@ -89,6 +99,18 @@ public final class AlchemyEvents {
             }
             return hasPotion(items, AlchemyEvents::canExtendXpPotion);
         }
+        if (ingredient.is(Items.BLAZE_POWDER)) {
+            return canBrewOil(items, level, pos, "fire");
+        }
+        if (ingredient.is(Items.SNOWBALL)) {
+            return canBrewOil(items, level, pos, "frost");
+        }
+        if (ingredient.is(Items.REDSTONE)) {
+            return canBrewOil(items, level, pos, "miners");
+        }
+        if (ingredient.is(Items.OAK_SAPLING)) {
+            return canBrewOil(items, level, pos, "lumber");
+        }
 
         return false;
     }
@@ -98,12 +120,20 @@ public final class AlchemyEvents {
                 || stack.is(Items.BONE_MEAL)
                 || stack.is(Items.ENDER_PEARL)
                 || stack.is(Items.HONEY_BOTTLE)
+                || stack.is(Items.BLAZE_POWDER)
+                || stack.is(Items.SNOWBALL)
+                || stack.is(Items.REDSTONE)
+                || stack.is(Items.OAK_SAPLING)
                 || stack.is(ModBlocks.CAMELLIA_FLOWER.asItem());
     }
 
     public static boolean isXpElixir(ItemStack stack) {
         return stack.is(ModItems.DOUBLE_XP_POTION)
                 || stack.is(ModItems.TRIPLE_XP_POTION);
+    }
+
+    public static boolean isOilBase(ItemStack stack) {
+        return stack.is(ModItems.OIL_BASE);
     }
 
     public static boolean handleCustomBrew(
@@ -121,6 +151,20 @@ public final class AlchemyEvents {
                     AlchemyEvents::isAwkwardPotion,
                     AlchemyEvents::honeyedBase
             );
+        } else if (ingredient.is(ModBlocks.CAMELLIA_FLOWER.asItem())) {
+            if (hasPotion(items, AlchemyEvents::isWaterBottle)) {
+                changed = replaceMatching(
+                        items,
+                        AlchemyEvents::isWaterBottle,
+                        stack -> new ItemStack(ModItems.OIL_BASE)
+                );
+            } else if (canBrewOil(items, level, pos, "camellia")) {
+                changed = replaceMatching(
+                        items,
+                        AlchemyEvents::isOilBase,
+                        stack -> new ItemStack(ModItems.CAMELLIA_OIL)
+                );
+            }
         } else if (ingredient.is(Items.BONE_MEAL)) {
             changed = replaceMatching(
                     items,
@@ -140,6 +184,34 @@ public final class AlchemyEvents {
             int maxExtraTicks = getNearbyHoneyExtensionCap(level, pos);
             changed = extendMatchingXpPotions(items, maxExtraTicks);
             xpAward = EXTENSION_XP;
+        } else if (ingredient.is(Items.BLAZE_POWDER)
+                && canBrewOil(items, level, pos, "fire")) {
+            changed = replaceMatching(
+                    items,
+                    AlchemyEvents::isOilBase,
+                    stack -> new ItemStack(ModItems.FIRE_OIL)
+            );
+        } else if (ingredient.is(Items.SNOWBALL)
+                && canBrewOil(items, level, pos, "frost")) {
+            changed = replaceMatching(
+                    items,
+                    AlchemyEvents::isOilBase,
+                    stack -> new ItemStack(ModItems.FROST_OIL)
+            );
+        } else if (ingredient.is(Items.REDSTONE)
+                && canBrewOil(items, level, pos, "miners")) {
+            changed = replaceMatching(
+                    items,
+                    AlchemyEvents::isOilBase,
+                    stack -> new ItemStack(ModItems.MINERS_OIL)
+            );
+        } else if (ingredient.is(Items.OAK_SAPLING)
+                && canBrewOil(items, level, pos, "lumber")) {
+            changed = replaceMatching(
+                    items,
+                    AlchemyEvents::isOilBase,
+                    stack -> new ItemStack(ModItems.LUMBER_OIL)
+            );
         }
 
         if (!changed) {
@@ -335,6 +407,48 @@ public final class AlchemyEvents {
         return false;
     }
 
+    private static boolean canBrewOil(
+            NonNullList<ItemStack> items,
+            Level level,
+            BlockPos pos,
+            String oilId
+    ) {
+        if (!hasPotion(items, AlchemyEvents::isOilBase)) {
+            return false;
+        }
+        if (level == null || pos == null) {
+            return true;
+        }
+        OilRegistry.Entry oil = OilRegistry.get(oilId);
+        return oil != null && hasNearbyAlchemyPerk(
+                level,
+                pos,
+                oil.requiredPerkId()
+        );
+    }
+
+    private static boolean hasNearbyAlchemyPerk(
+            Level level,
+            BlockPos pos,
+            String perkId
+    ) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return false;
+        }
+
+        return !serverLevel.getPlayers(
+                player -> player.distanceToSqr(
+                        pos.getX() + 0.5,
+                        pos.getY() + 0.5,
+                        pos.getZ() + 0.5
+                ) <= 8.0 * 8.0
+                        && SkillManager.hasAlchemyPerk(
+                        player.getUUID(),
+                        perkId
+                )
+        ).isEmpty();
+    }
+
     private static boolean replaceMatching(
             NonNullList<ItemStack> items,
             StackPredicate predicate,
@@ -356,6 +470,13 @@ public final class AlchemyEvents {
         return stack.is(Items.POTION)
                 && contents != null
                 && contents.is(Potions.AWKWARD);
+    }
+
+    private static boolean isWaterBottle(ItemStack stack) {
+        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+        return stack.is(Items.POTION)
+                && contents != null
+                && contents.is(Potions.WATER);
     }
 
     private static boolean isPotionContainer(ItemStack stack) {
