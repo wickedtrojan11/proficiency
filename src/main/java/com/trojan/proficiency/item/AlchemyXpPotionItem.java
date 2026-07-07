@@ -6,11 +6,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
@@ -36,37 +39,53 @@ public class AlchemyXpPotionItem extends Item {
             Player player,
             InteractionHand hand
     ) {
-        ItemStack stack = player.getItemInHand(hand);
+        return ItemUtils.startUsingInstantly(level, player, hand);
+    }
 
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return InteractionResultHolder.sidedSuccess(stack, true);
-        }
-
-        SkillManager.grantAlchemyXpBuff(
-                serverPlayer,
-                multiplier,
-                AlchemyEvents.getXpPotionDuration(stack)
-        );
+    @Override
+    public ItemStack finishUsingItem(
+            ItemStack stack,
+            Level level,
+            LivingEntity entity
+    ) {
         int appliedDurationTicks = AlchemyEvents.getXpPotionDuration(stack);
 
-        if (!serverPlayer.getAbilities().instabuild) {
-            stack.shrink(1);
-            if (stack.isEmpty()) {
-                return InteractionResultHolder.consume(
-                        new ItemStack(Items.GLASS_BOTTLE)
-                );
-            }
-            serverPlayer.getInventory().add(new ItemStack(Items.GLASS_BOTTLE));
+        if (entity instanceof ServerPlayer serverPlayer) {
+            SkillManager.grantAlchemyXpBuff(
+                    serverPlayer,
+                    multiplier,
+                    appliedDurationTicks
+            );
+            serverPlayer.sendSystemMessage(Component.literal(
+                    "\u00A7d" + getDescription().getString()
+                            + " active: skill XP x" + multiplier + " for "
+                            + formatDuration(appliedDurationTicks)
+                            + "."
+            ));
         }
 
-        serverPlayer.sendSystemMessage(Component.literal(
-                "\u00A7d" + getDescription().getString()
-                        + " active: skill XP x" + multiplier + " for "
-                        + formatDuration(appliedDurationTicks)
-                        + "."
-        ));
+        if (
+                entity instanceof Player player
+                        && !player.getAbilities().instabuild
+        ) {
+            stack.shrink(1);
+            if (stack.isEmpty()) {
+                return new ItemStack(Items.GLASS_BOTTLE);
+            }
+            player.getInventory().add(new ItemStack(Items.GLASS_BOTTLE));
+        }
 
-        return InteractionResultHolder.consume(stack);
+        return stack;
+    }
+
+    @Override
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
+        return 32;
+    }
+
+    @Override
+    public UseAnim getUseAnimation(ItemStack stack) {
+        return UseAnim.DRINK;
     }
 
     @Override

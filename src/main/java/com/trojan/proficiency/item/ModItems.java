@@ -111,6 +111,7 @@ public final class ModItems {
                 CAMELLIA_OIL,
                 "Camellia Oil",
                 OilRegistry.Target.DAMAGEABLE,
+                "camellia_press",
                 java.util.List.of(
                         Component.literal(
                                 "Unbreaking-style durability preservation."
@@ -122,6 +123,7 @@ public final class ModItems {
                 FIRE_OIL,
                 "Fire Oil",
                 OilRegistry.Target.WEAPON,
+                "oilers_touch",
                 java.util.List.of(
                         Component.literal("Weapons briefly burn enemies.")
                 )
@@ -131,6 +133,7 @@ public final class ModItems {
                 FROST_OIL,
                 "Frost Oil",
                 OilRegistry.Target.WEAPON,
+                "polished_edge",
                 java.util.List.of(
                         Component.literal("Weapons briefly slow enemies.")
                 )
@@ -140,6 +143,7 @@ public final class ModItems {
                 MINERS_OIL,
                 "Miner's Oil",
                 OilRegistry.Target.PICKAXE,
+                "everlasting_sheen",
                 java.util.List.of(
                         Component.literal("Pickaxes mine slightly faster."),
                         Component.literal("Small durability preservation.")
@@ -150,6 +154,7 @@ public final class ModItems {
                 LUMBER_OIL,
                 "Lumber Oil",
                 OilRegistry.Target.AXE,
+                "everlasting_sheen",
                 java.util.List.of(
                         Component.literal("Axes chop slightly faster."),
                         Component.literal("Small durability preservation.")

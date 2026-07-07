@@ -17,6 +17,7 @@ public final class AlchemyTooltip {
     public static void register() {
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
             OilRegistry.appendAppliedOilTooltip(stack, lines);
+            appendOilItemUnlockTooltip(stack, lines);
             appendIngredientKnowledge(stack, lines);
 
             Minecraft minecraft = Minecraft.getInstance();
@@ -101,5 +102,38 @@ public final class AlchemyTooltip {
         lines.add(Component.literal(
                 "Unknown alchemical properties"
         ).withStyle(ChatFormatting.DARK_PURPLE));
+    }
+
+    private static void appendOilItemUnlockTooltip(
+            ItemStack stack,
+            java.util.List<Component> lines
+    ) {
+        OilRegistry.Entry oil = OilRegistry.getByItem(stack.getItem());
+        if (oil == null) {
+            return;
+        }
+
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return;
+        }
+
+        if (!ClientSkillState.hasAlchemyPerk(
+                minecraft.player.getUUID(),
+                oil.requiredPerkId()
+        )) {
+            lines.add(Component.literal(
+                    "Locked: unlock " + oil.displayName() + " in Alchemy."
+            ).withStyle(ChatFormatting.DARK_RED));
+            return;
+        }
+
+        lines.add(Component.literal(
+                "Charges: " + (ClientSkillState.hasAlchemyPerk(
+                        minecraft.player.getUUID(),
+                        "perfect_coating"
+                ) ? "500" : "250")
+        ).withStyle(ChatFormatting.GOLD));
+        lines.addAll(oil.tooltip());
     }
 }

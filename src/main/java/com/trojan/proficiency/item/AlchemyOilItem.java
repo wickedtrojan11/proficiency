@@ -44,6 +44,14 @@ public class AlchemyOilItem extends Item {
             return InteractionResultHolder.sidedSuccess(oilStack, true);
         }
 
+        if (!OilRegistry.isOilUnlocked(serverPlayer, oil)) {
+            serverPlayer.sendSystemMessage(Component.literal(
+                    "\u00A7cUnlock " + oil.displayName()
+                            + " in Alchemy before using it."
+            ));
+            return InteractionResultHolder.fail(oilStack);
+        }
+
         if (!OilRegistry.applyOil(serverPlayer, target, oil)) {
             return InteractionResultHolder.fail(oilStack);
         }
@@ -79,12 +87,10 @@ public class AlchemyOilItem extends Item {
             return;
         }
 
-        tooltip.add(Component.literal(
-                "Applies a temporary coating with 250+ charges."
-        ).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.literal("Alchemy oil coating.")
+                .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.literal(
                 "Use while holding target gear in the opposite hand."
         ).withStyle(ChatFormatting.DARK_GRAY));
-        tooltip.addAll(oil.tooltip());
     }
 }

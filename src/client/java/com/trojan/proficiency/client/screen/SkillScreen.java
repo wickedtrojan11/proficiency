@@ -2614,6 +2614,9 @@ public class SkillScreen extends Screen {
     }
 
     private int getAlchemyOilTier(UUID playerId) {
+        if (ClientSkillState.hasAlchemyPerk(playerId, "perfect_coating")) {
+            return 5;
+        }
         if (ClientSkillState.hasAlchemyPerk(playerId, "everlasting_sheen")) {
             return 4;
         }

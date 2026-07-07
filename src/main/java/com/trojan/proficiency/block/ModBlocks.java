@@ -11,8 +11,12 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ComposterBlock;
+import net.minecraft.world.level.block.FlowerBlock;
+import net.minecraft.world.level.block.FlowerPotBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.effect.MobEffects;
 
 public final class ModBlocks {
 
@@ -31,9 +35,19 @@ public final class ModBlocks {
             );
 
     public static final Block CAMELLIA_FLOWER =
-            new Block(
+            new FlowerBlock(
+                    MobEffects.REGENERATION,
+                    5.0f,
                     BlockBehaviour.Properties.ofFullCopy(
                             Blocks.DANDELION
+                    ).noOcclusion()
+            );
+
+    public static final Block POTTED_CAMELLIA_FLOWER =
+            new FlowerPotBlock(
+                    CAMELLIA_FLOWER,
+                    BlockBehaviour.Properties.ofFullCopy(
+                            Blocks.POTTED_DANDELION
                     ).noOcclusion()
             );
 
@@ -80,6 +94,14 @@ public final class ModBlocks {
                         CAMELLIA_FLOWER,
                         new Item.Properties()
                 )
+        );
+        registerBlockNoItem(
+                "potted_camellia_flower",
+                POTTED_CAMELLIA_FLOWER
+        );
+        ComposterBlock.COMPOSTABLES.put(
+                CAMELLIA_FLOWER.asItem(),
+                0.65f
         );
 
         registerBlock(
@@ -130,6 +152,18 @@ public final class ModBlocks {
                 BuiltInRegistries.ITEM,
                 id(name),
                 item
+        );
+    }
+
+    private static void registerBlockNoItem(
+            String name,
+            Block block
+    ) {
+
+        Registry.register(
+                BuiltInRegistries.BLOCK,
+                id(name),
+                block
         );
     }
 

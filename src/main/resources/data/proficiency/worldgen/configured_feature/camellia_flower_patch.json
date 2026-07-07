@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:flower",
+  "config": {
+    "tries": 8,
+    "xz_spread": 6,
+    "y_spread": 2,
+    "feature": {
+      "feature": {
+        "type": "minecraft:simple_block",
+        "config": {
+          "to_place": {
+            "type": "minecraft:simple_state_provider",
+            "state": {
+              "Name": "proficiency:camellia_flower"
+            }
+          }
+        }
+      },
+      "placement": []
+    }
+  }
+}

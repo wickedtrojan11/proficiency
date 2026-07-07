@@ -47,24 +47,28 @@ public final class AlchemyOilEvents {
                         return;
                     }
                     ItemStack stack = serverPlayer.getMainHandItem();
-                    OilRegistry.Entry oil = OilRegistry.getAppliedOil(stack);
-                    if (oil == null) {
+                    if (OilRegistry.getAppliedOils(stack).isEmpty()) {
                         return;
                     }
 
-                    boolean successfulUse = switch (oil.id()) {
-                        case "miners" ->
-                                stack.getItem() instanceof PickaxeItem;
-                        case "lumber" -> stack.getItem() instanceof AxeItem
-                                && state.is(BlockTags.LOGS);
-                        case "camellia" -> false;
-                        default -> false;
-                    };
-                    if (!successfulUse) {
-                        return;
+                    if (OilRegistry.hasUsableOil(
+                            serverPlayer,
+                            stack,
+                            "miners"
+                    )
+                            && stack.getItem() instanceof PickaxeItem) {
+                        OilRegistry.consumeCharge(stack, "miners");
+                    }
+                    if (OilRegistry.hasUsableOil(
+                            serverPlayer,
+                            stack,
+                            "lumber"
+                    )
+                            && stack.getItem() instanceof AxeItem
+                            && state.is(BlockTags.LOGS)) {
+                        OilRegistry.consumeCharge(stack, "lumber");
                     }
 
-                    OilRegistry.consumeCharge(stack);
                     OilRegistry.tryPreserveDurability(
                             serverPlayer,
                             stack,
@@ -76,17 +80,16 @@ public final class AlchemyOilEvents {
 
     private static void applyHeldToolSpeed(ServerPlayer player) {
         ItemStack stack = player.getMainHandItem();
-        OilRegistry.Entry oil = OilRegistry.getAppliedOil(stack);
-        if (oil == null) {
+        if (OilRegistry.getAppliedOils(stack).isEmpty()) {
             return;
         }
         if (!SkillManager.isAlchemyToggleEnabled(player.getUUID(), "oils")) {
             return;
         }
 
-        boolean speedOil = ("miners".equals(oil.id())
+        boolean speedOil = (OilRegistry.hasUsableOil(player, stack, "miners")
                 && stack.getItem() instanceof PickaxeItem)
-                || ("lumber".equals(oil.id())
+                || (OilRegistry.hasUsableOil(player, stack, "lumber")
                 && stack.getItem() instanceof AxeItem);
         if (!speedOil) {
             return;
@@ -107,43 +110,34 @@ public final class AlchemyOilEvents {
             LivingEntity target
     ) {
         ItemStack stack = player.getMainHandItem();
-        OilRegistry.Entry oil = OilRegistry.getAppliedOil(stack);
-        if (oil == null) {
+        if (OilRegistry.getAppliedOils(stack).isEmpty()) {
             return;
         }
         if (!SkillManager.isAlchemyToggleEnabled(player.getUUID(), "oils")) {
             return;
         }
 
-        switch (oil.id()) {
-            case "fire" -> {
-                target.setRemainingFireTicks(Math.max(
-                        target.getRemainingFireTicks(),
-                        OilRegistry.getFireTicks(player)
-                ));
-                OilRegistry.consumeCharge(stack);
-                feedback(player, target, true);
-            }
-            case "frost" -> {
-                target.addEffect(new MobEffectInstance(
-                        MobEffects.MOVEMENT_SLOWDOWN,
-                        OilRegistry.getFrostTicks(player),
-                        0,
-                        false,
-                        true,
-                        true
-                ));
-                OilRegistry.consumeCharge(stack);
-                feedback(player, target, false);
-            }
-            case "camellia" -> OilRegistry.tryPreserveDurability(
-                    player,
-                    stack,
-                    player.getRandom()
-            );
-            default -> {
-            }
+        if (OilRegistry.hasUsableOil(player, stack, "fire")) {
+            target.setRemainingFireTicks(Math.max(
+                    target.getRemainingFireTicks(),
+                    OilRegistry.getFireTicks(player)
+            ));
+            OilRegistry.consumeCharge(stack, "fire");
+            feedback(player, target, true);
         }
+        if (OilRegistry.hasUsableOil(player, stack, "frost")) {
+            target.addEffect(new MobEffectInstance(
+                    MobEffects.MOVEMENT_SLOWDOWN,
+                    OilRegistry.getFrostTicks(player),
+                    0,
+                    false,
+                    true,
+                    true
+            ));
+            OilRegistry.consumeCharge(stack, "frost");
+            feedback(player, target, false);
+        }
+        OilRegistry.tryPreserveDurability(player, stack, player.getRandom());
     }
 
     private static void feedback(

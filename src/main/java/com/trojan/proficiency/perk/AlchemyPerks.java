@@ -73,25 +73,30 @@ public final class AlchemyPerks {
                     315, 95, "perfect_suspension");
 
     public static final SkillPerk CAMELLIA_PRESS =
-            perk("camellia_press", "Camellia Press",
+            perk("camellia_press", "Camellia Oil",
                     "Camellia petals yield a protective oil.",
                     "Unlocks Camellia Oil for tools and weapons.", 5, 410,
                     325, null);
     public static final SkillPerk OILERS_TOUCH =
-            perk("oilers_touch", "Oiler's Touch",
-                    "A little oil reaches every hinge and edge.",
-                    "Oiled gear has a stronger durability benefit.", 12, 410,
-                    265, "camellia_press");
+            perk("oilers_touch", "Fire Oil",
+                    "A volatile coating catches on a clean strike.",
+                    "Unlocks Fire Oil for weapons.", 10, 410,
+                    280, "camellia_press");
     public static final SkillPerk POLISHED_EDGE =
-            perk("polished_edge", "Polished Edge",
-                    "A clean gleam means a cleaner swing.",
-                    "Oiled gear lasts even longer.", 25, 410, 205,
+            perk("polished_edge", "Frost Oil",
+                    "Winter settles into the edge of the blade.",
+                    "Unlocks Frost Oil for weapons.", 15, 410, 235,
                     "oilers_touch");
     public static final SkillPerk EVERLASTING_SHEEN =
-            perk("everlasting_sheen", "Everlasting Sheen",
-                    "The oil settles into the soul of the tool.",
-                    "Oiled gear reaches its best durability benefit.", 40,
-                    410, 95, "polished_edge");
+            perk("everlasting_sheen", "Master Craftsman",
+                    "You tailor coatings to the tool in your hand.",
+                    "Unlocks Miner's Oil and Lumber Oil.", 20,
+                    410, 190, "polished_edge");
+    public static final SkillPerk PERFECT_COATING =
+            perk("perfect_coating", "Perfect Coating",
+                    "No drop is wasted, and no edge rejects a second finish.",
+                    "Oil charges are doubled and two oils can coat one item.",
+                    25, 410, 145, "everlasting_sheen");
 
     public static final SkillPerk REFINED_MIXTURE =
             perk("refined_mixture", "Refined Mixture",
@@ -127,7 +132,7 @@ public final class AlchemyPerks {
             SWEETENED_STABILITY, LONG_STEEP, DEEP_BINDING,
             PERFECT_SUSPENSION, ETERNAL_DRAUGHT,
             CAMELLIA_PRESS, OILERS_TOUCH, POLISHED_EDGE,
-            EVERLASTING_SHEEN,
+            EVERLASTING_SHEEN, PERFECT_COATING,
             REFINED_MIXTURE, CONCENTRATED_ESSENCE,
             DISTILLED_PERFECTION, MASTERS_FORMULA, PHILOSOPHERS_BREW
     );

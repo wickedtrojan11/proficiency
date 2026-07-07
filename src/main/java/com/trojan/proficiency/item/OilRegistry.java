@@ -24,6 +24,10 @@ public final class OilRegistry {
 
     private static final String OIL_ID_KEY = "proficiency_oil_id";
     private static final String OIL_CHARGES_KEY = "proficiency_oil_charges";
+    private static final String SECONDARY_OIL_ID_KEY =
+            "proficiency_oil_id_2";
+    private static final String SECONDARY_OIL_CHARGES_KEY =
+            "proficiency_oil_charges_2";
     private static final int BASE_CHARGES = 250;
     private static final Map<String, Entry> BY_ID = new LinkedHashMap<>();
     private static final Map<Item, Entry> BY_ITEM = new IdentityHashMap<>();
@@ -36,6 +40,7 @@ public final class OilRegistry {
             Item item,
             String displayName,
             Target target,
+            String requiredPerkId,
             List<Component> tooltip
     ) {
         if (
@@ -45,6 +50,8 @@ public final class OilRegistry {
                         || displayName == null
                         || displayName.isBlank()
                         || target == null
+                        || requiredPerkId == null
+                        || requiredPerkId.isBlank()
                         || BY_ID.containsKey(id)
                         || BY_ITEM.containsKey(item)
         ) {
@@ -52,7 +59,14 @@ public final class OilRegistry {
                     "Invalid or duplicate oil registration: " + id
             );
         }
-        Entry entry = new Entry(id, item, displayName, target, tooltip);
+        Entry entry = new Entry(
+                id,
+                item,
+                displayName,
+                target,
+                requiredPerkId,
+                tooltip
+        );
         BY_ID.put(id, entry);
         BY_ITEM.put(item, entry);
         return entry;
@@ -89,13 +103,17 @@ public final class OilRegistry {
         if (!SkillManager.isAlchemyToggleEnabled(player.getUUID(), "oils")) {
             return false;
         }
+        if (!oil.isUnlocked(player)) {
+            return false;
+        }
 
         CompoundTag tag = targetStack.getOrDefault(
                 DataComponents.CUSTOM_DATA,
                 net.minecraft.world.item.component.CustomData.EMPTY
         ).copyTag();
-        tag.putString(OIL_ID_KEY, oil.id());
-        tag.putInt(OIL_CHARGES_KEY, getMaxCharges(player));
+        int slot = findApplicationSlot(player, tag, oil.id());
+        tag.putString(oilIdKey(slot), oil.id());
+        tag.putInt(oilChargesKey(slot), getMaxCharges(player));
         targetStack.set(
                 DataComponents.CUSTOM_DATA,
                 net.minecraft.world.item.component.CustomData.of(tag)
@@ -105,16 +123,24 @@ public final class OilRegistry {
     }
 
     public static Entry getAppliedOil(ItemStack stack) {
-        String id = getAppliedOilId(stack);
-        return id == null ? null : get(id);
+        List<AppliedOil> oils = getAppliedOils(stack);
+        return oils.isEmpty() ? null : oils.getFirst().entry();
     }
 
     public static String getAppliedOilId(ItemStack stack) {
+        Entry oil = getAppliedOil(stack);
+        return oil == null ? null : oil.id();
+    }
+
+    public static List<AppliedOil> getAppliedOils(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(
                 DataComponents.CUSTOM_DATA,
                 net.minecraft.world.item.component.CustomData.EMPTY
         ).copyTag();
-        return tag.contains(OIL_ID_KEY) ? tag.getString(OIL_ID_KEY) : null;
+        java.util.ArrayList<AppliedOil> oils = new java.util.ArrayList<>();
+        addAppliedOil(oils, tag, 0);
+        addAppliedOil(oils, tag, 1);
+        return oils;
     }
 
     public static int getRemainingCharges(ItemStack stack) {
@@ -122,13 +148,25 @@ public final class OilRegistry {
                 DataComponents.CUSTOM_DATA,
                 net.minecraft.world.item.component.CustomData.EMPTY
         ).copyTag();
-        return tag.contains(OIL_CHARGES_KEY)
-                ? Math.max(0, tag.getInt(OIL_CHARGES_KEY))
-                : 0;
+        int charges = 0;
+        for (AppliedOil oil : getAppliedOils(stack)) {
+            charges += oil.charges();
+        }
+        return charges;
     }
 
     public static boolean consumeCharge(ItemStack stack) {
-        Entry oil = getAppliedOil(stack);
+        AppliedOil oil = getAppliedOils(stack).stream()
+                .findFirst()
+                .orElse(null);
+        return oil != null && consumeCharge(stack, oil.entry().id());
+    }
+
+    public static boolean consumeCharge(ItemStack stack, String oilId) {
+        AppliedOil oil = getAppliedOils(stack).stream()
+                .filter(appliedOil -> appliedOil.entry().id().equals(oilId))
+                .findFirst()
+                .orElse(null);
         if (oil == null) {
             return false;
         }
@@ -137,10 +175,13 @@ public final class OilRegistry {
                 DataComponents.CUSTOM_DATA,
                 net.minecraft.world.item.component.CustomData.EMPTY
         ).copyTag();
-        int charges = Math.max(0, tag.getInt(OIL_CHARGES_KEY)) - 1;
+        int charges = Math.max(
+                0,
+                tag.getInt(oilChargesKey(oil.slot()))
+        ) - 1;
         if (charges <= 0) {
-            tag.remove(OIL_ID_KEY);
-            tag.remove(OIL_CHARGES_KEY);
+            tag.remove(oilIdKey(oil.slot()));
+            tag.remove(oilChargesKey(oil.slot()));
             if (tag.isEmpty()) {
                 stack.remove(DataComponents.CUSTOM_DATA);
             } else {
@@ -149,11 +190,13 @@ public final class OilRegistry {
                         net.minecraft.world.item.component.CustomData.of(tag)
                 );
             }
-            stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
+            if (getAppliedOils(stack).isEmpty()) {
+                stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
+            }
             return true;
         }
 
-        tag.putInt(OIL_CHARGES_KEY, charges);
+        tag.putInt(oilChargesKey(oil.slot()), charges);
         stack.set(
                 DataComponents.CUSTOM_DATA,
                 net.minecraft.world.item.component.CustomData.of(tag)
@@ -166,40 +209,34 @@ public final class OilRegistry {
             ItemStack stack,
             List<Component> tooltip
     ) {
-        Entry oil = getAppliedOil(stack);
-        if (oil == null) {
+        List<AppliedOil> oils = getAppliedOils(stack);
+        if (oils.isEmpty()) {
             return false;
         }
-        tooltip.add(Component.literal(
-                "Current Oil: " + oil.displayName()
-        ).withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.literal(
-                "Remaining Charges: " + getRemainingCharges(stack)
-        ).withStyle(ChatFormatting.GRAY));
+        for (AppliedOil oil : oils) {
+            tooltip.add(Component.literal(
+                    "Current Oil: " + oil.entry().displayName()
+            ).withStyle(ChatFormatting.AQUA));
+            tooltip.add(Component.literal(
+                    "Remaining Charges: " + oil.charges()
+            ).withStyle(ChatFormatting.GRAY));
+        }
         return true;
     }
 
     public static int getMaxCharges(ServerPlayer player) {
-        if (SkillManager.hasAlchemyPerk(
-                player.getUUID(),
-                "everlasting_sheen"
-        )) {
-            return 400;
-        }
-        if (SkillManager.hasAlchemyPerk(player.getUUID(), "polished_edge")) {
-            return 350;
-        }
-        if (SkillManager.hasAlchemyPerk(player.getUUID(), "oilers_touch")) {
-            return 300;
-        }
-        return BASE_CHARGES;
+        return hasPerfectCoating(player) ? BASE_CHARGES * 2 : BASE_CHARGES;
     }
 
     public static float getDurabilitySaveChance(
             ServerPlayer player,
             ItemStack stack
     ) {
-        Entry oil = getAppliedOil(stack);
+        AppliedOil oil = getAppliedOils(stack).stream()
+                .filter(appliedOil -> appliedOil.entry().isDurabilityOil()
+                        && appliedOil.entry().isUnlocked(player))
+                .findFirst()
+                .orElse(null);
         if (oil == null) {
             return 0.0f;
         }
@@ -207,7 +244,7 @@ public final class OilRegistry {
             return 0.0f;
         }
 
-        float chance = switch (oil.id()) {
+        float chance = switch (oil.entry().id()) {
             case "camellia" -> 0.20f;
             case "miners", "lumber" -> 0.08f;
             default -> 0.0f;
@@ -215,22 +252,10 @@ public final class OilRegistry {
         if (chance <= 0.0f) {
             return 0.0f;
         }
-        if (SkillManager.hasAlchemyPerk(player.getUUID(), "oilers_touch")) {
-            chance += 0.04f;
-        }
-        if (SkillManager.hasAlchemyPerk(player.getUUID(), "polished_edge")) {
-            chance += 0.05f;
-        }
-        if (SkillManager.hasAlchemyPerk(
-                player.getUUID(),
-                "everlasting_sheen"
-        )) {
-            chance += 0.06f;
-        }
         return SkillManager.scalePerkChance(
                 player.getUUID(),
                 SkillType.ALCHEMY,
-                Math.min(0.45f, chance)
+                chance
         );
     }
 
@@ -247,42 +272,94 @@ public final class OilRegistry {
         if (damage > 0) {
             stack.setDamageValue(damage - 1);
         }
-        consumeCharge(stack);
+        AppliedOil oil = getAppliedOils(stack).stream()
+                .filter(appliedOil -> appliedOil.entry().isDurabilityOil()
+                        && appliedOil.entry().isUnlocked(player))
+                .findFirst()
+                .orElse(null);
+        if (oil != null) {
+            consumeCharge(stack, oil.entry().id());
+        }
         return true;
     }
 
     public static int getFireTicks(ServerPlayer player) {
-        int ticks = 60;
-        if (SkillManager.hasAlchemyPerk(player.getUUID(), "oilers_touch")) {
-            ticks += 20;
-        }
-        if (SkillManager.hasAlchemyPerk(player.getUUID(), "polished_edge")) {
-            ticks += 20;
-        }
-        if (SkillManager.hasAlchemyPerk(
-                player.getUUID(),
-                "everlasting_sheen"
-        )) {
-            ticks += 20;
-        }
-        return ticks;
+        return 60;
     }
 
     public static int getFrostTicks(ServerPlayer player) {
-        int ticks = 50;
-        if (SkillManager.hasAlchemyPerk(player.getUUID(), "oilers_touch")) {
-            ticks += 15;
-        }
-        if (SkillManager.hasAlchemyPerk(player.getUUID(), "polished_edge")) {
-            ticks += 15;
-        }
-        if (SkillManager.hasAlchemyPerk(
+        return 50;
+    }
+
+    public static boolean hasOil(ItemStack stack, String oilId) {
+        return getAppliedOils(stack).stream()
+                .anyMatch(oil -> oil.entry().id().equals(oilId));
+    }
+
+    public static boolean hasUsableOil(
+            ServerPlayer player,
+            ItemStack stack,
+            String oilId
+    ) {
+        return getAppliedOils(stack).stream()
+                .anyMatch(oil -> oil.entry().id().equals(oilId)
+                        && oil.entry().isUnlocked(player));
+    }
+
+    public static boolean isOilUnlocked(ServerPlayer player, Entry oil) {
+        return oil != null && oil.isUnlocked(player);
+    }
+
+    private static boolean hasPerfectCoating(ServerPlayer player) {
+        return SkillManager.hasAlchemyPerk(
                 player.getUUID(),
-                "everlasting_sheen"
-        )) {
-            ticks += 20;
+                "perfect_coating"
+        );
+    }
+
+    private static int findApplicationSlot(
+            ServerPlayer player,
+            CompoundTag tag,
+            String oilId
+    ) {
+        if (oilId.equals(tag.getString(OIL_ID_KEY))) {
+            return 0;
         }
-        return ticks;
+        if (oilId.equals(tag.getString(SECONDARY_OIL_ID_KEY))) {
+            return 1;
+        }
+        if (!tag.contains(OIL_ID_KEY)) {
+            return 0;
+        }
+        if (hasPerfectCoating(player) && !tag.contains(SECONDARY_OIL_ID_KEY)) {
+            return 1;
+        }
+        return 0;
+    }
+
+    private static void addAppliedOil(
+            List<AppliedOil> oils,
+            CompoundTag tag,
+            int slot
+    ) {
+        String idKey = oilIdKey(slot);
+        String chargesKey = oilChargesKey(slot);
+        if (!tag.contains(idKey)) {
+            return;
+        }
+        Entry entry = get(tag.getString(idKey));
+        int charges = Math.max(0, tag.getInt(chargesKey));
+        if (entry != null && charges > 0) {
+            oils.add(new AppliedOil(entry, slot, charges));
+        }
+    }
+
+    private static String oilIdKey(int slot) {
+        return slot == 0 ? OIL_ID_KEY : SECONDARY_OIL_ID_KEY;
+    }
+
+    private static String oilChargesKey(int slot) {
+        return slot == 0 ? OIL_CHARGES_KEY : SECONDARY_OIL_CHARGES_KEY;
     }
 
     public enum Target {
@@ -319,10 +396,27 @@ public final class OilRegistry {
             Item item,
             String displayName,
             Target target,
+            String requiredPerkId,
             List<Component> tooltip
     ) {
         public boolean canApplyTo(ItemStack stack) {
             return !stack.isEmpty() && target.matches(stack);
         }
+
+        public boolean isUnlocked(ServerPlayer player) {
+            return SkillManager.hasAlchemyPerk(
+                    player.getUUID(),
+                    requiredPerkId
+            );
+        }
+
+        public boolean isDurabilityOil() {
+            return "camellia".equals(id)
+                    || "miners".equals(id)
+                    || "lumber".equals(id);
+        }
+    }
+
+    public record AppliedOil(Entry entry, int slot, int charges) {
     }
 }
