@@ -35,6 +35,7 @@ import com.trojan.proficiency.event.SkillBookEvents;
 import com.trojan.proficiency.event.PrestigeEffectEvents;
 import com.trojan.proficiency.event.OneHandedEvents;
 import com.trojan.proficiency.event.AlchemyEvents;
+import com.trojan.proficiency.event.AlchemyOilEvents;
 import com.trojan.proficiency.item.ModItems;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 public class ProficiencyMod implements ModInitializer {
@@ -144,6 +145,7 @@ public class ProficiencyMod implements ModInitializer {
 		PrestigeEffectEvents.register();
 		OneHandedEvents.register();
 		AlchemyEvents.register();
+		AlchemyOilEvents.register();
 		MiningPerkEffects.register();
 		WoodcuttingPerkEffects.register();
 		MiningDurabilityEvents.register();

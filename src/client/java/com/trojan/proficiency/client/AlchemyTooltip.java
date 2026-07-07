@@ -1,6 +1,7 @@
 package com.trojan.proficiency.client;
 
 import com.trojan.proficiency.item.ModItems;
+import com.trojan.proficiency.item.OilRegistry;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -14,6 +15,8 @@ public final class AlchemyTooltip {
 
     public static void register() {
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
+            OilRegistry.appendAppliedOilTooltip(stack, lines);
+
             Minecraft minecraft = Minecraft.getInstance();
             if (
                     minecraft.player == null

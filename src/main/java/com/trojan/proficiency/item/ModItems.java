@@ -5,6 +5,7 @@ import com.trojan.proficiency.block.ModBlocks;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
@@ -66,9 +67,11 @@ public final class ModItems {
             3,
             5 * 60 * 20
     );
-    public static final Item CAMELLIA_OIL = new CamelliaOilItem(
-            new Item.Properties().stacksTo(16)
-    );
+    public static final Item CAMELLIA_OIL = oil("camellia");
+    public static final Item FIRE_OIL = oil("fire");
+    public static final Item FROST_OIL = oil("frost");
+    public static final Item MINERS_OIL = oil("miners");
+    public static final Item LUMBER_OIL = oil("lumber");
 
     private ModItems() {
     }
@@ -98,6 +101,61 @@ public final class ModItems {
         register("double_xp_potion", DOUBLE_XP_POTION);
         register("triple_xp_potion", TRIPLE_XP_POTION);
         register("camellia_oil", CAMELLIA_OIL);
+        register("fire_oil", FIRE_OIL);
+        register("frost_oil", FROST_OIL);
+        register("miners_oil", MINERS_OIL);
+        register("lumber_oil", LUMBER_OIL);
+
+        OilRegistry.register(
+                "camellia",
+                CAMELLIA_OIL,
+                "Camellia Oil",
+                OilRegistry.Target.DAMAGEABLE,
+                java.util.List.of(
+                        Component.literal(
+                                "Unbreaking-style durability preservation."
+                        )
+                )
+        );
+        OilRegistry.register(
+                "fire",
+                FIRE_OIL,
+                "Fire Oil",
+                OilRegistry.Target.WEAPON,
+                java.util.List.of(
+                        Component.literal("Weapons briefly burn enemies.")
+                )
+        );
+        OilRegistry.register(
+                "frost",
+                FROST_OIL,
+                "Frost Oil",
+                OilRegistry.Target.WEAPON,
+                java.util.List.of(
+                        Component.literal("Weapons briefly slow enemies.")
+                )
+        );
+        OilRegistry.register(
+                "miners",
+                MINERS_OIL,
+                "Miner's Oil",
+                OilRegistry.Target.PICKAXE,
+                java.util.List.of(
+                        Component.literal("Pickaxes mine slightly faster."),
+                        Component.literal("Small durability preservation.")
+                )
+        );
+        OilRegistry.register(
+                "lumber",
+                LUMBER_OIL,
+                "Lumber Oil",
+                OilRegistry.Target.AXE,
+                java.util.List.of(
+                        Component.literal("Axes chop slightly faster."),
+                        Component.literal("Small durability preservation.")
+                )
+        );
+        OilRegistry.validate();
 
         SkillBookRegistry.registerSkillBooks(
                 "mining",
@@ -157,8 +215,16 @@ public final class ModItems {
                     entries.accept(TRIPLE_XP_POTION);
                     entries.accept(ModBlocks.CAMELLIA_FLOWER.asItem());
                     entries.accept(CAMELLIA_OIL);
+                    entries.accept(FIRE_OIL);
+                    entries.accept(FROST_OIL);
+                    entries.accept(MINERS_OIL);
+                    entries.accept(LUMBER_OIL);
                     entries.accept(ModBlocks.PROFICIENT_BREW_STAND.asItem());
                 });
+    }
+
+    private static Item oil(String oilId) {
+        return new AlchemyOilItem(new Item.Properties().stacksTo(16), oilId);
     }
 
     private static void register(String name, Item item) {
