@@ -10,6 +10,7 @@ import net.minecraft.world.inventory.MenuType;
 public final class ModMenus {
 
     public static MenuType<SolarComposterMenu> SOLAR_COMPOSTER;
+    public static MenuType<ProficientBrewStandMenu> PROFICIENT_BREW_STAND;
 
     private ModMenus() {
     }
@@ -25,6 +26,18 @@ public final class ModMenus {
                         ),
                         new MenuType<>(
                                 SolarComposterMenu::new,
+                                FeatureFlags.VANILLA_SET
+                        )
+                );
+        PROFICIENT_BREW_STAND =
+                Registry.register(
+                        BuiltInRegistries.MENU,
+                        ResourceLocation.fromNamespaceAndPath(
+                                ProficiencyMod.MOD_ID,
+                                "proficient_brew_stand"
+                        ),
+                        new MenuType<>(
+                                ProficientBrewStandMenu::new,
                                 FeatureFlags.VANILLA_SET
                         )
                 );

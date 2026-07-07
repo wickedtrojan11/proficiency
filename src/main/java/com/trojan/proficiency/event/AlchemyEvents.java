@@ -141,6 +141,33 @@ public final class AlchemyEvents {
             BlockPos pos,
             NonNullList<ItemStack> items
     ) {
+        return handleCustomBrew(
+                level,
+                pos,
+                items,
+                true
+        );
+    }
+
+    public static boolean applyCustomBrewResults(
+            Level level,
+            BlockPos pos,
+            NonNullList<ItemStack> items
+    ) {
+        return handleCustomBrew(
+                level,
+                pos,
+                items,
+                false
+        );
+    }
+
+    private static boolean handleCustomBrew(
+            Level level,
+            BlockPos pos,
+            NonNullList<ItemStack> items,
+            boolean applySideEffects
+    ) {
         ItemStack ingredient = items.get(3);
         boolean changed = false;
         int xpAward = BREW_XP;
@@ -218,6 +245,10 @@ public final class AlchemyEvents {
             return false;
         }
 
+        if (!applySideEffects) {
+            return true;
+        }
+
         consumeIngredient(level, pos, items);
         awardNearbyAlchemyXp(level, pos, xpAward);
         if (ingredient.is(Items.HONEY_BOTTLE)) {
@@ -238,7 +269,7 @@ public final class AlchemyEvents {
         awardNearbyAlchemyXp(level, pos, BREW_XP);
     }
 
-    private static void awardNearbyAlchemyXp(
+    public static void awardNearbyAlchemyXp(
             Level level,
             BlockPos pos,
             int amount
@@ -318,7 +349,7 @@ public final class AlchemyEvents {
         }
 
         boolean upgradedAny = false;
-        for (int slot = 0; slot < 3; slot++) {
+        for (int slot = 0; slot < items.size(); slot++) {
             ItemStack stack = items.get(slot);
             if (!isPotionContainer(stack)) {
                 continue;

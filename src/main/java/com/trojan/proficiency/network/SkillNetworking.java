@@ -73,6 +73,13 @@ public final class SkillNetworking {
                                 + result.message()
                 )
         );
+        if (result.success()
+                && skillType == SkillType.ALCHEMY
+                && "proficient_brew_stand".equals(payload.perkId())) {
+            player.sendSystemMessage(Component.literal(
+                    "\u00A7dYour mastery of alchemy has allowed you to construct the Proficient Brew Stand."
+            ));
+        }
         SkillManager.sendSkillState(player);
     }
 

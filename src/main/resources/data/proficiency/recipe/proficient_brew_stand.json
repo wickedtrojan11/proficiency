@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " B ",
+    "SCS",
+    " B "
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:brewing_stand"
+    },
+    "S": {
+      "item": "minecraft:smooth_stone"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    }
+  },
+  "result": {
+    "id": "proficiency:proficient_brew_stand",
+    "count": 1
+  }
+}

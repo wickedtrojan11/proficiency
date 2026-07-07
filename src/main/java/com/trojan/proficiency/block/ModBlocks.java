@@ -51,8 +51,8 @@ public final class ModBlocks {
                     ).noOcclusion()
             );
 
-    public static final Block PROFICIENT_BREW_STAND =
-            new Block(
+    public static final ProficientBrewStandBlock PROFICIENT_BREW_STAND =
+            new ProficientBrewStandBlock(
                     BlockBehaviour.Properties.ofFullCopy(
                             Blocks.BREWING_STAND
                     )
@@ -63,6 +63,8 @@ public final class ModBlocks {
 
     public static BlockEntityType<SolarComposterBlockEntity>
             SOLAR_COMPOSTER_ENTITY;
+    public static BlockEntityType<ProficientBrewStandBlockEntity>
+            PROFICIENT_BREW_STAND_ENTITY;
 
     private ModBlocks() {
     }
@@ -132,6 +134,16 @@ public final class ModBlocks {
                         FabricBlockEntityTypeBuilder.create(
                                 SolarComposterBlockEntity::new,
                                 SOLAR_COMPOSTER
+                        ).build()
+                );
+
+        PROFICIENT_BREW_STAND_ENTITY =
+                Registry.register(
+                        BuiltInRegistries.BLOCK_ENTITY_TYPE,
+                        id("proficient_brew_stand"),
+                        FabricBlockEntityTypeBuilder.create(
+                                ProficientBrewStandBlockEntity::new,
+                                PROFICIENT_BREW_STAND
                         ).build()
                 );
     }

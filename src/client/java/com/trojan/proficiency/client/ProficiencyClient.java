@@ -2,6 +2,7 @@ package com.trojan.proficiency.client;
 
 import com.trojan.proficiency.block.ModBlocks;
 import com.trojan.proficiency.client.keybind.KeybindHandler;
+import com.trojan.proficiency.client.screen.ProficientBrewStandScreen;
 import com.trojan.proficiency.client.screen.SolarComposterScreen;
 import com.trojan.proficiency.menu.ModMenus;
 
@@ -29,6 +30,10 @@ public class ProficiencyClient implements ClientModInitializer {
         MenuScreens.register(
                 ModMenus.SOLAR_COMPOSTER,
                 SolarComposterScreen::new
+        );
+        MenuScreens.register(
+                ModMenus.PROFICIENT_BREW_STAND,
+                ProficientBrewStandScreen::new
         );
         BlockRenderLayerMap.INSTANCE.putBlock(
                 ModBlocks.AUTO_FARMER_PLANT_POT,
