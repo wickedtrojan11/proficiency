@@ -12,11 +12,14 @@ import com.trojan.proficiency.perk.WoodcuttingPerks;
 import com.trojan.proficiency.perk.FarmingPerks;
 import com.trojan.proficiency.perk.OneHandedPerks;
 import com.trojan.proficiency.perk.AlchemyPerks;
+import com.trojan.proficiency.item.AlchemyIngredientRegistry;
+import com.trojan.proficiency.item.AlchemyJournalRegistry;
 import com.trojan.proficiency.skill.SkillType;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 public class SkillScreen extends Screen {
     private static final int DESIGN_WIDTH = 960;
     private static final int DESIGN_HEIGHT = 500;
@@ -104,6 +107,10 @@ public class SkillScreen extends Screen {
     private static final int HEAVY_SWINGS_TOGGLE_Y = 432;
     private static final int HEAVY_SWINGS_TOGGLE_WIDTH = 150;
     private static final int HEAVY_SWINGS_TOGGLE_HEIGHT = 12;
+    private static final int ALCHEMY_JOURNAL_TOGGLE_X = 50;
+    private static final int ALCHEMY_JOURNAL_TOGGLE_Y = 340;
+    private static final int ALCHEMY_JOURNAL_TOGGLE_WIDTH = 150;
+    private static final int ALCHEMY_JOURNAL_TOGGLE_HEIGHT = 12;
 
     private static final int TREE_PANEL_X = 250;
     private static final int TREE_PANEL_Y = 50;
@@ -173,6 +180,7 @@ public class SkillScreen extends Screen {
     private float uiOffsetX;
     private float uiOffsetY;
     private boolean confirmingPrestige;
+    private boolean alchemyJournalOpen;
 
     public SkillScreen() {
         super(Component.literal("Proficiency"));
@@ -477,6 +485,22 @@ public class SkillScreen extends Screen {
             );
             if (toggleRow >= 0) {
                 ClientSkillState.toggleAlchemy(toggles.get(toggleRow).id());
+                minecraft.player.playSound(
+                        net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                        1.0f,
+                        1.0f
+                );
+                return true;
+            }
+            if (isInside(
+                    mouseX,
+                    mouseY,
+                    ALCHEMY_JOURNAL_TOGGLE_X,
+                    ALCHEMY_JOURNAL_TOGGLE_Y,
+                    ALCHEMY_JOURNAL_TOGGLE_WIDTH,
+                    ALCHEMY_JOURNAL_TOGGLE_HEIGHT
+            )) {
+                alchemyJournalOpen = !alchemyJournalOpen;
                 minecraft.player.playSound(
                         net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
                         1.0f,
@@ -853,6 +877,13 @@ public class SkillScreen extends Screen {
                     graphics,
                     getVisibleAlchemyToggles()
             );
+            graphics.drawString(
+                    font,
+                    "Journal: " + (alchemyJournalOpen ? "OPEN" : "CLOSED"),
+                    ALCHEMY_JOURNAL_TOGGLE_X,
+                    ALCHEMY_JOURNAL_TOGGLE_Y,
+                    alchemyJournalOpen ? 0xFFFFAA55 : 0xAAAAAA
+            );
         }
 
         // =========================
@@ -964,6 +995,12 @@ public class SkillScreen extends Screen {
                 ResourceLocation.fromNamespaceAndPath(
                         "proficiency",
                         "textures/gui/one_handed_bg.png"
+                );
+
+        ResourceLocation alchemyBackground =
+                ResourceLocation.fromNamespaceAndPath(
+                        "proficiency",
+                        "textures/gui/alchemy_bg.png"
                 );
 
         int miningXp =
@@ -1122,6 +1159,35 @@ public class SkillScreen extends Screen {
 
             graphics.blit(
                     oneHandedBackground,
+                    TREE_X,
+                    TREE_Y,
+                    0,
+                    0,
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT,
+                    TREE_BACKGROUND_WIDTH,
+                    TREE_BACKGROUND_HEIGHT
+            );
+
+            graphics.fill(
+                    TREE_X,
+                    TREE_Y,
+                    TREE_X + TREE_BACKGROUND_WIDTH,
+                    TREE_Y + TREE_BACKGROUND_HEIGHT,
+                    0x33000000
+            );
+        }
+
+        if (
+                selectedSkill == 4
+                        && backgroundEnabled
+                        && minecraft.getResourceManager()
+                                .getResource(alchemyBackground)
+                                .isPresent()
+        ) {
+
+            graphics.blit(
+                    alchemyBackground,
                     TREE_X,
                     TREE_Y,
                     0,
@@ -2324,6 +2390,9 @@ public class SkillScreen extends Screen {
                             + "%",
                     MINING_STAT_X, ORE_SENSE_STAT_Y, 0xFFAA00);
 
+            if (alchemyJournalOpen) {
+                drawAlchemyJournal(graphics, alchemyPlayerId);
+            } else {
             for (SkillPerk perk : getVisibleAlchemyPerks()) {
                 if (perk.getParentId() == null) {
                     continue;
@@ -2405,6 +2474,7 @@ public class SkillScreen extends Screen {
                     );
                 }
             }
+            }
         }
 
         drawPrestigeControls(graphics);
@@ -2416,6 +2486,216 @@ public class SkillScreen extends Screen {
         width = actualWidth;
         height = actualHeight;
         graphics.pose().popPose();
+    }
+
+    private void drawAlchemyJournal(GuiGraphics graphics, UUID playerId) {
+        int panelX = TREE_PANEL_X + 18;
+        int panelY = TREE_PANEL_Y + 28;
+        int panelWidth = TREE_PANEL_WIDTH - 36;
+        int panelHeight = TREE_PANEL_HEIGHT - 130;
+        int leftX = panelX + 14;
+        int rightX = panelX + 325;
+
+        graphics.fill(
+                panelX,
+                panelY,
+                panelX + panelWidth,
+                panelY + panelHeight,
+                0xDD050306
+        );
+        graphics.renderOutline(
+                panelX,
+                panelY,
+                panelWidth,
+                panelHeight,
+                0xFFAA55CC
+        );
+        graphics.drawCenteredString(
+                font,
+                "ALCHEMY JOURNAL",
+                panelX + panelWidth / 2,
+                panelY + 8,
+                0xFFFFAA55
+        );
+
+        graphics.drawString(font, "Ingredients", leftX, panelY + 28,
+                0xFF77FFAA);
+        graphics.drawString(font, "\u2713 Discovered  \u2713 Tasted",
+                leftX, panelY + 40, 0xFF77FFAA);
+        int ingredientY = panelY + 54;
+        for (AlchemyIngredientRegistry.Entry ingredient
+                : AlchemyIngredientRegistry.entries()) {
+            boolean discovered =
+                    ClientSkillState.hasDiscoveredAlchemyIngredient(
+                            ingredient.key()
+                    );
+            graphics.drawString(
+                    font,
+                    discovered
+                            ? "\u2713\u2713 " + fitJournalText(
+                            new ItemStack(ingredient.item())
+                            .getHoverName()
+                            .getString()
+                                    + ": "
+                                    + String.join(
+                                    ", ",
+                                    ingredient.knownUses()
+                            ),
+                            270
+                    )
+                            : "???",
+                    leftX,
+                    ingredientY,
+                    discovered ? 0xFFE5E5E5 : 0xFF777777
+            );
+            ingredientY += 11;
+        }
+
+        graphics.drawString(font, "Recipes", rightX, panelY + 28,
+                0xFFDD99FF);
+        int recipeY = panelY + 42;
+        recipeY = drawAlchemyJournalCategory(
+                graphics,
+                playerId,
+                "Potion Recipes",
+                rightX,
+                recipeY
+        );
+        recipeY = drawAlchemyJournalCategory(
+                graphics,
+                playerId,
+                "XP Elixirs",
+                rightX,
+                recipeY + 4
+        );
+        recipeY = drawAlchemyJournalCategory(
+                graphics,
+                playerId,
+                "Oil Recipes",
+                rightX,
+                recipeY + 4
+        );
+        recipeY = drawAlchemyJournalCategory(
+                graphics,
+                playerId,
+                "Ancient Recipes",
+                rightX,
+                recipeY + 4
+        );
+        if (ClientSkillState.getAlchemyPrestige(playerId) >= 2) {
+            drawAlchemyJournalCategory(
+                    graphics,
+                    playerId,
+                    "Experimental Brewing",
+                    rightX,
+                    recipeY + 4
+            );
+        }
+    }
+
+    private int drawAlchemyJournalCategory(
+            GuiGraphics graphics,
+            UUID playerId,
+            String category,
+            int x,
+            int y
+    ) {
+        boolean drewHeader = false;
+        int currentY = y;
+
+        for (AlchemyJournalRegistry.RecipeEntry recipe
+                : AlchemyJournalRegistry.recipes()) {
+            if (!recipe.category().equals(category)) {
+                continue;
+            }
+            if (recipe.hiddenUntilUnlocked()
+                    && !isAlchemyRecipeVisible(playerId, recipe)) {
+                continue;
+            }
+            if (!drewHeader) {
+                graphics.drawString(font, category, x, currentY,
+                        0xFFFFAA55);
+                currentY += 11;
+                drewHeader = true;
+            }
+
+            boolean known = isAlchemyRecipeKnown(playerId, recipe);
+            boolean unlocked = isAlchemyRecipeUnlocked(playerId, recipe);
+            String name = known ? recipe.name() : "???";
+            if (known && !unlocked) {
+                name += " (locked)";
+            }
+            graphics.drawString(
+                    font,
+                    (known ? "\u2713 " : "") + name,
+                    x + 10,
+                    currentY,
+                    known
+                            ? unlocked ? 0xFFE5E5E5 : 0xFFAAAAAA
+                            : 0xFF777777
+            );
+            currentY += 10;
+        }
+
+        return drewHeader ? currentY : y;
+    }
+
+    private boolean isAlchemyRecipeKnown(
+            UUID playerId,
+            AlchemyJournalRegistry.RecipeEntry recipe
+    ) {
+        if (recipe.discoveryKey() != null) {
+            return ClientSkillState.hasDiscoveredAlchemyIngredient(
+                    recipe.discoveryKey()
+            );
+        }
+        if (isAlchemyRecipeUnlocked(playerId, recipe)) {
+            return true;
+        }
+        for (String ingredientKey : recipe.ingredientKeys()) {
+            if (ClientSkillState.hasDiscoveredAlchemyIngredient(
+                    ingredientKey
+            )) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isAlchemyRecipeUnlocked(
+            UUID playerId,
+            AlchemyJournalRegistry.RecipeEntry recipe
+    ) {
+        return recipe.requiredPerkId() == null
+                || ClientSkillState.hasAlchemyPerk(
+                playerId,
+                recipe.requiredPerkId()
+        );
+    }
+
+    private boolean isAlchemyRecipeVisible(
+            UUID playerId,
+            AlchemyJournalRegistry.RecipeEntry recipe
+    ) {
+        if ("Experimental Brewing".equals(recipe.category())) {
+            return ClientSkillState.getAlchemyPrestige(playerId) >= 2;
+        }
+        return isAlchemyRecipeUnlocked(playerId, recipe);
+    }
+
+    private String fitJournalText(String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+        String suffix = "...";
+        String trimmed = text;
+        while (
+                !trimmed.isEmpty()
+                        && font.width(trimmed + suffix) > maxWidth
+        ) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + suffix;
     }
 
     private void updateUiTransform() {

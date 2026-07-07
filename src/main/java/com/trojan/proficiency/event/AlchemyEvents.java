@@ -2,8 +2,10 @@ package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.block.ModBlocks;
+import com.trojan.proficiency.item.ExperimentalAlchemyRegistry;
 import com.trojan.proficiency.item.ModItems;
 import com.trojan.proficiency.item.OilRegistry;
+import com.trojan.proficiency.skill.SkillType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 public final class AlchemyEvents {
 
@@ -45,6 +48,8 @@ public final class AlchemyEvents {
     private static final int EXTENSION_XP = 1;
     private static final int BASE_XP_POTION_DURATION_TICKS = 5 * 60 * 20;
     private static final int HONEY_EXTENSION_TICKS = 60 * 20;
+    private static final int EXPERIMENTAL_MAX_DURATION_TICKS = 3 * 60 * 20;
+    private static final int EXPERIMENTAL_MAX_AMPLIFIER = 1;
 
     private AlchemyEvents() {
     }
@@ -70,6 +75,9 @@ public final class AlchemyEvents {
 
         if (ingredient.is(Items.HONEYCOMB)) {
             return hasPotion(items, AlchemyEvents::isAwkwardPotion);
+        }
+        if (isCompletedPotionContainer(ingredient)) {
+            return canBrewExperimentalPotion(items, level, pos);
         }
         if (ingredient.is(ModBlocks.CAMELLIA_FLOWER.asItem())) {
             return hasPotion(items, AlchemyEvents::isWaterBottle)
@@ -124,7 +132,16 @@ public final class AlchemyEvents {
                 || stack.is(Items.SNOWBALL)
                 || stack.is(Items.REDSTONE)
                 || stack.is(Items.OAK_SAPLING)
-                || stack.is(ModBlocks.CAMELLIA_FLOWER.asItem());
+                || stack.is(ModBlocks.CAMELLIA_FLOWER.asItem())
+                || isCompletedPotionContainer(stack);
+    }
+
+    public static boolean isExperimentalBrewable(
+            NonNullList<ItemStack> items,
+            Level level,
+            BlockPos pos
+    ) {
+        return canBrewExperimentalPotion(items, level, pos);
     }
 
     public static boolean isXpElixir(ItemStack stack) {
@@ -178,6 +195,8 @@ public final class AlchemyEvents {
                     AlchemyEvents::isAwkwardPotion,
                     AlchemyEvents::honeyedBase
             );
+        } else if (isCompletedPotionContainer(ingredient)) {
+            changed = brewExperimentalPotion(level, pos, items, ingredient);
         } else if (ingredient.is(ModBlocks.CAMELLIA_FLOWER.asItem())) {
             if (hasPotion(items, AlchemyEvents::isWaterBottle)) {
                 changed = replaceMatching(
@@ -253,6 +272,8 @@ public final class AlchemyEvents {
         awardNearbyAlchemyXp(level, pos, xpAward);
         if (ingredient.is(Items.HONEY_BOTTLE)) {
             playHoneyExtensionFeedback(level, pos);
+        } else if (isCompletedPotionContainer(ingredient)) {
+            playExperimentalBrewFeedback(level, pos);
         }
         level.playSound(
                 null,
@@ -418,6 +439,156 @@ public final class AlchemyEvents {
         return 0;
     }
 
+    private static boolean canBrewExperimentalPotion(
+            NonNullList<ItemStack> items,
+            Level level,
+            BlockPos pos
+    ) {
+        if (!hasNearbyAlchemyPrestige(level, pos, 2)) {
+            return false;
+        }
+        ItemStack ingredient = items.get(3);
+        if (!isCompletedPotionContainer(ingredient)) {
+            return false;
+        }
+        for (int slot = 0; slot < 3; slot++) {
+            if (ExperimentalAlchemyRegistry.findRecipe(
+                    items.get(slot),
+                    ingredient
+            ) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean brewExperimentalPotion(
+            Level level,
+            BlockPos pos,
+            NonNullList<ItemStack> items,
+            ItemStack ingredient
+    ) {
+        if (!hasNearbyAlchemyPrestige(level, pos, 2)) {
+            return false;
+        }
+        for (int slot = 0; slot < 3; slot++) {
+            ItemStack base = items.get(slot);
+            ExperimentalAlchemyRegistry.Entry recipe =
+                    ExperimentalAlchemyRegistry.findRecipe(
+                            base,
+                            ingredient
+                    );
+            if (recipe == null) {
+                continue;
+            }
+
+            items.set(slot, combinedPotion(base, ingredient, recipe));
+            discoverNearbyExperimentalRecipe(level, pos, recipe);
+            return true;
+        }
+        return false;
+    }
+
+    private static ItemStack combinedPotion(
+            ItemStack base,
+            ItemStack ingredient,
+            ExperimentalAlchemyRegistry.Entry recipe
+    ) {
+        ItemStack result = base.copyWithCount(1);
+        PotionContents baseContents = base.get(DataComponents.POTION_CONTENTS);
+        PotionContents ingredientContents =
+                ingredient.get(DataComponents.POTION_CONTENTS);
+        List<MobEffectInstance> effects = new ArrayList<>();
+
+        addExperimentalEffects(effects, baseContents, recipe);
+        addExperimentalEffects(effects, ingredientContents, recipe);
+
+        result.set(
+                DataComponents.POTION_CONTENTS,
+                new PotionContents(
+                        Optional.empty(),
+                        Optional.of(0x8B55CC),
+                        effects
+                )
+        );
+        result.set(
+                DataComponents.CUSTOM_NAME,
+                Component.literal("Experimental Brew: "
+                        + recipe.displayName())
+        );
+        return result;
+    }
+
+    private static void addExperimentalEffects(
+            List<MobEffectInstance> effects,
+            PotionContents contents,
+            ExperimentalAlchemyRegistry.Entry recipe
+    ) {
+        if (contents == null) {
+            return;
+        }
+        for (MobEffectInstance effect : contents.getAllEffects()) {
+            if (!effect.is(recipe.firstEffect())
+                    && !effect.is(recipe.secondEffect())) {
+                continue;
+            }
+            if (effects.stream().anyMatch(existing -> existing.is(
+                    effect.getEffect()
+            ))) {
+                continue;
+            }
+            effects.add(new MobEffectInstance(
+                    effect.getEffect(),
+                    Math.min(
+                            effect.getDuration(),
+                            EXPERIMENTAL_MAX_DURATION_TICKS
+                    ),
+                    Math.min(
+                            effect.getAmplifier(),
+                            EXPERIMENTAL_MAX_AMPLIFIER
+                    ),
+                    effect.isAmbient(),
+                    effect.isVisible(),
+                    effect.showIcon()
+            ));
+        }
+    }
+
+    private static void discoverNearbyExperimentalRecipe(
+            Level level,
+            BlockPos pos,
+            ExperimentalAlchemyRegistry.Entry recipe
+    ) {
+        getNearbyAlchemyPlayer(level, pos, player -> SkillManager.getPrestige(
+                player.getUUID(),
+                SkillType.ALCHEMY
+        ) >= 2).ifPresent(player -> {
+            boolean discovered = SkillManager.discoverAlchemyIngredient(
+                    player,
+                    recipe.discoveryKey()
+            );
+            if (discovered) {
+                player.sendSystemMessage(Component.literal(
+                        "\u00A7dExperimental recipe discovered: "
+                                + recipe.displayName()
+                ));
+            }
+        });
+    }
+
+    private static boolean hasNearbyAlchemyPrestige(
+            Level level,
+            BlockPos pos,
+            int prestige
+    ) {
+        return getNearbyAlchemyPlayer(level, pos, player ->
+                SkillManager.getPrestige(
+                        player.getUUID(),
+                        SkillType.ALCHEMY
+                ) >= prestige
+        ).isPresent();
+    }
+
     public static int getXpPotionDuration(ItemStack stack) {
         return BASE_XP_POTION_DURATION_TICKS + getExtraDuration(stack);
     }
@@ -463,21 +634,36 @@ public final class AlchemyEvents {
             BlockPos pos,
             String perkId
     ) {
+        return getNearbyAlchemyPlayer(level, pos, player ->
+                SkillManager.hasAlchemyPerk(player.getUUID(), perkId)
+        ).isPresent();
+    }
+
+    private static Optional<ServerPlayer> getNearbyAlchemyPlayer(
+            Level level,
+            BlockPos pos,
+            Predicate<ServerPlayer> predicate
+    ) {
         if (!(level instanceof ServerLevel serverLevel)) {
-            return false;
+            return Optional.empty();
         }
 
-        return !serverLevel.getPlayers(
-                player -> player.distanceToSqr(
-                        pos.getX() + 0.5,
-                        pos.getY() + 0.5,
-                        pos.getZ() + 0.5
-                ) <= 8.0 * 8.0
-                        && SkillManager.hasAlchemyPerk(
-                        player.getUUID(),
-                        perkId
+        return serverLevel.getPlayers(
+                        player -> player.distanceToSqr(
+                                pos.getX() + 0.5,
+                                pos.getY() + 0.5,
+                                pos.getZ() + 0.5
+                        ) <= 8.0 * 8.0
+                                && predicate.test(player)
                 )
-        ).isEmpty();
+                .stream()
+                .min(Comparator.comparingDouble(
+                        player -> player.distanceToSqr(
+                                pos.getX() + 0.5,
+                                pos.getY() + 0.5,
+                                pos.getZ() + 0.5
+                        )
+                ));
     }
 
     private static boolean replaceMatching(
@@ -514,6 +700,13 @@ public final class AlchemyEvents {
         return stack.is(Items.POTION)
                 || stack.is(Items.SPLASH_POTION)
                 || stack.is(Items.LINGERING_POTION);
+    }
+
+    private static boolean isCompletedPotionContainer(ItemStack stack) {
+        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+        return isPotionContainer(stack)
+                && contents != null
+                && contents.hasEffects();
     }
 
     private static ItemStack upgradePotionPotency(ItemStack stack) {
@@ -706,6 +899,31 @@ public final class AlchemyEvents {
                     0.15,
                     0.2,
                     0.0
+            );
+        }
+    }
+
+    private static void playExperimentalBrewFeedback(Level level, BlockPos pos) {
+        level.playSound(
+                null,
+                pos,
+                SoundEvents.ENCHANTMENT_TABLE_USE,
+                SoundSource.BLOCKS,
+                0.35f,
+                1.35f
+        );
+
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(
+                    ParticleTypes.ENCHANT,
+                    pos.getX() + 0.5,
+                    pos.getY() + 0.9,
+                    pos.getZ() + 0.5,
+                    8,
+                    0.25,
+                    0.2,
+                    0.25,
+                    0.02
             );
         }
     }

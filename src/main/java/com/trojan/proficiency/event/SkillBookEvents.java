@@ -1,6 +1,7 @@
 package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.item.ModItems;
 import com.trojan.proficiency.item.SkillBookRegistry;
 import com.trojan.proficiency.item.SkillBookRegistry.LootProfile;
 import com.trojan.proficiency.util.OneHandedWeapons;
@@ -35,6 +36,8 @@ public final class SkillBookEvents {
     private static final float ANCIENT_CITY_CHEST_CHANCE = 0.125f;
     private static final float NETHER_CHEST_CHANCE = 0.075f;
     private static final float DUNGEON_CHEST_CHANCE = 0.08f;
+    private static final float ANCIENT_NOTES_STANDARD_CHANCE = 0.03f;
+    private static final float ANCIENT_NOTES_DANGEROUS_CHANCE = 0.08f;
     private static final Set<ResourceKey<LootTable>> SKILL_BOOK_CHESTS = Set.of(
             BuiltInLootTables.SIMPLE_DUNGEON,
             BuiltInLootTables.ABANDONED_MINESHAFT,
@@ -80,6 +83,17 @@ public final class SkillBookEvents {
                 );
             }
             tableBuilder.withPool(pool);
+
+            tableBuilder.withPool(LootPool.lootPool()
+                    .setRolls(ConstantValue.exactly(1.0f))
+                    .when(LootItemRandomChanceCondition.randomChance(
+                            profile == LootProfile.DANGEROUS_CHEST
+                                    ? ANCIENT_NOTES_DANGEROUS_CHANCE
+                                    : ANCIENT_NOTES_STANDARD_CHANCE
+                    ))
+                    .add(LootItem.lootTableItem(
+                            ModItems.ANCIENT_ALCHEMY_NOTES
+                    )));
         });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {

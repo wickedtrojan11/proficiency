@@ -1372,6 +1372,12 @@ public class SkillManager {
                 .hasDiscoveredAlchemyIngredient(ingredientKey);
     }
 
+    public static Set<String> getDiscoveredAlchemyKeys(UUID playerId) {
+        return Set.copyOf(
+                getPlayerData(playerId).getDiscoveredAlchemyIngredients()
+        );
+    }
+
     public static boolean discoverAlchemyIngredient(
             ServerPlayer player,
             String ingredientKey

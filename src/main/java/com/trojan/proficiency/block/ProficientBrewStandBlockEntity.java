@@ -140,8 +140,27 @@ public class ProficientBrewStandBlockEntity extends BlockEntity
     }
 
     private void doBrew(Level level, BlockPos pos) {
-        boolean changed = applyCustomBank(level, pos, 0);
-        changed = applyCustomBank(level, pos, 3) || changed;
+        boolean experimentalFirstBank = AlchemyEvents.isExperimentalBrewable(
+                createBank(0),
+                level,
+                pos
+        );
+        boolean experimentalSecondBank = AlchemyEvents.isExperimentalBrewable(
+                createBank(3),
+                level,
+                pos
+        );
+        boolean changed;
+        if (experimentalFirstBank || experimentalSecondBank) {
+            changed = applyCustomBank(
+                    level,
+                    pos,
+                    experimentalFirstBank ? 0 : 3
+            );
+        } else {
+            changed = applyCustomBank(level, pos, 0);
+            changed = applyCustomBank(level, pos, 3) || changed;
+        }
         if (changed) {
             consumeIngredient();
             AlchemyEvents.awardNearbyAlchemyXp(level, pos);

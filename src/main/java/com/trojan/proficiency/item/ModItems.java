@@ -77,6 +77,8 @@ public final class ModItems {
     public static final Item LUMBER_OIL = oil("lumber");
     public static final Item PHILOSOPHERS_STONE =
             new PhilosophersStoneItem(new Item.Properties().stacksTo(1));
+    public static final Item ANCIENT_ALCHEMY_NOTES =
+            new AncientAlchemyNotesItem(new Item.Properties().stacksTo(16));
 
     private ModItems() {
     }
@@ -112,6 +114,7 @@ public final class ModItems {
         register("miners_oil", MINERS_OIL);
         register("lumber_oil", LUMBER_OIL);
         register("philosophers_stone", PHILOSOPHERS_STONE);
+        register("ancient_alchemy_notes", ANCIENT_ALCHEMY_NOTES);
 
         OilRegistry.register(
                 "camellia",
@@ -233,6 +236,7 @@ public final class ModItems {
                     entries.accept(MINERS_OIL);
                     entries.accept(LUMBER_OIL);
                     entries.accept(PHILOSOPHERS_STONE);
+                    entries.accept(ANCIENT_ALCHEMY_NOTES);
                     entries.accept(ModBlocks.PROFICIENT_BREW_STAND.asItem());
                 });
     }

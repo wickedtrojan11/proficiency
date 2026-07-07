@@ -96,6 +96,12 @@ public final class AlchemyTooltip {
                     .withStyle(ChatFormatting.LIGHT_PURPLE)
                     .append(ingredient.knownEffect().copy()
                             .withStyle(ChatFormatting.GRAY)));
+            for (String knownUse : ingredient.knownUses()) {
+                lines.add(Component.literal("Known use: ")
+                        .withStyle(ChatFormatting.LIGHT_PURPLE)
+                        .append(Component.literal(knownUse)
+                                .withStyle(ChatFormatting.GRAY)));
+            }
             return;
         }
 
