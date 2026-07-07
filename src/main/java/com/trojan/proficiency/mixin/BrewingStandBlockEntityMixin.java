@@ -22,8 +22,26 @@ public abstract class BrewingStandBlockEntityMixin {
     int brewTime;
 
     @Unique
+    private static final ThreadLocal<BrewingContext> proficiency$brewingContext =
+            new ThreadLocal<>();
+
+    @Unique
     private static final ThreadLocal<ItemStack> proficiency$capturedIngredient =
             ThreadLocal.withInitial(() -> ItemStack.EMPTY);
+
+    @Inject(
+            method = "serverTick",
+            at = @At("HEAD")
+    )
+    private static void proficiency$captureBrewingContext(
+            Level level,
+            BlockPos pos,
+            net.minecraft.world.level.block.state.BlockState state,
+            BrewingStandBlockEntity blockEntity,
+            CallbackInfo callbackInfo
+    ) {
+        proficiency$brewingContext.set(new BrewingContext(level, pos));
+    }
 
     @Inject(
             method = "serverTick",
@@ -38,6 +56,7 @@ public abstract class BrewingStandBlockEntityMixin {
     ) {
         int bonus = AlchemyEvents.getNearbyBrewingSpeedBonusPercent(level, pos);
         if (bonus <= 0) {
+            proficiency$brewingContext.remove();
             return;
         }
 
@@ -47,6 +66,7 @@ public abstract class BrewingStandBlockEntityMixin {
             int extraTicks = Math.max(1, bonus / 10);
             mixin.brewTime = Math.max(1, mixin.brewTime - extraTicks);
         }
+        proficiency$brewingContext.remove();
     }
 
     @Inject(
@@ -59,7 +79,15 @@ public abstract class BrewingStandBlockEntityMixin {
             NonNullList<ItemStack> items,
             CallbackInfoReturnable<Boolean> callbackInfo
     ) {
-        if (AlchemyEvents.isCustomBrewable(items)) {
+        BrewingContext context = proficiency$brewingContext.get();
+        boolean brewable = context == null
+                ? AlchemyEvents.isCustomBrewable(items)
+                : AlchemyEvents.isCustomBrewable(
+                        items,
+                        context.level,
+                        context.pos
+                );
+        if (brewable) {
             callbackInfo.setReturnValue(true);
         }
     }
@@ -120,5 +148,9 @@ public abstract class BrewingStandBlockEntityMixin {
         );
         proficiency$capturedIngredient.set(ItemStack.EMPTY);
         AlchemyEvents.awardNearbyAlchemyXp(level, pos);
+    }
+
+    @Unique
+    private record BrewingContext(Level level, BlockPos pos) {
     }
 }

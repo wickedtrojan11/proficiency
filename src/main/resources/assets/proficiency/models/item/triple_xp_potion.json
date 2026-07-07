@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:item/potion"
+    "layer0": "proficiency:item/triple_xp_potion"
   }
 }

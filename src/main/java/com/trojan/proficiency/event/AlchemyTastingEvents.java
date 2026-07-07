@@ -12,7 +12,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,14 +39,16 @@ public final class AlchemyTastingEvents {
                 return InteractionResultHolder.pass(stack);
             }
 
+            if (!serverPlayer.isShiftKeyDown()) {
+                return InteractionResultHolder.pass(stack);
+            }
+
             int tick = serverPlayer.server.getTickCount();
             if (COOLDOWNS.getOrDefault(
                     serverPlayer.getUUID(),
                     0
             ) > tick) {
-                return shouldPreserveVanillaUse(stack)
-                        ? InteractionResultHolder.pass(stack)
-                        : InteractionResultHolder.success(stack);
+                return InteractionResultHolder.success(stack);
             }
 
             COOLDOWNS.put(
@@ -95,13 +96,7 @@ public final class AlchemyTastingEvents {
                 ));
             }
 
-            return shouldPreserveVanillaUse(stack)
-                    ? InteractionResultHolder.pass(stack)
-                    : InteractionResultHolder.success(stack);
+            return InteractionResultHolder.success(stack);
         });
-    }
-
-    private static boolean shouldPreserveVanillaUse(ItemStack stack) {
-        return stack.is(Items.HONEY_BOTTLE);
     }
 }

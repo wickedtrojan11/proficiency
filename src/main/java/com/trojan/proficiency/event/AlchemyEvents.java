@@ -56,6 +56,14 @@ public final class AlchemyEvents {
     public static boolean isCustomBrewable(
             NonNullList<ItemStack> items
     ) {
+        return isCustomBrewable(items, null, null);
+    }
+
+    public static boolean isCustomBrewable(
+            NonNullList<ItemStack> items,
+            Level level,
+            BlockPos pos
+    ) {
         ItemStack ingredient = items.get(3);
 
         if (ingredient.is(Items.HONEYCOMB)) {
@@ -71,6 +79,13 @@ public final class AlchemyEvents {
             );
         }
         if (ingredient.is(Items.HONEY_BOTTLE)) {
+            if (level != null && pos != null) {
+                int maxExtraTicks = getNearbyHoneyExtensionCap(level, pos);
+                return hasPotion(
+                        items,
+                        stack -> canExtendXpPotion(stack, maxExtraTicks)
+                );
+            }
             return hasPotion(items, AlchemyEvents::canExtendXpPotion);
         }
 
@@ -121,9 +136,6 @@ public final class AlchemyEvents {
         }
 
         if (!changed) {
-            if (ingredient.is(Items.HONEY_BOTTLE)) {
-                return true;
-            }
             return false;
         }
 
@@ -462,6 +474,16 @@ public final class AlchemyEvents {
         return (stack.is(ModItems.DOUBLE_XP_POTION)
                 || stack.is(ModItems.TRIPLE_XP_POTION))
                 && getExtraDuration(stack) < 10 * 60 * 20;
+    }
+
+    private static boolean canExtendXpPotion(
+            ItemStack stack,
+            int maxExtraTicks
+    ) {
+        return (stack.is(ModItems.DOUBLE_XP_POTION)
+                || stack.is(ModItems.TRIPLE_XP_POTION))
+                && maxExtraTicks > 0
+                && getExtraDuration(stack) < maxExtraTicks;
     }
 
     private static ItemStack extendXpPotion(

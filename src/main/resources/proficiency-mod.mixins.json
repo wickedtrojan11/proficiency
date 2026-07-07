@@ -12,6 +12,7 @@
 		"MushroomGrowthMixin",
 		"NetherWartGrowthMixin",
 		"OneHandedLootingMixin",
+		"PotionBrewingMixin",
 		"ProjectileParryMixin",
 		"SheepShearingMixin",
 		"SaplingGrowthMixin",
