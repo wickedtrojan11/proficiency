@@ -35,7 +35,7 @@ public class AutoFarmerPlantPotBlock extends BaseEntityBlock {
             IntegerProperty.create(
                     "crop_type",
                     0,
-                    6
+                    7
             );
 
     private static final VoxelShape SHAPE =

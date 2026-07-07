@@ -80,6 +80,21 @@ public final class OilRegistry {
         return BY_ITEM.get(item);
     }
 
+    public static Entry getByStack(ItemStack stack) {
+        return stack.isEmpty() ? null : getByItem(stack.getItem());
+    }
+
+    public static boolean isOilItem(ItemStack stack) {
+        return getByStack(stack) != null;
+    }
+
+    public static boolean canAnyOilApplyTo(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        return BY_ID.values().stream().anyMatch(oil -> oil.canApplyTo(stack));
+    }
+
     public static Collection<Entry> entries() {
         return BY_ID.values();
     }
@@ -111,6 +126,10 @@ public final class OilRegistry {
                 DataComponents.CUSTOM_DATA,
                 net.minecraft.world.item.component.CustomData.EMPTY
         ).copyTag();
+        if (!hasPerfectCoating(player)) {
+            tag.remove(SECONDARY_OIL_ID_KEY);
+            tag.remove(SECONDARY_OIL_CHARGES_KEY);
+        }
         int slot = findApplicationSlot(player, tag, oil.id());
         tag.putString(oilIdKey(slot), oil.id());
         tag.putInt(oilChargesKey(slot), getMaxCharges(player));

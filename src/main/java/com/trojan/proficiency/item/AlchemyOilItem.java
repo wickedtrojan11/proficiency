@@ -2,9 +2,6 @@ package com.trojan.proficiency.item;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
@@ -31,48 +28,12 @@ public class AlchemyOilItem extends Item {
             InteractionHand hand
     ) {
         ItemStack oilStack = player.getItemInHand(hand);
-        ItemStack target = hand == InteractionHand.MAIN_HAND
-                ? player.getOffhandItem()
-                : player.getMainHandItem();
-        OilRegistry.Entry oil = OilRegistry.get(oilId);
-
-        if (oil == null || !oil.canApplyTo(target)) {
-            return InteractionResultHolder.fail(oilStack);
-        }
-
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return InteractionResultHolder.sidedSuccess(oilStack, true);
-        }
-
-        if (!OilRegistry.isOilUnlocked(serverPlayer, oil)) {
-            serverPlayer.sendSystemMessage(Component.literal(
-                    "\u00A7cUnlock " + oil.displayName()
-                            + " in Alchemy before using it."
+        if (!level.isClientSide) {
+            player.sendSystemMessage(Component.literal(
+                    "\u00A77Apply oils to gear at a Smithing Table."
             ));
-            return InteractionResultHolder.fail(oilStack);
         }
-
-        if (!OilRegistry.applyOil(serverPlayer, target, oil)) {
-            return InteractionResultHolder.fail(oilStack);
-        }
-
-        if (!serverPlayer.getAbilities().instabuild) {
-            oilStack.shrink(1);
-        }
-        level.playSound(
-                null,
-                serverPlayer.blockPosition(),
-                SoundEvents.HONEY_BLOCK_PLACE,
-                SoundSource.PLAYERS,
-                0.45f,
-                1.35f
-        );
-        serverPlayer.sendSystemMessage(Component.literal(
-                "\u00A7a" + oil.displayName() + " coats your "
-                        + target.getHoverName().getString()
-                        + "."
-        ));
-        return InteractionResultHolder.consume(oilStack);
+        return InteractionResultHolder.pass(oilStack);
     }
 
     @Override
@@ -90,7 +51,7 @@ public class AlchemyOilItem extends Item {
         tooltip.add(Component.literal("Alchemy oil coating.")
                 .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.literal(
-                "Use while holding target gear in the opposite hand."
+                "Apply to valid gear at a Smithing Table."
         ).withStyle(ChatFormatting.DARK_GRAY));
     }
 }

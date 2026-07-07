@@ -116,6 +116,22 @@
     {
       "when": { "stage": "4", "crop_type": "6" },
       "apply": { "model": "proficiency:block/auto_farmer_plant_pot_sugar_cane_4" }
+    },
+    {
+      "when": { "stage": "1", "crop_type": "7" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_camellia_1" }
+    },
+    {
+      "when": { "stage": "2", "crop_type": "7" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_camellia_2" }
+    },
+    {
+      "when": { "stage": "3", "crop_type": "7" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_camellia_3" }
+    },
+    {
+      "when": { "stage": "4", "crop_type": "7" },
+      "apply": { "model": "proficiency:block/auto_farmer_plant_pot_camellia_4" }
     }
   ]
 }

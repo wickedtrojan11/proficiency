@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -104,6 +105,7 @@ public class AutoFarmerPlantPotBlockEntity extends BlockEntity {
         ) {
 
             blockEntity.growthTicks = 0;
+            blockEntity.awardHarvestXp(serverLevel);
             blockEntity.updateVisualStage();
             serverLevel.sendParticles(
                     ParticleTypes.COMPOSTER,
@@ -232,6 +234,10 @@ public class AutoFarmerPlantPotBlockEntity extends BlockEntity {
 
         if (cropItem == Items.SUGAR_CANE) {
             return 6;
+        }
+
+        if (cropItem == ModBlocks.CAMELLIA_FLOWER.asItem()) {
+            return 7;
         }
 
         return 0;
@@ -430,7 +436,36 @@ public class AutoFarmerPlantPotBlockEntity extends BlockEntity {
             return Items.SUGAR_CANE;
         }
 
+        if (stack.is(ModBlocks.CAMELLIA_FLOWER.asItem())) {
+            return ModBlocks.CAMELLIA_FLOWER.asItem();
+        }
+
         return null;
+    }
+
+    private void awardHarvestXp(
+            ServerLevel level
+    ) {
+
+        if (
+                cropItem != ModBlocks.CAMELLIA_FLOWER.asItem()
+                        || ownerId == null
+        ) {
+
+            return;
+        }
+
+        ServerPlayer owner =
+                level.getServer()
+                        .getPlayerList()
+                        .getPlayer(ownerId);
+
+        if (owner != null) {
+            SkillManager.addFarmingXp(
+                    owner,
+                    1
+            );
+        }
     }
 
     private static Item getHarvestItem(
