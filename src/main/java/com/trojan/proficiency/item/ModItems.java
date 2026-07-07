@@ -75,6 +75,8 @@ public final class ModItems {
     public static final Item FROST_OIL = oil("frost");
     public static final Item MINERS_OIL = oil("miners");
     public static final Item LUMBER_OIL = oil("lumber");
+    public static final Item PHILOSOPHERS_STONE =
+            new PhilosophersStoneItem(new Item.Properties().stacksTo(1));
 
     private ModItems() {
     }
@@ -109,6 +111,7 @@ public final class ModItems {
         register("frost_oil", FROST_OIL);
         register("miners_oil", MINERS_OIL);
         register("lumber_oil", LUMBER_OIL);
+        register("philosophers_stone", PHILOSOPHERS_STONE);
 
         OilRegistry.register(
                 "camellia",
@@ -229,6 +232,7 @@ public final class ModItems {
                     entries.accept(FROST_OIL);
                     entries.accept(MINERS_OIL);
                     entries.accept(LUMBER_OIL);
+                    entries.accept(PHILOSOPHERS_STONE);
                     entries.accept(ModBlocks.PROFICIENT_BREW_STAND.asItem());
                 });
     }

@@ -95,6 +95,7 @@ public class PlayerData {
     private int alchemyPrestige = 0;
     private Set<String> unlockedAlchemyPerks = new HashSet<>();
     private Set<String> discoveredAlchemyIngredients = new HashSet<>();
+    private Boolean hasOwnedPhilosophersStone = false;
     private Boolean alchemyBrewingSpeedEnabled = true;
     private Boolean alchemyIngredientEfficiencyEnabled = true;
     private Boolean alchemyPotionDurationEnabled = true;
@@ -647,6 +648,14 @@ public class PlayerData {
 
     public boolean discoverAlchemyIngredient(String ingredientKey) {
         return getDiscoveredAlchemyIngredients().add(ingredientKey);
+    }
+
+    public boolean hasOwnedPhilosophersStone() {
+        return hasOwnedPhilosophersStone != null && hasOwnedPhilosophersStone;
+    }
+
+    public void setHasOwnedPhilosophersStone(boolean owned) {
+        hasOwnedPhilosophersStone = owned;
     }
 
     public boolean isAlchemyBrewingSpeedEnabled() {

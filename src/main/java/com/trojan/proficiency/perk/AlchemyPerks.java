@@ -124,6 +124,32 @@ public final class AlchemyPerks {
                     "Eligible brewed potions always gain one amplifier level.",
                     40, 505, 95, "masters_formula");
 
+    public static final SkillPerk TRANSMUTATION =
+            hiddenPerk("transmutation", "Transmutation",
+                    "Ancient alchemy bends matter toward perfection.",
+                    "Unlocks the Philosopher's Stone recipe.", 1, 600,
+                    325, null, 200);
+    public static final SkillPerk ETERNAL_CATALYST =
+            hiddenPerk("eternal_catalyst", "Eternal Catalyst",
+                    "Your Stone learns to hold one living formula.",
+                    "The Philosopher's Stone can bind 1 potion effect until death.",
+                    1, 600, 270, "transmutation", 1);
+    public static final SkillPerk PERFECT_HARMONY =
+            hiddenPerk("perfect_harmony", "Perfect Harmony",
+                    "Two formulas circle without consuming each other.",
+                    "The Philosopher's Stone can bind 2 potion effects until death.",
+                    1, 600, 215, "eternal_catalyst", 1);
+    public static final SkillPerk MASTER_INFUSION =
+            hiddenPerk("master_infusion", "Master Infusion",
+                    "The Stone holds a triad of perfected draughts.",
+                    "The Philosopher's Stone can bind 3 potion effects until death.",
+                    1, 600, 160, "perfect_harmony", 1);
+    public static final SkillPerk MAGNUM_OPUS =
+            hiddenPerk("magnum_opus", "Magnum Opus",
+                    "The work recognizes its maker.",
+                    "Your Philosopher's Stone becomes soulbound and retained after death.",
+                    1, 600, 105, "master_infusion", 1);
+
     public static final List<SkillPerk> ALL_PERKS = List.of(
             QUICK_STIR, HEATED_REACTION, RAPID_INFUSION,
             PROFICIENT_BREW_STAND,
@@ -134,7 +160,9 @@ public final class AlchemyPerks {
             CAMELLIA_PRESS, OILERS_TOUCH, POLISHED_EDGE,
             EVERLASTING_SHEEN, PERFECT_COATING,
             REFINED_MIXTURE, CONCENTRATED_ESSENCE,
-            DISTILLED_PERFECTION, MASTERS_FORMULA, PHILOSOPHERS_BREW
+            DISTILLED_PERFECTION, MASTERS_FORMULA, PHILOSOPHERS_BREW,
+            TRANSMUTATION, ETERNAL_CATALYST, PERFECT_HARMONY,
+            MASTER_INFUSION, MAGNUM_OPUS
     );
 
     public static final Map<String, SkillPerk> PERKS_BY_ID =
@@ -166,6 +194,30 @@ public final class AlchemyPerks {
                 x,
                 y,
                 parentId
+        );
+    }
+
+    private static SkillPerk hiddenPerk(
+            String id,
+            String name,
+            String description,
+            String effect,
+            int level,
+            int x,
+            int y,
+            String parentId,
+            int pointCost
+    ) {
+        return new SkillPerk(
+                id,
+                name,
+                description,
+                effect,
+                level,
+                x,
+                y,
+                parentId,
+                pointCost
         );
     }
 }

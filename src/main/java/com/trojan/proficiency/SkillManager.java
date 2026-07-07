@@ -49,6 +49,8 @@ public class SkillManager {
             wellRestedRemainingTicks = new HashMap<>();
     private static final HashMap<UUID, AlchemyXpBuff>
             alchemyXpBuffs = new HashMap<>();
+    private static final HashSet<UUID>
+            philosopherStoneXpBoosts = new HashSet<>();
 
     private static final int WELL_RESTED_DURATION_TICKS =
             5 * 60 * 20;
@@ -72,6 +74,7 @@ public class SkillManager {
         miningStreaks.clear();
         wellRestedRemainingTicks.clear();
         alchemyXpBuffs.clear();
+        philosopherStoneXpBoosts.clear();
     }
 
     public static void loadPlayerData(
@@ -136,6 +139,7 @@ public class SkillManager {
         miningStreaks.remove(playerId);
         wellRestedRemainingTicks.remove(playerId);
         alchemyXpBuffs.remove(playerId);
+        philosopherStoneXpBoosts.remove(playerId);
     }
 
     private static PlayerData getPlayerData(
@@ -771,7 +775,22 @@ public class SkillManager {
             multiplier = Math.max(multiplier, alchemyBuff.multiplier());
         }
 
+        if (philosopherStoneXpBoosts.contains(playerId)) {
+            multiplier = Math.max(multiplier, 2);
+        }
+
         return amount * multiplier;
+    }
+
+    public static void setPhilosopherStoneXpBoost(
+            UUID playerId,
+            boolean enabled
+    ) {
+        if (enabled) {
+            philosopherStoneXpBoosts.add(playerId);
+        } else {
+            philosopherStoneXpBoosts.remove(playerId);
+        }
     }
 
     public static void grantAlchemyXpBuff(
@@ -1446,6 +1465,31 @@ public class SkillManager {
 
         int playerLevel = getLevel(data, skillType);
 
+        if (
+                skillType == SkillType.ALCHEMY
+                        && isHiddenAlchemyPerk(perkId)
+                        && data.getAlchemyPrestige() < 1
+        ) {
+
+            return new PerkUnlockResult(
+                    PerkUnlockResult.Status.LEVEL_REQUIRED,
+                    perk.getName() + " requires Alchemy Prestige I."
+            );
+        }
+
+        if (
+                skillType == SkillType.ALCHEMY
+                        && isPostTransmutationPerk(perkId)
+                        && !data.hasOwnedPhilosophersStone()
+        ) {
+
+            return new PerkUnlockResult(
+                    PerkUnlockResult.Status.PARENT_REQUIRED,
+                    perk.getName()
+                            + " requires: Craft a Philosopher's Stone."
+            );
+        }
+
         if (playerLevel < perk.getRequiredLevel()) {
 
             return new PerkUnlockResult(
@@ -1802,6 +1846,30 @@ public class SkillManager {
         }
 
         return 3;
+    }
+
+    public static boolean hasOwnedPhilosophersStone(UUID playerId) {
+        return getPlayerData(playerId).hasOwnedPhilosophersStone();
+    }
+
+    public static void markOwnedPhilosophersStone(UUID playerId) {
+        PlayerData data = getPlayerData(playerId);
+        if (!data.hasOwnedPhilosophersStone()) {
+            data.setHasOwnedPhilosophersStone(true);
+            savePlayerData(playerId);
+        }
+    }
+
+    private static boolean isHiddenAlchemyPerk(String perkId) {
+        return "transmutation".equals(perkId)
+                || isPostTransmutationPerk(perkId);
+    }
+
+    private static boolean isPostTransmutationPerk(String perkId) {
+        return "eternal_catalyst".equals(perkId)
+                || "perfect_harmony".equals(perkId)
+                || "master_infusion".equals(perkId)
+                || "magnum_opus".equals(perkId);
     }
 
     public static boolean hasFarmingPerk(

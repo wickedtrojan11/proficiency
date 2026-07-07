@@ -36,6 +36,7 @@ import com.trojan.proficiency.event.PrestigeEffectEvents;
 import com.trojan.proficiency.event.OneHandedEvents;
 import com.trojan.proficiency.event.AlchemyEvents;
 import com.trojan.proficiency.event.AlchemyOilEvents;
+import com.trojan.proficiency.event.AlchemyPhilosopherEvents;
 import com.trojan.proficiency.event.AlchemyTastingEvents;
 import com.trojan.proficiency.event.CamelliaBonemealEvents;
 import com.trojan.proficiency.item.AlchemyIngredientRegistry;
@@ -152,6 +153,7 @@ public class ProficiencyMod implements ModInitializer {
 		OneHandedEvents.register();
 		AlchemyEvents.register();
 		AlchemyOilEvents.register();
+		AlchemyPhilosopherEvents.register();
 		AlchemyTastingEvents.register();
 		CamelliaBonemealEvents.register();
 		MiningPerkEffects.register();

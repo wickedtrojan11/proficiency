@@ -595,7 +595,7 @@ public class SkillScreen extends Screen {
             }
         }
         if (selectedSkill == 4) {
-            for (SkillPerk perk : AlchemyPerks.ALL_PERKS) {
+            for (SkillPerk perk : getVisibleAlchemyPerks()) {
                 int perkX = perk.getX() + TREE_OFFSET_X;
                 int perkY = perk.getY() + TREE_OFFSET_Y;
                 if (
@@ -2288,6 +2288,15 @@ public class SkillScreen extends Screen {
                     65,
                     0xFFDD99FF
             );
+            if (isAlchemyHiddenBranchVisible()) {
+                graphics.drawCenteredString(
+                        font,
+                        "STONE",
+                        TREE_OFFSET_X + 605,
+                        65,
+                        0xFFFF66DD
+                );
+            }
 
             graphics.drawString(font, "Alchemy Level: " + alchemyLevel,
                     BOTTOM_INFO_X, height - MINING_LEVEL_Y_OFFSET, 0xFFFF55FF);
@@ -2315,7 +2324,7 @@ public class SkillScreen extends Screen {
                             + "%",
                     MINING_STAT_X, ORE_SENSE_STAT_Y, 0xFFAA00);
 
-            for (SkillPerk perk : AlchemyPerks.ALL_PERKS) {
+            for (SkillPerk perk : getVisibleAlchemyPerks()) {
                 if (perk.getParentId() == null) {
                     continue;
                 }
@@ -2342,7 +2351,7 @@ public class SkillScreen extends Screen {
                 );
             }
 
-            for (SkillPerk perk : AlchemyPerks.ALL_PERKS) {
+            for (SkillPerk perk : getVisibleAlchemyPerks()) {
                 int perkX = perk.getX() + TREE_OFFSET_X;
                 int perkY = perk.getY() + TREE_OFFSET_Y;
                 graphics.fill(perkX, perkY,
@@ -2366,25 +2375,31 @@ public class SkillScreen extends Screen {
                                 && mouseY >= perkY
                                 && mouseY <= perkY + PERK_NODE_SIZE
                 ) {
+                    List<net.minecraft.util.FormattedCharSequence> tooltip =
+                            new ArrayList<>();
+                    tooltip.add(Component.literal(perk.getName())
+                            .getVisualOrderText());
+                    tooltip.add(Component.literal(
+                            "Requires Alchemy Level: "
+                                    + perk.getRequiredLevel()
+                    ).getVisualOrderText());
+                    if (isPostTransmutationAlchemyPerk(perk)) {
+                        tooltip.add(Component.literal(
+                                "Requires: Craft a Philosopher's Stone"
+                        ).getVisualOrderText());
+                    }
+                    tooltip.add(Component.literal(
+                            "Cost: "
+                                    + perk.getPointCost()
+                                    + " Perk Points"
+                    ).getVisualOrderText());
+                    tooltip.add(Component.literal(perk.getDescription())
+                            .getVisualOrderText());
+                    tooltip.add(Component.literal(perk.getEffectText())
+                            .getVisualOrderText());
                     graphics.renderTooltip(
                             font,
-                            List.of(
-                                    Component.literal(perk.getName())
-                                            .getVisualOrderText(),
-                                    Component.literal(
-                                            "Requires Alchemy Level: "
-                                                    + perk.getRequiredLevel()
-                                    ).getVisualOrderText(),
-                                    Component.literal(
-                                            "Cost: "
-                                                    + perk.getPointCost()
-                                                    + " Perk Points"
-                                    ).getVisualOrderText(),
-                                    Component.literal(perk.getDescription())
-                                            .getVisualOrderText(),
-                                    Component.literal(perk.getEffectText())
-                                            .getVisualOrderText()
-                            ),
+                            tooltip,
                             mouseX,
                             mouseY
                     );
@@ -2655,6 +2670,44 @@ public class SkillScreen extends Screen {
             return 10;
         }
         return 0;
+    }
+
+    private List<SkillPerk> getVisibleAlchemyPerks() {
+        if (isAlchemyHiddenBranchVisible()) {
+            return AlchemyPerks.ALL_PERKS;
+        }
+        return AlchemyPerks.ALL_PERKS.stream()
+                .filter(perk -> !isHiddenAlchemyPerk(perk))
+                .toList();
+    }
+
+    private boolean isAlchemyHiddenBranchVisible() {
+        UUID playerId = minecraft.player.getUUID();
+        if (ClientSkillState.getAlchemyPrestige(playerId) < 1) {
+            return false;
+        }
+        return ClientSkillState.getAlchemyPerkPoints(playerId) >= 200
+                || AlchemyPerks.ALL_PERKS.stream()
+                .filter(this::isHiddenAlchemyPerk)
+                .anyMatch(perk -> ClientSkillState.hasAlchemyPerk(
+                        playerId,
+                        perk.getId()
+                ));
+    }
+
+    private boolean isHiddenAlchemyPerk(SkillPerk perk) {
+        return "transmutation".equals(perk.getId())
+                || "eternal_catalyst".equals(perk.getId())
+                || "perfect_harmony".equals(perk.getId())
+                || "master_infusion".equals(perk.getId())
+                || "magnum_opus".equals(perk.getId());
+    }
+
+    private boolean isPostTransmutationAlchemyPerk(SkillPerk perk) {
+        return "eternal_catalyst".equals(perk.getId())
+                || "perfect_harmony".equals(perk.getId())
+                || "master_infusion".equals(perk.getId())
+                || "magnum_opus".equals(perk.getId());
     }
 
     private boolean isInside(

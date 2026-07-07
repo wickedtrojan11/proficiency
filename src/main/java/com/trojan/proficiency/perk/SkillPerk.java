@@ -17,6 +17,7 @@ public class SkillPerk {
     private final int x;
 
     private final int y;
+    private final Integer pointCostOverride;
 
     public SkillPerk(
             String id,
@@ -27,6 +28,20 @@ public class SkillPerk {
             int x,
             int y,
             String parentId
+    ) {
+        this(id, name, description, effectText, requiredLevel, x, y, parentId, null);
+    }
+
+    public SkillPerk(
+            String id,
+            String name,
+            String description,
+            String effectText,
+            int requiredLevel,
+            int x,
+            int y,
+            String parentId,
+            Integer pointCostOverride
     ) {
         this.effectText = effectText;
         this.id = id;
@@ -42,6 +57,7 @@ public class SkillPerk {
         this.y = y;
 
         this.parentId = parentId;
+        this.pointCostOverride = pointCostOverride;
     }
     public String getEffectText() {
 
@@ -64,6 +80,10 @@ public class SkillPerk {
     }
 
     public int getPointCost() {
+
+        if (pointCostOverride != null) {
+            return pointCostOverride;
+        }
 
         return getPointCostForLevel(requiredLevel);
     }

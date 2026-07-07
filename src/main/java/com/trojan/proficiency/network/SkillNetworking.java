@@ -7,7 +7,10 @@ import com.trojan.proficiency.skill.SkillType;
 import com.trojan.proficiency.event.OneHandedEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+
+import java.util.List;
 
 public final class SkillNetworking {
 
@@ -79,6 +82,14 @@ public final class SkillNetworking {
             player.sendSystemMessage(Component.literal(
                     "\u00A7dYour mastery of alchemy has allowed you to construct the Proficient Brew Stand."
             ));
+        }
+        if (result.success()
+                && skillType == SkillType.ALCHEMY
+                && "transmutation".equals(payload.perkId())) {
+            player.awardRecipesByKey(List.of(ResourceLocation.fromNamespaceAndPath(
+                    ProficiencyMod.MOD_ID,
+                    "philosophers_stone"
+            )));
         }
         SkillManager.sendSkillState(player);
     }

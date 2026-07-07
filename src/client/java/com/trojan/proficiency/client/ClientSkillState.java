@@ -150,6 +150,15 @@ public final class ClientSkillState {
                     SkillType.ONE_HANDED
             );
             showNewPerkToasts(alchemy, payload.alchemy(), SkillType.ALCHEMY);
+            if (!isHiddenAlchemyVisible(alchemy)
+                    && isHiddenAlchemyVisible(payload.alchemy())) {
+                SystemToast.add(
+                        Minecraft.getInstance().getToasts(),
+                        SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                        Component.literal("Ancient Knowledge Revealed"),
+                        Component.literal("Your studies have uncovered a forgotten path of alchemy.")
+                );
+            }
         }
 
         mining = payload.mining();
@@ -196,6 +205,20 @@ public final class ClientSkillState {
                 );
             }
         }
+    }
+
+    private static boolean isHiddenAlchemyVisible(
+            SkillStatePayload.SkillState state
+    ) {
+        return state.prestige() >= 1
+                && (
+                state.perkPoints() >= 200
+                        || state.unlockedPerks().contains("transmutation")
+                        || state.unlockedPerks().contains("eternal_catalyst")
+                        || state.unlockedPerks().contains("perfect_harmony")
+                        || state.unlockedPerks().contains("master_infusion")
+                        || state.unlockedPerks().contains("magnum_opus")
+        );
     }
 
     public static void requestPerkUnlock(

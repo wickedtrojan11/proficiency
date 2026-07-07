@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "AFA",
+    "CDG",
+    "NON"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:ancient_debris"
+    },
+    "F": {
+      "item": "proficiency:fire_oil"
+    },
+    "C": {
+      "item": "proficiency:camellia_oil"
+    },
+    "D": {
+      "item": "minecraft:diamond_block"
+    },
+    "G": {
+      "item": "proficiency:triple_xp_potion"
+    },
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "O": {
+      "item": "proficiency:oil_base"
+    }
+  },
+  "result": {
+    "id": "proficiency:philosophers_stone",
+    "count": 1
+  }
+}
