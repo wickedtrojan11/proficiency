@@ -40,11 +40,9 @@ import com.trojan.proficiency.event.AlchemyPhilosopherEvents;
 import com.trojan.proficiency.event.AlchemyTastingEvents;
 import com.trojan.proficiency.event.CamelliaBonemealEvents;
 import com.trojan.proficiency.item.AlchemyIngredientRegistry;
-import com.trojan.proficiency.item.OilRegistry;
 import com.trojan.proficiency.worldgen.ModWorldgen;
 import com.trojan.proficiency.item.ModItems;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.minecraft.network.chat.Component;
 public class ProficiencyMod implements ModInitializer {
 
 	public static final String MOD_ID = "proficiency";
@@ -56,9 +54,6 @@ public class ProficiencyMod implements ModInitializer {
 	public void onInitialize() {
 
 		LOGGER.info("Proficiency loaded!");
-		if (OilRegistry.isDebugEnabled()) {
-			LOGGER.info("[OilDebug] debug enabled");
-		}
 
 		PayloadTypeRegistry.playS2C().register(
 				XpGainPayload.TYPE,
@@ -131,11 +126,6 @@ public class ProficiencyMod implements ModInitializer {
 			);
 			SkillManager.sendSkillState(handler.player);
 			SkillManager.sendPrestigeRoster(server);
-			if (OilRegistry.isDebugEnabled()) {
-				handler.player.sendSystemMessage(
-						Component.literal("[OilDebug] debug enabled")
-				);
-			}
 		});
 
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {

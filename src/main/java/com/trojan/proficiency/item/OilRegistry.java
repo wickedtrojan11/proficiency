@@ -1,6 +1,5 @@
 package com.trojan.proficiency.item;
 
-import com.trojan.proficiency.ProficiencyMod;
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.skill.SkillType;
 import com.trojan.proficiency.util.OneHandedWeapons;
@@ -11,7 +10,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
@@ -34,7 +32,7 @@ public final class OilRegistry {
             "proficiency_oil_charges_2";
     private static final int BASE_CHARGES = 250;
     private static final boolean DEBUG_OILS =
-            true;
+            Boolean.getBoolean("proficiency.debugOils");
     private static final Map<String, Entry> BY_ID = new LinkedHashMap<>();
     private static final Map<Item, Entry> BY_ITEM = new IdentityHashMap<>();
 
@@ -190,35 +188,18 @@ public final class OilRegistry {
             ItemStack stack,
             String oilId
     ) {
-        debugOil("ENTER consumeCharge()");
-        debugOil("consumeCharge requested oil id: {}", oilId);
         AppliedOil oil = getAppliedOils(stack).stream()
                 .filter(appliedOil -> appliedOil.entry().id().equals(oilId))
                 .findFirst()
                 .orElse(null);
         if (oil == null) {
-            debugOil(
-                    "consumeCharge return false: requested={} stored oils={}",
-                    oilId,
-                    oilIds(getAppliedOils(stack))
-            );
             return ChargeMutationResult.notFound();
         }
-        debugOil(
-                "consumeCharge stored oil: {} requested: {} matches: {}",
-                oil.entry().id(),
-                oilId,
-                oil.entry().id().equals(oilId)
-        );
 
         String chargesKey = oilChargesKey(oil.slot());
         CompoundTag tag = copyOilCustomData(stack);
-        int storedBefore = tag.getInt(chargesKey);
-        debugOil("consumeCharge charges read: {}", storedBefore);
-        int charges = Math.max(0, storedBefore - 1);
-        debugOil("consumeCharge charges after decrement: {}", charges);
+        int charges = Math.max(0, tag.getInt(chargesKey) - 1);
         if (charges <= 0) {
-            debugOil("consumeCharge writing removal for oil {}", oilId);
             tag.remove(oilIdKey(oil.slot()));
             tag.remove(chargesKey);
             if (tag.isEmpty()) {
@@ -229,32 +210,13 @@ public final class OilRegistry {
             if (getAppliedOils(stack).isEmpty()) {
                 stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
             }
-            int storedAfter = copyOilCustomData(stack).getInt(chargesKey);
-            return new ChargeMutationResult(
-                    true,
-                    storedBefore,
-                    storedAfter
-            );
+            return new ChargeMutationResult(true);
         }
 
-        debugOil("consumeCharge writing new value: {}", charges);
         tag.putInt(chargesKey, charges);
         setOilCustomData(stack, tag);
         stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
-        int storedAfter = copyOilCustomData(stack).getInt(chargesKey);
-        debugOil(
-                "Oil charge mutation: oil={} key={} storedBefore={} targetAfter={} storedAfter={}",
-                oilId,
-                chargesKey,
-                storedBefore,
-                charges,
-                storedAfter
-        );
-        return new ChargeMutationResult(
-                true,
-                storedBefore,
-                storedAfter
-        );
+        return new ChargeMutationResult(true);
     }
 
     public static boolean consumeCharge(
@@ -367,7 +329,6 @@ public final class OilRegistry {
             String eventName
     ) {
         List<AppliedOil> oils = getAppliedOils(stack);
-        String oilIds = oilIds(oils);
         AppliedOil oil = oils.stream()
                 .filter(appliedOil -> "camellia".equals(
                         appliedOil.entry().id()
@@ -375,88 +336,22 @@ public final class OilRegistry {
                 .findFirst()
                 .orElse(null);
         if (oil == null) {
-            debugOil(
-                    "Camellia direct drain checked {}, but no Camellia oil was found. Oils={}",
-                    stack,
-                    oils
-            );
-            DurabilityOilUseResult result = new DurabilityOilUseResult(
-                    true,
-                    false,
-                    oilIds,
-                    0,
-                    0,
-                    false,
-                    false,
-                    false,
-                    0,
-                    0
-            );
-            sendOilDebugMessage(player, eventName, stack, result);
-            return result;
+            return DurabilityOilUseResult.NONE;
         }
         float chance = getDurabilitySaveChanceForOil(player, oil.entry());
-        int beforeCharges = oil.charges();
         ChargeMutationResult chargeMutation =
                 consumeChargeResult(stack, oil.entry().id());
         if (chance <= 0.0f || !chargeMutation.consumed()) {
-            debugOil(
-                    "Camellia durability use skipped for {}. chance={} beforeCharges={}",
-                    stack,
-                    chance,
-                    beforeCharges
-            );
-            DurabilityOilUseResult result = new DurabilityOilUseResult(
-                    true,
-                    true,
-                    oilIds,
-                    beforeCharges,
-                    beforeCharges,
-                    false,
-                    false,
-                    false,
-                    chargeMutation.storedBefore(),
-                    chargeMutation.storedAfter()
-            );
-            sendOilDebugMessage(player, eventName, stack, result);
-            return result;
+            return new DurabilityOilUseResult(false, false);
         }
 
         boolean handUpdated = syncHeldStack(player, stack);
-        int afterCharges = getAppliedOils(stack).stream()
-                .filter(appliedOil -> "camellia".equals(
-                        appliedOil.entry().id()
-                ))
-                .findFirst()
-                .map(AppliedOil::charges)
-                .orElse(0);
         boolean preserved = random.nextFloat() <= chance;
         if (preserved && stack.getDamageValue() > 0) {
             stack.setDamageValue(stack.getDamageValue() - 1);
             handUpdated = syncHeldStack(player, stack) || handUpdated;
         }
-        debugOil(
-                "Camellia durability use: player={} stack={} before={} after={} preserved={}",
-                player.getGameProfile().getName(),
-                stack,
-                beforeCharges,
-                afterCharges,
-                preserved
-        );
-        DurabilityOilUseResult result = new DurabilityOilUseResult(
-                true,
-                true,
-                oilIds,
-                beforeCharges,
-                afterCharges,
-                handUpdated,
-                true,
-                preserved,
-                chargeMutation.storedBefore(),
-                chargeMutation.storedAfter()
-        );
-        sendOilDebugMessage(player, eventName, stack, result);
-        return result;
+        return new DurabilityOilUseResult(handUpdated, preserved);
     }
 
     private static float getDurabilitySaveChanceForOil(
@@ -576,7 +471,6 @@ public final class OilRegistry {
                 stack
         )) {
             player.setItemInHand(InteractionHand.MAIN_HAND, stack);
-            debugOil("Synced Camellia stack to main hand: {}", stack);
             player.getInventory().setChanged();
             player.inventoryMenu.broadcastChanges();
             return true;
@@ -585,7 +479,6 @@ public final class OilRegistry {
                 stack
         )) {
             player.setItemInHand(InteractionHand.OFF_HAND, stack);
-            debugOil("Synced Camellia stack to offhand: {}", stack);
             player.getInventory().setChanged();
             player.inventoryMenu.broadcastChanges();
             return true;
@@ -594,69 +487,14 @@ public final class OilRegistry {
             for (int i = 0; i < player.getInventory().items.size(); i++) {
                 if (player.getInventory().items.get(i) == stack) {
                     player.getInventory().setItem(i, stack);
-                    debugOil(
-                            "Synced Camellia stack to inventory slot {}: {}",
-                            i,
-                            stack
-                    );
                     synced = true;
                     break;
                 }
-            }
-            if (!synced) {
-                debugOil(
-                        "Camellia stack was mutated but no matching held/inventory slot was found: {}",
-                        stack
-                );
             }
             player.getInventory().setChanged();
             player.inventoryMenu.broadcastChanges();
             return synced;
         }
-    }
-
-    private static void debugOil(String message, Object... args) {
-        if (DEBUG_OILS) {
-            ProficiencyMod.LOGGER.info("[OilDebug] " + message, args);
-        }
-    }
-
-    private static void sendOilDebugMessage(
-            ServerPlayer player,
-            String eventName,
-            ItemStack stack,
-            DurabilityOilUseResult result
-    ) {
-        if (!DEBUG_OILS) {
-            return;
-        }
-        String itemName = stack.isEmpty()
-                ? Items.AIR.getDescription().getString()
-                : stack.getHoverName().getString();
-        player.displayClientMessage(Component.literal(
-                "[OilDebug] event fired: "
-                        + (result.eventFired() ? "yes" : "no")
-                        + " | event: " + eventName
-                        + " | item: " + itemName
-                        + " | has oil: " + (result.hasOil() ? "yes" : "no")
-                        + " | oil id found: " + result.oilIdFound()
-                        + " | charges before: " + result.chargesBefore()
-                        + " | charges after: " + result.chargesAfter()
-                        + " | stored before: " + result.storedBefore()
-                        + " | stored after: " + result.storedAfter()
-                        + " | hand/slot updated: "
-                        + (result.handUpdated() ? "yes" : "no")
-        ), false);
-    }
-
-    private static String oilIds(List<AppliedOil> oils) {
-        if (oils.isEmpty()) {
-            return "none";
-        }
-        return oils.stream()
-                .map(appliedOil -> appliedOil.entry().id())
-                .reduce((left, right) -> left + "," + right)
-                .orElse("none");
     }
 
     public enum Target {
@@ -718,39 +556,18 @@ public final class OilRegistry {
     }
 
     public record DurabilityOilUseResult(
-            boolean eventFired,
-            boolean hasOil,
-            String oilIdFound,
-            int chargesBefore,
-            int chargesAfter,
             boolean handUpdated,
-            boolean consumed,
-            boolean preserved,
-            int storedBefore,
-            int storedAfter
+            boolean preserved
     ) {
         public static final DurabilityOilUseResult NONE =
-                new DurabilityOilUseResult(
-                        false,
-                        false,
-                        "none",
-                        0,
-                        0,
-                        false,
-                        false,
-                        false,
-                        0,
-                        0
-                );
+                new DurabilityOilUseResult(false, false);
     }
 
     private record ChargeMutationResult(
-            boolean consumed,
-            int storedBefore,
-            int storedAfter
+            boolean consumed
     ) {
         private static ChargeMutationResult notFound() {
-            return new ChargeMutationResult(false, 0, 0);
+            return new ChargeMutationResult(false);
         }
     }
 }

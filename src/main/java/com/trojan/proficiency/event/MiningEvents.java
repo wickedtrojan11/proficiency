@@ -35,54 +35,13 @@ public class MiningEvents {
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
             if (player instanceof ServerPlayer serverPlayer) {
                 ItemStack mainHand = serverPlayer.getMainHandItem();
-                boolean hasCamellia =
-                        OilRegistry.hasOil(mainHand, "camellia");
-                boolean hasUsableCamellia =
-                        OilRegistry.hasUsableOil(
-                                serverPlayer,
-                                mainHand,
-                                "camellia"
-                        );
-                boolean oilsToggle =
-                        SkillManager.isAlchemyToggleEnabled(
-                                serverPlayer.getUUID(),
-                                "oils"
-                        );
-                boolean camelliaPerk =
-                        SkillManager.hasAlchemyPerk(
-                                serverPlayer.getUUID(),
-                                "camellia_press"
-                        );
-                boolean shouldTrace =
-                        OilRegistry.isDebugEnabled()
-                                || !OilRegistry.getAppliedOils(mainHand)
-                                .isEmpty();
-                if (OilRegistry.isDebugEnabled()) {
-                    serverPlayer.sendSystemMessage(Component.literal(
-                            "[OilDebug] MiningEvents shouldTrace="
-                                    + shouldTrace
-                                    + " hasCamellia=" + hasCamellia
-                                    + " hasUsable=" + hasUsableCamellia
-                                    + " oilsToggle=" + oilsToggle
-                                    + " camelliaPerk=" + camelliaPerk
-                    ));
-                }
-                if (shouldTrace) {
-                    if (OilRegistry.isDebugEnabled()) {
-                        serverPlayer.sendSystemMessage(Component.literal(
-                                "[OilDebug] CALLING consumeCharge() via Camellia helper"
-                        ));
-                    }
+                if (!OilRegistry.getAppliedOils(mainHand).isEmpty()) {
                     OilRegistry.consumeCamelliaDurabilityUse(
                             serverPlayer,
                             mainHand,
                             serverPlayer.getRandom(),
                             "known mining event"
                     );
-                } else if (OilRegistry.isDebugEnabled()) {
-                    serverPlayer.sendSystemMessage(Component.literal(
-                            "[OilDebug] SKIPPING Camellia helper: shouldTrace=false"
-                    ));
                 }
             }
 
