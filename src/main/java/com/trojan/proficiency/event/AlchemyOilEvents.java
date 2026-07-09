@@ -57,7 +57,11 @@ public final class AlchemyOilEvents {
                             "miners"
                     )
                             && stack.getItem() instanceof PickaxeItem) {
-                        OilRegistry.consumeCharge(stack, "miners");
+                        OilRegistry.consumeCharge(
+                                serverPlayer,
+                                stack,
+                                "miners"
+                        );
                     }
                     if (OilRegistry.hasUsableOil(
                             serverPlayer,
@@ -66,7 +70,11 @@ public final class AlchemyOilEvents {
                     )
                             && stack.getItem() instanceof AxeItem
                             && state.is(BlockTags.LOGS)) {
-                        OilRegistry.consumeCharge(stack, "lumber");
+                        OilRegistry.consumeCharge(
+                                serverPlayer,
+                                stack,
+                                "lumber"
+                        );
                     }
 
                     OilRegistry.tryPreserveDurability(
@@ -122,7 +130,7 @@ public final class AlchemyOilEvents {
                     target.getRemainingFireTicks(),
                     OilRegistry.getFireTicks(player)
             ));
-            OilRegistry.consumeCharge(stack, "fire");
+            OilRegistry.consumeCharge(player, stack, "fire");
             feedback(player, target, true);
         }
         if (OilRegistry.hasUsableOil(player, stack, "frost")) {
@@ -134,7 +142,7 @@ public final class AlchemyOilEvents {
                     true,
                     true
             ));
-            OilRegistry.consumeCharge(stack, "frost");
+            OilRegistry.consumeCharge(player, stack, "frost");
             feedback(player, target, false);
         }
         OilRegistry.tryPreserveDurability(player, stack, player.getRandom());

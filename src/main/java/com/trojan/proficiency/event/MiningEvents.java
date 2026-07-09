@@ -1,6 +1,7 @@
 package com.trojan.proficiency.event;
 import net.minecraft.server.level.ServerPlayer;
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.item.OilRegistry;
 import com.trojan.proficiency.util.MiningUtils;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import com.trojan.proficiency.perk.MiningPerks;
@@ -32,6 +33,58 @@ public class MiningEvents {
 
     public static void register() {
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
+            if (player instanceof ServerPlayer serverPlayer) {
+                ItemStack mainHand = serverPlayer.getMainHandItem();
+                boolean hasCamellia =
+                        OilRegistry.hasOil(mainHand, "camellia");
+                boolean hasUsableCamellia =
+                        OilRegistry.hasUsableOil(
+                                serverPlayer,
+                                mainHand,
+                                "camellia"
+                        );
+                boolean oilsToggle =
+                        SkillManager.isAlchemyToggleEnabled(
+                                serverPlayer.getUUID(),
+                                "oils"
+                        );
+                boolean camelliaPerk =
+                        SkillManager.hasAlchemyPerk(
+                                serverPlayer.getUUID(),
+                                "camellia_press"
+                        );
+                boolean shouldTrace =
+                        OilRegistry.isDebugEnabled()
+                                || !OilRegistry.getAppliedOils(mainHand)
+                                .isEmpty();
+                if (OilRegistry.isDebugEnabled()) {
+                    serverPlayer.sendSystemMessage(Component.literal(
+                            "[OilDebug] MiningEvents shouldTrace="
+                                    + shouldTrace
+                                    + " hasCamellia=" + hasCamellia
+                                    + " hasUsable=" + hasUsableCamellia
+                                    + " oilsToggle=" + oilsToggle
+                                    + " camelliaPerk=" + camelliaPerk
+                    ));
+                }
+                if (shouldTrace) {
+                    if (OilRegistry.isDebugEnabled()) {
+                        serverPlayer.sendSystemMessage(Component.literal(
+                                "[OilDebug] CALLING consumeCharge() via Camellia helper"
+                        ));
+                    }
+                    OilRegistry.consumeCamelliaDurabilityUse(
+                            serverPlayer,
+                            mainHand,
+                            serverPlayer.getRandom(),
+                            "known mining event"
+                    );
+                } else if (OilRegistry.isDebugEnabled()) {
+                    serverPlayer.sendSystemMessage(Component.literal(
+                            "[OilDebug] SKIPPING Camellia helper: shouldTrace=false"
+                    ));
+                }
+            }
 
 // =========================
 // NO ORE ESCAPES

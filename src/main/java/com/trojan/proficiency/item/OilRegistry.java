@@ -1,5 +1,6 @@
 package com.trojan.proficiency.item;
 
+import com.trojan.proficiency.ProficiencyMod;
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.skill.SkillType;
 import com.trojan.proficiency.util.OneHandedWeapons;
@@ -9,7 +10,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PickaxeItem;
@@ -29,6 +33,8 @@ public final class OilRegistry {
     private static final String SECONDARY_OIL_CHARGES_KEY =
             "proficiency_oil_charges_2";
     private static final int BASE_CHARGES = 250;
+    private static final boolean DEBUG_OILS =
+            true;
     private static final Map<String, Entry> BY_ID = new LinkedHashMap<>();
     private static final Map<Item, Entry> BY_ITEM = new IdentityHashMap<>();
 
@@ -107,6 +113,10 @@ public final class OilRegistry {
         }
     }
 
+    public static boolean isDebugEnabled() {
+        return DEBUG_OILS;
+    }
+
     public static boolean applyOil(
             ServerPlayer player,
             ItemStack targetStack,
@@ -122,10 +132,7 @@ public final class OilRegistry {
             return false;
         }
 
-        CompoundTag tag = targetStack.getOrDefault(
-                DataComponents.CUSTOM_DATA,
-                net.minecraft.world.item.component.CustomData.EMPTY
-        ).copyTag();
+        CompoundTag tag = copyOilCustomData(targetStack);
         if (!hasPerfectCoating(player)) {
             tag.remove(SECONDARY_OIL_ID_KEY);
             tag.remove(SECONDARY_OIL_CHARGES_KEY);
@@ -133,10 +140,7 @@ public final class OilRegistry {
         int slot = findApplicationSlot(player, tag, oil.id());
         tag.putString(oilIdKey(slot), oil.id());
         tag.putInt(oilChargesKey(slot), getMaxCharges(player));
-        targetStack.set(
-                DataComponents.CUSTOM_DATA,
-                net.minecraft.world.item.component.CustomData.of(tag)
-        );
+        setOilCustomData(targetStack, tag);
         targetStack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
         return true;
     }
@@ -152,10 +156,7 @@ public final class OilRegistry {
     }
 
     public static List<AppliedOil> getAppliedOils(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(
-                DataComponents.CUSTOM_DATA,
-                net.minecraft.world.item.component.CustomData.EMPTY
-        ).copyTag();
+        CompoundTag tag = copyOilCustomData(stack);
         java.util.ArrayList<AppliedOil> oils = new java.util.ArrayList<>();
         addAppliedOil(oils, tag, 0);
         addAppliedOil(oils, tag, 1);
@@ -163,10 +164,7 @@ public final class OilRegistry {
     }
 
     public static int getRemainingCharges(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(
-                DataComponents.CUSTOM_DATA,
-                net.minecraft.world.item.component.CustomData.EMPTY
-        ).copyTag();
+        CompoundTag tag = copyOilCustomData(stack);
         int charges = 0;
         for (AppliedOil oil : getAppliedOils(stack)) {
             charges += oil.charges();
@@ -178,50 +176,97 @@ public final class OilRegistry {
         AppliedOil oil = getAppliedOils(stack).stream()
                 .findFirst()
                 .orElse(null);
-        return oil != null && consumeCharge(stack, oil.entry().id());
+        return oil != null && consumeChargeResult(
+                stack,
+                oil.entry().id()
+        ).consumed();
     }
 
     public static boolean consumeCharge(ItemStack stack, String oilId) {
+        return consumeChargeResult(stack, oilId).consumed();
+    }
+
+    private static ChargeMutationResult consumeChargeResult(
+            ItemStack stack,
+            String oilId
+    ) {
+        debugOil("ENTER consumeCharge()");
+        debugOil("consumeCharge requested oil id: {}", oilId);
         AppliedOil oil = getAppliedOils(stack).stream()
                 .filter(appliedOil -> appliedOil.entry().id().equals(oilId))
                 .findFirst()
                 .orElse(null);
         if (oil == null) {
-            return false;
+            debugOil(
+                    "consumeCharge return false: requested={} stored oils={}",
+                    oilId,
+                    oilIds(getAppliedOils(stack))
+            );
+            return ChargeMutationResult.notFound();
         }
+        debugOil(
+                "consumeCharge stored oil: {} requested: {} matches: {}",
+                oil.entry().id(),
+                oilId,
+                oil.entry().id().equals(oilId)
+        );
 
-        CompoundTag tag = stack.getOrDefault(
-                DataComponents.CUSTOM_DATA,
-                net.minecraft.world.item.component.CustomData.EMPTY
-        ).copyTag();
-        int charges = Math.max(
-                0,
-                tag.getInt(oilChargesKey(oil.slot()))
-        ) - 1;
+        String chargesKey = oilChargesKey(oil.slot());
+        CompoundTag tag = copyOilCustomData(stack);
+        int storedBefore = tag.getInt(chargesKey);
+        debugOil("consumeCharge charges read: {}", storedBefore);
+        int charges = Math.max(0, storedBefore - 1);
+        debugOil("consumeCharge charges after decrement: {}", charges);
         if (charges <= 0) {
+            debugOil("consumeCharge writing removal for oil {}", oilId);
             tag.remove(oilIdKey(oil.slot()));
-            tag.remove(oilChargesKey(oil.slot()));
+            tag.remove(chargesKey);
             if (tag.isEmpty()) {
                 stack.remove(DataComponents.CUSTOM_DATA);
             } else {
-                stack.set(
-                        DataComponents.CUSTOM_DATA,
-                        net.minecraft.world.item.component.CustomData.of(tag)
-                );
+                setOilCustomData(stack, tag);
             }
             if (getAppliedOils(stack).isEmpty()) {
                 stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
             }
-            return true;
+            int storedAfter = copyOilCustomData(stack).getInt(chargesKey);
+            return new ChargeMutationResult(
+                    true,
+                    storedBefore,
+                    storedAfter
+            );
         }
 
-        tag.putInt(oilChargesKey(oil.slot()), charges);
-        stack.set(
-                DataComponents.CUSTOM_DATA,
-                net.minecraft.world.item.component.CustomData.of(tag)
-        );
+        debugOil("consumeCharge writing new value: {}", charges);
+        tag.putInt(chargesKey, charges);
+        setOilCustomData(stack, tag);
         stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
-        return true;
+        int storedAfter = copyOilCustomData(stack).getInt(chargesKey);
+        debugOil(
+                "Oil charge mutation: oil={} key={} storedBefore={} targetAfter={} storedAfter={}",
+                oilId,
+                chargesKey,
+                storedBefore,
+                charges,
+                storedAfter
+        );
+        return new ChargeMutationResult(
+                true,
+                storedBefore,
+                storedAfter
+        );
+    }
+
+    public static boolean consumeCharge(
+            ServerPlayer player,
+            ItemStack stack,
+            String oilId
+    ) {
+        boolean consumed = consumeCharge(stack, oilId);
+        if (consumed) {
+            syncHeldStack(player, stack);
+        }
+        return consumed;
     }
 
     public static boolean appendAppliedOilTooltip(
@@ -252,8 +297,7 @@ public final class OilRegistry {
             ItemStack stack
     ) {
         AppliedOil oil = getAppliedOils(stack).stream()
-                .filter(appliedOil -> appliedOil.entry().isDurabilityOil()
-                        && appliedOil.entry().isUnlocked(player))
+                .filter(appliedOil -> appliedOil.entry().isDurabilityOil())
                 .findFirst()
                 .orElse(null);
         if (oil == null) {
@@ -283,7 +327,15 @@ public final class OilRegistry {
             ItemStack stack,
             RandomSource random
     ) {
-        float chance = getDurabilitySaveChance(player, stack);
+        AppliedOil oil = getAppliedOils(stack).stream()
+                .filter(appliedOil -> appliedOil.entry().isDurabilityOil()
+                        && !"camellia".equals(appliedOil.entry().id()))
+                .findFirst()
+                .orElse(null);
+        if (oil == null) {
+            return false;
+        }
+        float chance = getDurabilitySaveChanceForOil(player, oil.entry());
         if (chance <= 0.0f || random.nextFloat() > chance) {
             return false;
         }
@@ -291,15 +343,142 @@ public final class OilRegistry {
         if (damage > 0) {
             stack.setDamageValue(damage - 1);
         }
-        AppliedOil oil = getAppliedOils(stack).stream()
-                .filter(appliedOil -> appliedOil.entry().isDurabilityOil()
-                        && appliedOil.entry().isUnlocked(player))
+        consumeCharge(player, stack, oil.entry().id());
+        return true;
+    }
+
+    public static DurabilityOilUseResult consumeCamelliaDurabilityUse(
+            ServerPlayer player,
+            ItemStack stack,
+            RandomSource random
+    ) {
+        return consumeCamelliaDurabilityUse(
+                player,
+                stack,
+                random,
+                "oil use"
+        );
+    }
+
+    public static DurabilityOilUseResult consumeCamelliaDurabilityUse(
+            ServerPlayer player,
+            ItemStack stack,
+            RandomSource random,
+            String eventName
+    ) {
+        List<AppliedOil> oils = getAppliedOils(stack);
+        String oilIds = oilIds(oils);
+        AppliedOil oil = oils.stream()
+                .filter(appliedOil -> "camellia".equals(
+                        appliedOil.entry().id()
+                ))
                 .findFirst()
                 .orElse(null);
-        if (oil != null) {
-            consumeCharge(stack, oil.entry().id());
+        if (oil == null) {
+            debugOil(
+                    "Camellia direct drain checked {}, but no Camellia oil was found. Oils={}",
+                    stack,
+                    oils
+            );
+            DurabilityOilUseResult result = new DurabilityOilUseResult(
+                    true,
+                    false,
+                    oilIds,
+                    0,
+                    0,
+                    false,
+                    false,
+                    false,
+                    0,
+                    0
+            );
+            sendOilDebugMessage(player, eventName, stack, result);
+            return result;
         }
-        return true;
+        float chance = getDurabilitySaveChanceForOil(player, oil.entry());
+        int beforeCharges = oil.charges();
+        ChargeMutationResult chargeMutation =
+                consumeChargeResult(stack, oil.entry().id());
+        if (chance <= 0.0f || !chargeMutation.consumed()) {
+            debugOil(
+                    "Camellia durability use skipped for {}. chance={} beforeCharges={}",
+                    stack,
+                    chance,
+                    beforeCharges
+            );
+            DurabilityOilUseResult result = new DurabilityOilUseResult(
+                    true,
+                    true,
+                    oilIds,
+                    beforeCharges,
+                    beforeCharges,
+                    false,
+                    false,
+                    false,
+                    chargeMutation.storedBefore(),
+                    chargeMutation.storedAfter()
+            );
+            sendOilDebugMessage(player, eventName, stack, result);
+            return result;
+        }
+
+        boolean handUpdated = syncHeldStack(player, stack);
+        int afterCharges = getAppliedOils(stack).stream()
+                .filter(appliedOil -> "camellia".equals(
+                        appliedOil.entry().id()
+                ))
+                .findFirst()
+                .map(AppliedOil::charges)
+                .orElse(0);
+        boolean preserved = random.nextFloat() <= chance;
+        if (preserved && stack.getDamageValue() > 0) {
+            stack.setDamageValue(stack.getDamageValue() - 1);
+            handUpdated = syncHeldStack(player, stack) || handUpdated;
+        }
+        debugOil(
+                "Camellia durability use: player={} stack={} before={} after={} preserved={}",
+                player.getGameProfile().getName(),
+                stack,
+                beforeCharges,
+                afterCharges,
+                preserved
+        );
+        DurabilityOilUseResult result = new DurabilityOilUseResult(
+                true,
+                true,
+                oilIds,
+                beforeCharges,
+                afterCharges,
+                handUpdated,
+                true,
+                preserved,
+                chargeMutation.storedBefore(),
+                chargeMutation.storedAfter()
+        );
+        sendOilDebugMessage(player, eventName, stack, result);
+        return result;
+    }
+
+    private static float getDurabilitySaveChanceForOil(
+            ServerPlayer player,
+            Entry oil
+    ) {
+        if (!SkillManager.isAlchemyToggleEnabled(player.getUUID(), "oils")) {
+            return 0.0f;
+        }
+        float chance = switch (oil.id()) {
+            case "camellia" -> 0.20f;
+            case "miners", "lumber" -> 0.08f;
+            default -> 0.0f;
+        };
+        if (chance <= 0.0f) {
+            return 0.0f;
+        }
+        return SkillManager.scalePerkChance(
+                player.getUUID(),
+                SkillType.ALCHEMY,
+                chance
+        );
     }
 
     public static int getFireTicks(ServerPlayer player) {
@@ -321,8 +500,7 @@ public final class OilRegistry {
             String oilId
     ) {
         return getAppliedOils(stack).stream()
-                .anyMatch(oil -> oil.entry().id().equals(oilId)
-                        && oil.entry().isUnlocked(player));
+                .anyMatch(oil -> oil.entry().id().equals(oilId));
     }
 
     public static boolean isOilUnlocked(ServerPlayer player, Entry oil) {
@@ -381,6 +559,106 @@ public final class OilRegistry {
         return slot == 0 ? OIL_CHARGES_KEY : SECONDARY_OIL_CHARGES_KEY;
     }
 
+    private static CompoundTag copyOilCustomData(ItemStack stack) {
+        return stack.getOrDefault(
+                DataComponents.CUSTOM_DATA,
+                CustomData.EMPTY
+        ).copyTag();
+    }
+
+    private static void setOilCustomData(ItemStack stack, CompoundTag tag) {
+        CustomData.set(DataComponents.CUSTOM_DATA, stack, tag.copy());
+    }
+
+    private static boolean syncHeldStack(ServerPlayer player, ItemStack stack) {
+        if (player.getMainHandItem() == stack || ItemStack.isSameItemSameComponents(
+                player.getMainHandItem(),
+                stack
+        )) {
+            player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+            debugOil("Synced Camellia stack to main hand: {}", stack);
+            player.getInventory().setChanged();
+            player.inventoryMenu.broadcastChanges();
+            return true;
+        } else if (player.getOffhandItem() == stack || ItemStack.isSameItemSameComponents(
+                player.getOffhandItem(),
+                stack
+        )) {
+            player.setItemInHand(InteractionHand.OFF_HAND, stack);
+            debugOil("Synced Camellia stack to offhand: {}", stack);
+            player.getInventory().setChanged();
+            player.inventoryMenu.broadcastChanges();
+            return true;
+        } else {
+            boolean synced = false;
+            for (int i = 0; i < player.getInventory().items.size(); i++) {
+                if (player.getInventory().items.get(i) == stack) {
+                    player.getInventory().setItem(i, stack);
+                    debugOil(
+                            "Synced Camellia stack to inventory slot {}: {}",
+                            i,
+                            stack
+                    );
+                    synced = true;
+                    break;
+                }
+            }
+            if (!synced) {
+                debugOil(
+                        "Camellia stack was mutated but no matching held/inventory slot was found: {}",
+                        stack
+                );
+            }
+            player.getInventory().setChanged();
+            player.inventoryMenu.broadcastChanges();
+            return synced;
+        }
+    }
+
+    private static void debugOil(String message, Object... args) {
+        if (DEBUG_OILS) {
+            ProficiencyMod.LOGGER.info("[OilDebug] " + message, args);
+        }
+    }
+
+    private static void sendOilDebugMessage(
+            ServerPlayer player,
+            String eventName,
+            ItemStack stack,
+            DurabilityOilUseResult result
+    ) {
+        if (!DEBUG_OILS) {
+            return;
+        }
+        String itemName = stack.isEmpty()
+                ? Items.AIR.getDescription().getString()
+                : stack.getHoverName().getString();
+        player.displayClientMessage(Component.literal(
+                "[OilDebug] event fired: "
+                        + (result.eventFired() ? "yes" : "no")
+                        + " | event: " + eventName
+                        + " | item: " + itemName
+                        + " | has oil: " + (result.hasOil() ? "yes" : "no")
+                        + " | oil id found: " + result.oilIdFound()
+                        + " | charges before: " + result.chargesBefore()
+                        + " | charges after: " + result.chargesAfter()
+                        + " | stored before: " + result.storedBefore()
+                        + " | stored after: " + result.storedAfter()
+                        + " | hand/slot updated: "
+                        + (result.handUpdated() ? "yes" : "no")
+        ), false);
+    }
+
+    private static String oilIds(List<AppliedOil> oils) {
+        if (oils.isEmpty()) {
+            return "none";
+        }
+        return oils.stream()
+                .map(appliedOil -> appliedOil.entry().id())
+                .reduce((left, right) -> left + "," + right)
+                .orElse("none");
+    }
+
     public enum Target {
         DAMAGEABLE {
             @Override
@@ -437,5 +715,42 @@ public final class OilRegistry {
     }
 
     public record AppliedOil(Entry entry, int slot, int charges) {
+    }
+
+    public record DurabilityOilUseResult(
+            boolean eventFired,
+            boolean hasOil,
+            String oilIdFound,
+            int chargesBefore,
+            int chargesAfter,
+            boolean handUpdated,
+            boolean consumed,
+            boolean preserved,
+            int storedBefore,
+            int storedAfter
+    ) {
+        public static final DurabilityOilUseResult NONE =
+                new DurabilityOilUseResult(
+                        false,
+                        false,
+                        "none",
+                        0,
+                        0,
+                        false,
+                        false,
+                        false,
+                        0,
+                        0
+                );
+    }
+
+    private record ChargeMutationResult(
+            boolean consumed,
+            int storedBefore,
+            int storedAfter
+    ) {
+        private static ChargeMutationResult notFound() {
+            return new ChargeMutationResult(false, 0, 0);
+        }
     }
 }

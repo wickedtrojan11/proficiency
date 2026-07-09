@@ -1,12 +1,14 @@
 package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
+import com.trojan.proficiency.item.OilRegistry;
 import com.trojan.proficiency.util.OneHandedWeapons;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import com.trojan.proficiency.ProficiencyMod;
 import com.trojan.proficiency.skill.SkillType;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -149,6 +151,56 @@ public final class OneHandedEvents {
                     }
                     ServerPlayer attacker = getOneHandedAttacker(source);
                     if (attacker != null && !blocked && damageTaken > 0.0f) {
+                        ItemStack mainHand = attacker.getMainHandItem();
+                        boolean hasCamellia =
+                                OilRegistry.hasOil(mainHand, "camellia");
+                        boolean hasUsableCamellia =
+                                OilRegistry.hasUsableOil(
+                                        attacker,
+                                        mainHand,
+                                        "camellia"
+                                );
+                        boolean oilsToggle =
+                                SkillManager.isAlchemyToggleEnabled(
+                                        attacker.getUUID(),
+                                        "oils"
+                                );
+                        boolean camelliaPerk =
+                                SkillManager.hasAlchemyPerk(
+                                        attacker.getUUID(),
+                                        "camellia_press"
+                                );
+                        boolean shouldTrace =
+                                OilRegistry.isDebugEnabled()
+                                        || !OilRegistry.getAppliedOils(mainHand)
+                                        .isEmpty();
+                        if (OilRegistry.isDebugEnabled()) {
+                            attacker.sendSystemMessage(Component.literal(
+                                    "[OilDebug] OneHandedEvents shouldTrace="
+                                            + shouldTrace
+                                            + " hasCamellia=" + hasCamellia
+                                            + " hasUsable=" + hasUsableCamellia
+                                            + " oilsToggle=" + oilsToggle
+                                            + " camelliaPerk=" + camelliaPerk
+                            ));
+                        }
+                        if (shouldTrace) {
+                            if (OilRegistry.isDebugEnabled()) {
+                                attacker.sendSystemMessage(Component.literal(
+                                        "[OilDebug] CALLING consumeCharge() via Camellia helper"
+                                ));
+                            }
+                            OilRegistry.consumeCamelliaDurabilityUse(
+                                    attacker,
+                                    mainHand,
+                                    attacker.getRandom(),
+                                    "known one-handed damage event"
+                            );
+                        } else if (OilRegistry.isDebugEnabled()) {
+                            attacker.sendSystemMessage(Component.literal(
+                                    "[OilDebug] SKIPPING Camellia helper: shouldTrace=false"
+                            ));
+                        }
                         if (!applyingOffhandStrikeDamage) {
                             scheduleDurabilityRefund(attacker);
                         }
@@ -471,7 +523,37 @@ public final class OneHandedEvents {
             return true;
         }
 
-        if (!shouldPreserveWeaponDurability(player)) {
+        ItemStack offhand = player.getOffhandItem();
+        boolean hasCamellia = OilRegistry.hasOil(offhand, "camellia");
+        boolean hasUsableCamellia =
+                OilRegistry.hasUsableOil(player, offhand, "camellia");
+        boolean oilsToggle =
+                SkillManager.isAlchemyToggleEnabled(player.getUUID(), "oils");
+        boolean camelliaPerk =
+                SkillManager.hasAlchemyPerk(
+                        player.getUUID(),
+                        "camellia_press"
+                );
+        if (OilRegistry.isDebugEnabled()) {
+            player.sendSystemMessage(Component.literal(
+                    "[OilDebug] OffhandStrike hasCamellia=" + hasCamellia
+                            + " hasUsable=" + hasUsableCamellia
+                            + " oilsToggle=" + oilsToggle
+                            + " camelliaPerk=" + camelliaPerk
+            ));
+            player.sendSystemMessage(Component.literal(
+                    "[OilDebug] CALLING consumeCharge() via Camellia helper"
+            ));
+        }
+        OilRegistry.DurabilityOilUseResult camelliaResult =
+                OilRegistry.consumeCamelliaDurabilityUse(
+                        player,
+                        offhand,
+                        player.getRandom(),
+                        "offhand strike"
+                );
+        if (!camelliaResult.preserved()
+                && !shouldPreserveWeaponDurability(player)) {
             player.getOffhandItem().hurtAndBreak(
                     1,
                     player,
