@@ -161,6 +161,12 @@ public abstract class BrewingStandBlockEntityMixin {
                 items,
                 proficiency$capturedIngredient.get()
         );
+        AlchemyEvents.discoverVanillaBrewingRecipes(
+                level,
+                pos,
+                proficiency$capturedIngredient.get(),
+                items
+        );
         proficiency$capturedIngredient.set(ItemStack.EMPTY);
         AlchemyEvents.awardNearbyAlchemyXp(level, pos);
     }

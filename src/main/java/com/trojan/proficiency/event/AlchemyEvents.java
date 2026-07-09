@@ -2,6 +2,7 @@ package com.trojan.proficiency.event;
 
 import com.trojan.proficiency.SkillManager;
 import com.trojan.proficiency.block.ModBlocks;
+import com.trojan.proficiency.item.AlchemyJournalRegistry;
 import com.trojan.proficiency.item.ExperimentalAlchemyRegistry;
 import com.trojan.proficiency.item.ModItems;
 import com.trojan.proficiency.item.OilRegistry;
@@ -21,6 +22,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -188,6 +190,8 @@ public final class AlchemyEvents {
         ItemStack ingredient = items.get(3);
         boolean changed = false;
         int xpAward = BREW_XP;
+        String discoveredCategory = null;
+        String discoveredRecipe = null;
 
         if (ingredient.is(Items.HONEYCOMB)) {
             changed = replaceMatching(
@@ -195,6 +199,8 @@ public final class AlchemyEvents {
                     AlchemyEvents::isAwkwardPotion,
                     AlchemyEvents::honeyedBase
             );
+            discoveredCategory = "XP Elixirs";
+            discoveredRecipe = "Honeyed Base";
         } else if (isCompletedPotionContainer(ingredient)) {
             changed = brewExperimentalPotion(level, pos, items, ingredient);
         } else if (ingredient.is(ModBlocks.CAMELLIA_FLOWER.asItem())) {
@@ -204,12 +210,16 @@ public final class AlchemyEvents {
                         AlchemyEvents::isWaterBottle,
                         stack -> new ItemStack(ModItems.OIL_BASE)
                 );
+                discoveredCategory = "Oil Recipes";
+                discoveredRecipe = "Oil Base";
             } else if (canBrewOil(items, level, pos, "camellia")) {
                 changed = replaceMatching(
                         items,
                         AlchemyEvents::isOilBase,
                         stack -> new ItemStack(ModItems.CAMELLIA_OIL)
                 );
+                discoveredCategory = "Oil Recipes";
+                discoveredRecipe = "Camellia Oil";
             }
         } else if (ingredient.is(Items.BONE_MEAL)) {
             changed = replaceMatching(
@@ -217,6 +227,8 @@ public final class AlchemyEvents {
                     AlchemyEvents::isHoneyedBase,
                     stack -> xpPotion(ModItems.DOUBLE_XP_POTION, 0)
             );
+            discoveredCategory = "XP Elixirs";
+            discoveredRecipe = "Experience Elixir";
         } else if (ingredient.is(Items.ENDER_PEARL)) {
             changed = replaceMatching(
                     items,
@@ -226,10 +238,14 @@ public final class AlchemyEvents {
                             getExtraDuration(stack)
                     )
             );
+            discoveredCategory = "XP Elixirs";
+            discoveredRecipe = "Greater Experience Elixir";
         } else if (ingredient.is(Items.HONEY_BOTTLE)) {
             int maxExtraTicks = getNearbyHoneyExtensionCap(level, pos);
             changed = extendMatchingXpPotions(items, maxExtraTicks);
             xpAward = EXTENSION_XP;
+            discoveredCategory = "XP Elixirs";
+            discoveredRecipe = "Honey Duration Extension";
         } else if (ingredient.is(Items.BLAZE_POWDER)
                 && canBrewOil(items, level, pos, "fire")) {
             changed = replaceMatching(
@@ -237,6 +253,8 @@ public final class AlchemyEvents {
                     AlchemyEvents::isOilBase,
                     stack -> new ItemStack(ModItems.FIRE_OIL)
             );
+            discoveredCategory = "Oil Recipes";
+            discoveredRecipe = "Fire Oil";
         } else if (ingredient.is(Items.SNOWBALL)
                 && canBrewOil(items, level, pos, "frost")) {
             changed = replaceMatching(
@@ -244,6 +262,8 @@ public final class AlchemyEvents {
                     AlchemyEvents::isOilBase,
                     stack -> new ItemStack(ModItems.FROST_OIL)
             );
+            discoveredCategory = "Oil Recipes";
+            discoveredRecipe = "Frost Oil";
         } else if (ingredient.is(Items.REDSTONE)
                 && canBrewOil(items, level, pos, "miners")) {
             changed = replaceMatching(
@@ -251,6 +271,8 @@ public final class AlchemyEvents {
                     AlchemyEvents::isOilBase,
                     stack -> new ItemStack(ModItems.MINERS_OIL)
             );
+            discoveredCategory = "Oil Recipes";
+            discoveredRecipe = "Miner's Oil";
         } else if (ingredient.is(Items.OAK_SAPLING)
                 && canBrewOil(items, level, pos, "lumber")) {
             changed = replaceMatching(
@@ -258,6 +280,8 @@ public final class AlchemyEvents {
                     AlchemyEvents::isOilBase,
                     stack -> new ItemStack(ModItems.LUMBER_OIL)
             );
+            discoveredCategory = "Oil Recipes";
+            discoveredRecipe = "Lumber Oil";
         }
 
         if (!changed) {
@@ -269,6 +293,9 @@ public final class AlchemyEvents {
         }
 
         consumeIngredient(level, pos, items);
+        if (discoveredCategory != null && discoveredRecipe != null) {
+            discoverNearbyRecipe(level, pos, discoveredCategory, discoveredRecipe);
+        }
         awardNearbyAlchemyXp(level, pos, xpAward);
         if (ingredient.is(Items.HONEY_BOTTLE)) {
             playHoneyExtensionFeedback(level, pos);
@@ -392,6 +419,151 @@ public final class AlchemyEvents {
                     1.6f
             );
         }
+    }
+
+    public static void discoverVanillaBrewingRecipes(
+            Level level,
+            BlockPos pos,
+            ItemStack ingredient,
+            NonNullList<ItemStack> items
+    ) {
+        if (ingredient.isEmpty()) {
+            return;
+        }
+        for (ItemStack stack : items) {
+            String recipeName = vanillaRecipeName(ingredient, stack);
+            String category = vanillaRecipeCategory(ingredient, stack);
+            if (recipeName != null && category != null) {
+                discoverNearbyRecipe(level, pos, category, recipeName);
+            }
+        }
+    }
+
+    private static String vanillaRecipeCategory(
+            ItemStack ingredient,
+            ItemStack result
+    ) {
+        if (ingredient.is(Items.GUNPOWDER) && result.is(Items.SPLASH_POTION)) {
+            return "Splash Potions";
+        }
+        if (ingredient.is(Items.DRAGON_BREATH)
+                && result.is(Items.LINGERING_POTION)) {
+            return "Lingering Potions";
+        }
+        if (ingredient.is(Items.FERMENTED_SPIDER_EYE)) {
+            return "Fermented Spider Eye Conversions";
+        }
+        if (ingredient.is(Items.REDSTONE)
+                || ingredient.is(Items.GLOWSTONE_DUST)) {
+            return "Potion Modifiers";
+        }
+        return "Potion Recipes";
+    }
+
+    private static String vanillaRecipeName(
+            ItemStack ingredient,
+            ItemStack result
+    ) {
+        PotionContents contents = result.get(DataComponents.POTION_CONTENTS);
+        if (contents == null) {
+            return null;
+        }
+        if (ingredient.is(Items.NETHER_WART)
+                && contents.is(Potions.AWKWARD)) {
+            return "Awkward Potion";
+        }
+        if (ingredient.is(Items.REDSTONE)) {
+            return "Long Duration";
+        }
+        if (ingredient.is(Items.GLOWSTONE_DUST)) {
+            return "Greater Potency";
+        }
+        if (ingredient.is(Items.GUNPOWDER)) {
+            return splashOrLingeringName("Splash ", result);
+        }
+        if (ingredient.is(Items.DRAGON_BREATH)) {
+            return splashOrLingeringName("Lingering ", result);
+        }
+        if (ingredient.is(Items.FERMENTED_SPIDER_EYE)) {
+            return fermentedConversionName(contents);
+        }
+        if (ingredient.is(Items.SUGAR)) {
+            return "Swiftness";
+        }
+        if (ingredient.is(Items.RABBIT_FOOT)) {
+            return "Leaping";
+        }
+        if (ingredient.is(Items.GLISTERING_MELON_SLICE)) {
+            return "Healing";
+        }
+        if (ingredient.is(Items.SPIDER_EYE)) {
+            return "Poison";
+        }
+        if (ingredient.is(Items.PUFFERFISH)) {
+            return "Water Breathing";
+        }
+        if (ingredient.is(Items.MAGMA_CREAM)) {
+            return "Fire Resistance";
+        }
+        if (ingredient.is(Items.GOLDEN_CARROT)) {
+            return "Night Vision";
+        }
+        if (ingredient.is(Items.BLAZE_POWDER)) {
+            return "Strength";
+        }
+        if (ingredient.is(Items.GHAST_TEAR)) {
+            return "Regeneration";
+        }
+        if (ingredient.is(Items.PHANTOM_MEMBRANE)) {
+            return "Slow Falling";
+        }
+        if (ingredient.is(Items.TURTLE_HELMET)) {
+            return "Turtle Master";
+        }
+        return null;
+    }
+
+    private static String splashOrLingeringName(String prefix, ItemStack stack) {
+        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+        if (contents == null) {
+            return null;
+        }
+        for (MobEffectInstance effect : contents.getAllEffects()) {
+            if (effect.is(MobEffects.MOVEMENT_SPEED)) return prefix + "Swiftness";
+            if (effect.is(MobEffects.DAMAGE_BOOST)) return prefix + "Strength";
+            if (effect.is(MobEffects.HEAL)) return prefix + "Healing";
+            if (effect.is(MobEffects.REGENERATION)) return prefix + "Regeneration";
+            if (effect.is(MobEffects.FIRE_RESISTANCE)) return prefix + "Fire Resistance";
+            if (effect.is(MobEffects.NIGHT_VISION)) return prefix + "Night Vision";
+            if (effect.is(MobEffects.WATER_BREATHING)) return prefix + "Water Breathing";
+            if (effect.is(MobEffects.JUMP)) return prefix + "Leaping";
+            if (effect.is(MobEffects.POISON)) return prefix + "Poison";
+            if (effect.is(MobEffects.SLOW_FALLING)) return prefix + "Slow Falling";
+            if (effect.is(MobEffects.DAMAGE_RESISTANCE)) return prefix + "Turtle Master";
+            if (effect.is(MobEffects.WEAKNESS)) return prefix + "Weakness";
+            if (effect.is(MobEffects.INVISIBILITY)) return prefix + "Invisibility";
+            if (effect.is(MobEffects.HARM)) return prefix + "Harming";
+            if (effect.is(MobEffects.MOVEMENT_SLOWDOWN)) return prefix + "Slowness";
+        }
+        return null;
+    }
+
+    private static String fermentedConversionName(PotionContents contents) {
+        for (MobEffectInstance effect : contents.getAllEffects()) {
+            if (effect.is(MobEffects.INVISIBILITY)) {
+                return "Night Vision -> Invisibility";
+            }
+            if (effect.is(MobEffects.HARM)) {
+                return "Healing -> Harming";
+            }
+            if (effect.is(MobEffects.MOVEMENT_SLOWDOWN)) {
+                return "Swiftness -> Slowness";
+            }
+            if (effect.is(MobEffects.WEAKNESS)) {
+                return "Weakness";
+            }
+        }
+        return null;
     }
 
     public static int getNearbyBrewingSpeedBonusPercent(
@@ -574,6 +746,22 @@ public final class AlchemyEvents {
                 ));
             }
         });
+    }
+
+    private static void discoverNearbyRecipe(
+            Level level,
+            BlockPos pos,
+            String category,
+            String recipeName
+    ) {
+        getNearbyAlchemyPlayer(level, pos, player -> true)
+                .ifPresent(player -> SkillManager.discoverAlchemyIngredient(
+                        player,
+                        AlchemyJournalRegistry.recipeDiscoveryKey(
+                                category,
+                                recipeName
+                        )
+                ));
     }
 
     private static boolean hasNearbyAlchemyPrestige(

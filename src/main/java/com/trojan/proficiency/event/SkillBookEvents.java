@@ -50,6 +50,7 @@ public final class SkillBookEvents {
             BuiltInLootTables.BASTION_HOGLIN_STABLE,
             BuiltInLootTables.BASTION_OTHER,
             BuiltInLootTables.ANCIENT_CITY,
+            BuiltInLootTables.WOODLAND_MANSION,
             BuiltInLootTables.VILLAGE_PLAINS_HOUSE,
             BuiltInLootTables.VILLAGE_TAIGA_HOUSE,
             BuiltInLootTables.VILLAGE_SNOWY_HOUSE,
@@ -148,6 +149,9 @@ public final class SkillBookEvents {
     private static float getChestBookChance(
             ResourceKey<LootTable> lootTable
     ) {
+        if (lootTable.equals(BuiltInLootTables.WOODLAND_MANSION)) {
+            return STRONGHOLD_CHEST_CHANCE;
+        }
         if (lootTable.equals(BuiltInLootTables.ABANDONED_MINESHAFT)) {
             return MINESHAFT_CHEST_CHANCE;
         }
@@ -181,6 +185,7 @@ public final class SkillBookEvents {
     ) {
         if (
                 lootTable.equals(BuiltInLootTables.ANCIENT_CITY)
+                        || lootTable.equals(BuiltInLootTables.WOODLAND_MANSION)
                         || lootTable.equals(BuiltInLootTables.NETHER_BRIDGE)
                         || lootTable.equals(BuiltInLootTables.BASTION_TREASURE)
                         || lootTable.equals(BuiltInLootTables.BASTION_BRIDGE)

@@ -181,6 +181,10 @@ public class SkillScreen extends Screen {
     private float uiOffsetY;
     private boolean confirmingPrestige;
     private boolean alchemyJournalOpen;
+    private int alchemyJournalScroll;
+    private String selectedAlchemyRecipeId;
+    private final List<AlchemyRecipeClickArea> alchemyRecipeClickAreas =
+            new ArrayList<>();
 
     public SkillScreen() {
         super(Component.literal("Proficiency"));
@@ -501,12 +505,33 @@ public class SkillScreen extends Screen {
                     ALCHEMY_JOURNAL_TOGGLE_HEIGHT
             )) {
                 alchemyJournalOpen = !alchemyJournalOpen;
+                selectedAlchemyRecipeId = null;
                 minecraft.player.playSound(
                         net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
                         1.0f,
                         1.0f
                 );
                 return true;
+            }
+            if (alchemyJournalOpen) {
+                if (selectedAlchemyRecipeId != null
+                        && isInside(mouseX, mouseY, 285, 95, 45, 14)) {
+                    selectedAlchemyRecipeId = null;
+                    return true;
+                }
+                for (AlchemyRecipeClickArea area : alchemyRecipeClickAreas) {
+                    if (isInside(
+                            mouseX,
+                            mouseY,
+                            area.x(),
+                            area.y(),
+                            area.width(),
+                            area.height()
+                    )) {
+                        selectedAlchemyRecipeId = area.recipeId();
+                        return true;
+                    }
+                }
             }
         }
 
@@ -724,6 +749,41 @@ public class SkillScreen extends Screen {
                 button
         );
 
+    }
+
+    @Override
+    public boolean mouseScrolled(
+            double mouseX,
+            double mouseY,
+            double horizontalAmount,
+            double verticalAmount
+    ) {
+        updateUiTransform();
+        mouseX = (mouseX - uiOffsetX) / uiScale;
+        mouseY = (mouseY - uiOffsetY) / uiScale;
+        if (selectedSkill == 4
+                && alchemyJournalOpen
+                && selectedAlchemyRecipeId == null
+                && isInside(
+                mouseX,
+                mouseY,
+                TREE_PANEL_X,
+                TREE_PANEL_Y,
+                TREE_PANEL_WIDTH,
+                TREE_PANEL_HEIGHT
+        )) {
+            alchemyJournalScroll = Math.max(
+                    0,
+                    alchemyJournalScroll + (verticalAmount < 0 ? 1 : -1)
+            );
+            return true;
+        }
+        return super.mouseScrolled(
+                mouseX,
+                mouseY,
+                horizontalAmount,
+                verticalAmount
+        );
     }
 
     @Override
@@ -2489,6 +2549,7 @@ public class SkillScreen extends Screen {
     }
 
     private void drawAlchemyJournal(GuiGraphics graphics, UUID playerId) {
+        alchemyRecipeClickAreas.clear();
         int panelX = TREE_PANEL_X + 18;
         int panelY = TREE_PANEL_Y + 28;
         int panelWidth = TREE_PANEL_WIDTH - 36;
@@ -2518,13 +2579,24 @@ public class SkillScreen extends Screen {
                 0xFFFFAA55
         );
 
+        if (selectedAlchemyRecipeId != null) {
+            drawAlchemyRecipeDetail(graphics, playerId, panelX, panelY);
+            return;
+        }
+
         graphics.drawString(font, "Ingredients", leftX, panelY + 28,
                 0xFF77FFAA);
         graphics.drawString(font, "\u2713 Discovered  \u2713 Tasted",
                 leftX, panelY + 40, 0xFF77FFAA);
         int ingredientY = panelY + 54;
+        int ingredientRows = 0;
         for (AlchemyIngredientRegistry.Entry ingredient
                 : AlchemyIngredientRegistry.entries()) {
+            if (ingredientRows >= 20) {
+                graphics.drawString(font, "...", leftX, ingredientY,
+                        0xFF777777);
+                break;
+            }
             boolean discovered =
                     ClientSkillState.hasDiscoveredAlchemyIngredient(
                             ingredient.key()
@@ -2549,74 +2621,49 @@ public class SkillScreen extends Screen {
                     discovered ? 0xFFE5E5E5 : 0xFF777777
             );
             ingredientY += 11;
+            ingredientRows++;
         }
 
         graphics.drawString(font, "Recipes", rightX, panelY + 28,
                 0xFFDD99FF);
-        int recipeY = panelY + 42;
-        recipeY = drawAlchemyJournalCategory(
-                graphics,
-                playerId,
-                "Potion Recipes",
-                rightX,
-                recipeY
-        );
-        recipeY = drawAlchemyJournalCategory(
-                graphics,
-                playerId,
-                "XP Elixirs",
-                rightX,
-                recipeY + 4
-        );
-        recipeY = drawAlchemyJournalCategory(
-                graphics,
-                playerId,
-                "Oil Recipes",
-                rightX,
-                recipeY + 4
-        );
-        recipeY = drawAlchemyJournalCategory(
-                graphics,
-                playerId,
-                "Ancient Recipes",
-                rightX,
-                recipeY + 4
-        );
-        if (ClientSkillState.getAlchemyPrestige(playerId) >= 2) {
-            drawAlchemyJournalCategory(
-                    graphics,
-                    playerId,
-                    "Experimental Brewing",
-                    rightX,
-                    recipeY + 4
-            );
-        }
+        graphics.drawString(font, "Scroll for more", rightX + 180,
+                panelY + 28, 0xFF777777);
+        drawAlchemyJournalRecipeList(graphics, playerId, rightX, panelY + 42);
     }
 
-    private int drawAlchemyJournalCategory(
+    private void drawAlchemyJournalRecipeList(
             GuiGraphics graphics,
             UUID playerId,
-            String category,
             int x,
             int y
     ) {
-        boolean drewHeader = false;
+        int skipped = 0;
+        int drawnRows = 0;
+        int maxRows = 21;
+        String lastCategory = "";
         int currentY = y;
 
         for (AlchemyJournalRegistry.RecipeEntry recipe
                 : AlchemyJournalRegistry.recipes()) {
-            if (!recipe.category().equals(category)) {
-                continue;
-            }
             if (recipe.hiddenUntilUnlocked()
                     && !isAlchemyRecipeVisible(playerId, recipe)) {
                 continue;
             }
-            if (!drewHeader) {
-                graphics.drawString(font, category, x, currentY,
+            if (skipped++ < alchemyJournalScroll) {
+                continue;
+            }
+            if (drawnRows >= maxRows) {
+                break;
+            }
+            if (!lastCategory.equals(recipe.category())) {
+                graphics.drawString(font, recipe.category(), x, currentY,
                         0xFFFFAA55);
                 currentY += 11;
-                drewHeader = true;
+                drawnRows++;
+                lastCategory = recipe.category();
+                if (drawnRows >= maxRows) {
+                    break;
+                }
             }
 
             boolean known = isAlchemyRecipeKnown(playerId, recipe);
@@ -2634,10 +2681,71 @@ public class SkillScreen extends Screen {
                             ? unlocked ? 0xFFE5E5E5 : 0xFFAAAAAA
                             : 0xFF777777
             );
+            if (known) {
+                alchemyRecipeClickAreas.add(new AlchemyRecipeClickArea(
+                        x + 10,
+                        currentY,
+                        280,
+                        10,
+                        recipe.id()
+                ));
+            }
             currentY += 10;
+            drawnRows++;
+        }
+    }
+
+    private void drawAlchemyRecipeDetail(
+            GuiGraphics graphics,
+            UUID playerId,
+            int panelX,
+            int panelY
+    ) {
+        AlchemyJournalRegistry.RecipeEntry recipe =
+                AlchemyJournalRegistry.get(selectedAlchemyRecipeId);
+        if (recipe == null || !isAlchemyRecipeKnown(playerId, recipe)) {
+            selectedAlchemyRecipeId = null;
+            return;
         }
 
-        return drewHeader ? currentY : y;
+        int x = panelX + 36;
+        int y = panelY + 34;
+        graphics.drawString(font, "< Back", 285, 95, 0xFFFFAA55);
+        graphics.drawString(font, recipe.category(), x, y, 0xFFDD99FF);
+        y += 18;
+        graphics.drawString(font, recipe.name(), x, y, 0xFFE5E5E5);
+        y += 22;
+        graphics.drawString(font, "Base Potion:", x, y, 0xFFFFAA55);
+        graphics.drawString(font, recipe.base(), x + 110, y, 0xFFE5E5E5);
+        y += 16;
+        graphics.drawString(font, "Ingredient:", x, y, 0xFFFFAA55);
+        graphics.drawString(font, recipe.ingredient(), x + 110, y,
+                0xFFE5E5E5);
+        y += 16;
+        graphics.drawString(font, "Result:", x, y, 0xFFFFAA55);
+        graphics.drawString(font, recipe.result(), x + 110, y, 0xFFE5E5E5);
+        y += 20;
+        graphics.drawString(font, "Optional Modifiers:", x, y, 0xFFFFAA55);
+        y += 14;
+        graphics.drawString(
+                font,
+                fitJournalText(getAlchemyRecipeModifiers(recipe), 520),
+                x + 16,
+                y,
+                0xFFAAAAAA
+        );
+        if (!recipe.notes().isBlank()) {
+            y += 20;
+            graphics.drawString(font, "Notes:", x, y, 0xFFFFAA55);
+            y += 14;
+            graphics.drawString(
+                    font,
+                    fitJournalText(recipe.notes(), 520),
+                    x + 16,
+                    y,
+                    0xFFAAAAAA
+            );
+        }
     }
 
     private boolean isAlchemyRecipeKnown(
@@ -2645,21 +2753,23 @@ public class SkillScreen extends Screen {
             AlchemyJournalRegistry.RecipeEntry recipe
     ) {
         if (recipe.discoveryKey() != null) {
-            return ClientSkillState.hasDiscoveredAlchemyIngredient(
-                    recipe.discoveryKey()
-            );
-        }
-        if (isAlchemyRecipeUnlocked(playerId, recipe)) {
-            return true;
-        }
-        for (String ingredientKey : recipe.ingredientKeys()) {
             if (ClientSkillState.hasDiscoveredAlchemyIngredient(
-                    ingredientKey
+                    recipe.discoveryKey()
             )) {
                 return true;
             }
         }
-        return false;
+        if (recipe.ingredientKeys().isEmpty()) {
+            return isAlchemyRecipeUnlocked(playerId, recipe);
+        }
+        for (String ingredientKey : recipe.ingredientKeys()) {
+            if (!ClientSkillState.hasDiscoveredAlchemyIngredient(
+                    ingredientKey
+            )) {
+                return false;
+            }
+        }
+            return true;
     }
 
     private boolean isAlchemyRecipeUnlocked(
@@ -2683,6 +2793,26 @@ public class SkillScreen extends Screen {
         return isAlchemyRecipeUnlocked(playerId, recipe);
     }
 
+    private String getAlchemyRecipeModifiers(
+            AlchemyJournalRegistry.RecipeEntry recipe
+    ) {
+        return switch (recipe.category()) {
+            case "Potion Recipes", "Fermented Spider Eye Conversions" ->
+                    "Redstone may extend duration; Glowstone may improve potency when vanilla allows it; Gunpowder makes Splash; Dragon's Breath makes Lingering.";
+            case "Splash Potions" ->
+                    "Dragon's Breath converts splash potions into lingering potions.";
+            case "Lingering Potions" ->
+                    "Already uses Dragon's Breath as the final modifier.";
+            case "XP Elixirs" ->
+                    "Honey Bottle extends elixir duration up to your unlocked cap.";
+            case "Oil Recipes" ->
+                    "Apply finished oils to valid gear at a Smithing Table.";
+            case "Experimental Brewing" ->
+                    "Uses two completed potions. Effects are combined with conservative duration and amplifier limits.";
+            default -> "None.";
+        };
+    }
+
     private String fitJournalText(String text, int maxWidth) {
         if (font.width(text) <= maxWidth) {
             return text;
@@ -2696,6 +2826,15 @@ public class SkillScreen extends Screen {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
         return trimmed + suffix;
+    }
+
+    private record AlchemyRecipeClickArea(
+            int x,
+            int y,
+            int width,
+            int height,
+            String recipeId
+    ) {
     }
 
     private void updateUiTransform() {
